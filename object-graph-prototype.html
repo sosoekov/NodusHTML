@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Карта связей объектов — локальный прототип</title>
+<title>Nodus v.0.3 — локальный прототип</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -55,7 +55,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   background:var(--bg-panel); gap:16px; flex-wrap:wrap;
 }
 .topbar-left{ display:flex; flex-direction:column; gap:5px; }
-.app-title{ font-size:16px; font-weight:600; margin:0; }
+.app-title{ font-size:16px; font-weight:700; margin:0; display:flex; align-items:center; gap:8px; }
+.app-logo{ width:22px; height:22px; flex:none; }
+.app-version{ font-size:12px; font-weight:500; color:var(--text-faint); }
 .stats{ display:flex; gap:6px; }
 .stat-chip{
   font-family:var(--mono); font-size:11px; color:var(--text-muted);
@@ -91,12 +93,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .sidebar-section + .sidebar-section{ border-top:1px solid var(--border-soft); }
 .search-input{ width:100%; padding:8px 10px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); }
 .filters{ display:flex; flex-direction:column; gap:6px; }
-.filters-label{ font-size:10.5px; color:var(--text-faint); margin:2px 0 0; }
 .filters-row{ display:flex; gap:6px; }
 .filters-row .select-sm{ flex:1; min-width:0; }
+.filters-row[hidden]{ display:none; }
 .select-sm{ padding:6px 8px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); color:var(--text-muted); font-size:12px; }
-.list-actions{ display:flex; gap:8px; }
-.list-actions .btn{ flex:1; }
+.side-tabs{ display:flex; border-bottom:1px solid var(--border-soft); flex:none; }
+.side-tab{ flex:1; background:transparent; border:none; border-bottom:2px solid transparent; padding:11px 0 9px; color:var(--text-muted); font-size:12.5px; cursor:pointer; }
+.side-tab:hover:not(.active){ color:var(--text); }
+.side-tab.active{ color:var(--accent); border-bottom-color:var(--accent); }
+.side-search-row{ display:flex; gap:6px; }
+.side-search-row .search-input{ flex:1; min-width:0; }
+.side-add{ width:34px; flex:none; padding:0; font-size:17px; line-height:1; }
 .list-wrap{ flex:1; overflow-y:auto; padding:4px 0 14px; min-height:0; }
 
 .list-group-title{ font-size:11px; color:var(--text-faint); margin:10px 14px 4px; }
@@ -228,7 +235,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 <div id="app">
   <header id="topbar">
     <div class="topbar-left">
-      <h1 class="app-title">Карта связей объектов</h1>
+      <h1 class="app-title">
+        <svg class="app-logo" viewBox="0 0 24 24" aria-hidden="true"><polyline points="5,19 5,5 19,19 19,5" fill="none" stroke="#E0A73E" stroke-width="2" stroke-linejoin="round"/><circle cx="5" cy="19" r="2.6" fill="#5AD0D9"/><circle cx="5" cy="5" r="2.6" fill="#D9D05A"/><circle cx="19" cy="19" r="2.6" fill="#D96A5A"/><circle cx="19" cy="5" r="2.6" fill="#7DD95A"/></svg>
+        Nodus <span class="app-version">v.0.3</span>
+      </h1>
       <div class="stats">
         <span class="stat-chip" id="stat-objects">0 объектов</span>
         <span class="stat-chip" id="stat-mechanisms">0 механизмов</span>
@@ -253,32 +263,22 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   </header>
   <div id="main">
     <aside id="sidebar-left">
-      <div class="sidebar-section">
-        <input type="text" id="search-input" class="search-input" placeholder="Поиск по названию и тегам">
+      <div class="side-tabs" role="tablist">
+        <button class="side-tab active" data-side="objects" type="button" role="tab">Объекты <span id="side-count-objects">0</span></button>
+        <button class="side-tab" data-side="mechanisms" type="button" role="tab">Механизмы <span id="side-count-mechanisms">0</span></button>
+      </div>
+      <div class="sidebar-section side-search-row">
+        <input type="text" id="search-input" class="search-input" placeholder="Название или тег">
+        <button class="btn btn-accent side-add" id="btn-side-add" type="button" title="Добавить объект" aria-label="Добавить объект">+</button>
       </div>
       <div class="sidebar-section filters">
-        <p class="filters-label">Объекты</p>
-        <div class="filters-row">
+        <div class="filters-row" id="side-filters-objects">
           <select id="filter-type" class="select-sm"><option value="">Все типы</option></select>
           <select id="filter-tag" class="select-sm"><option value="">Все теги</option></select>
         </div>
-        <p class="filters-label">Механизмы</p>
-        <div class="filters-row">
+        <div class="filters-row" id="side-filters-mechanisms" hidden>
           <select id="filter-mechcategory" class="select-sm"><option value="">Все категории</option></select>
         </div>
-        <p class="filters-label">Общее</p>
-        <div class="filters-row">
-          <select id="filter-status" class="select-sm">
-            <option value="">Любой статус</option>
-            <option value="stub">Заглушка</option>
-            <option value="active">Активен</option>
-            <option value="deprecated">Устарел</option>
-          </select>
-        </div>
-      </div>
-      <div class="sidebar-section list-actions">
-        <button class="btn btn-accent btn-sm" id="btn-add-object" type="button">Добавить объект</button>
-        <button class="btn btn-sm" id="btn-add-mechanism" type="button">Добавить механизм</button>
       </div>
       <div class="sidebar-section list-wrap">
         <div id="object-list"></div>
@@ -1063,6 +1063,7 @@ function layoutLabels(ctx, focus){
     }
     placed.push(b);
   }
+  var filterOn = !focus && !!graphFilter;
   function tryPlace(n, inFocus){
     var r = nodeRadius(n)*view.scale;
     var alpha = 1;
@@ -1070,7 +1071,7 @@ function layoutLabels(ctx, focus){
       var sizePx = labelRadius(n)*view.scale;
       if (sizePx < LABEL_MIN_PX) return;
       alpha = Math.min(1, (sizePx-LABEL_MIN_PX)/LABEL_FADE_PX + 0.25);
-      if (focus) alpha *= 0.15;
+      if (focus || (filterOn && !graphFilter.nodes.has(n.id))) alpha *= 0.15;
     }
     var sx = n.x*view.scale + view.offsetX, sy = n.y*view.scale + view.offsetY;
     var baseY = sy + r + 14;
@@ -1081,7 +1082,13 @@ function layoutLabels(ctx, focus){
     add(b);
   }
   if (focus) labelOrder.forEach(function(n){ if (focus.set.has(n.id)) tryPlace(n, true); });
-  labelOrder.forEach(function(n){ if (!focus || !focus.set.has(n.id)) tryPlace(n, false); });
+  if (filterOn){
+    /* Сначала место под подписи отобранных, потом — остальных. */
+    labelOrder.forEach(function(n){ if (graphFilter.nodes.has(n.id)) tryPlace(n, false); });
+    labelOrder.forEach(function(n){ if (!graphFilter.nodes.has(n.id)) tryPlace(n, false); });
+  } else {
+    labelOrder.forEach(function(n){ if (!focus || !focus.set.has(n.id)) tryPlace(n, false); });
+  }
   return placed;
 }
 
@@ -1195,8 +1202,19 @@ function drawEdgeBatch(ctx, list, hl, alpha, badgeAlpha){
   ctx.textBaseline='alphabetic';
 }
 
+/* Приглушение по отбору левой панели; наведение/клик (focus) важнее отбора. */
+var FILTER_DIM_NODE = 0.2, FILTER_DIM_EDGE = 0.08;
+
 function drawEdges(ctx, edges, focus){
   var normal = [], highlighted = [];
+  if (!focus && graphFilter){
+    var dimmed = [];
+    edges.forEach(function(e){ (graphFilter.edge(e) ? normal : dimmed).push(edgeGeometry(e)); });
+    drawEdgeBatch(ctx, dimmed, false, FILTER_DIM_EDGE, FILTER_DIM_NODE);
+    drawEdgeBatch(ctx, normal, false, 1, 1);
+    ctx.globalAlpha = 1;
+    return;
+  }
   edges.forEach(function(e){ (isEdgeHighlighted(e, focus) ? highlighted : normal).push(edgeGeometry(e)); });
   drawEdgeBatch(ctx, normal, false, focus ? 0.08 : 1, focus ? 0.15 : 1);
   drawEdgeBatch(ctx, highlighted, true, 1, 1);
@@ -1243,6 +1261,11 @@ function drawNodeBatch(ctx, nodes, baseAlpha){
 }
 
 function drawNodes(ctx, nodes, focus){
+  if (!focus && graphFilter){
+    drawNodeBatch(ctx, nodes.filter(function(n){ return !graphFilter.nodes.has(n.id); }), FILTER_DIM_NODE);
+    drawNodeBatch(ctx, nodes.filter(function(n){ return graphFilter.nodes.has(n.id); }), 1);
+    return;
+  }
   if (!focus){ drawNodeBatch(ctx, nodes, 1); return; }
   drawNodeBatch(ctx, nodes.filter(function(n){ return !focus.set.has(n.id); }), 0.15);
   drawNodeBatch(ctx, nodes.filter(function(n){ return focus.set.has(n.id); }), 1);
@@ -1957,48 +1980,84 @@ function renderListView(){
   });
 }
 
-function renderSidebar(){
-  refreshTagFilterOptions();
-  var q = (document.getElementById('search-input').value || '').toLowerCase().trim();
+/* Левая панель показывает либо объекты, либо механизмы. У каждой вкладки своя
+   строка поиска (запоминается при переключении) и свои фильтры. Отбор открытой
+   вкладки подсвечивает граф, остальное приглушается. */
+var sideTab = 'objects';
+var sideSearch = { objects:'', mechanisms:'' };
+var graphFilter = null; /* null — отбор не задан; иначе {nodes:Set, edge:function(e)} */
+
+function filteredSideObjects(){
+  var q = sideSearch.objects.toLowerCase().trim();
   var typeFilter = document.getElementById('filter-type').value;
   var tagFilter = document.getElementById('filter-tag').value;
-  var mechCategoryFilter = document.getElementById('filter-mechcategory').value;
-  var statusFilter = document.getElementById('filter-status').value;
-
-  var objList = Object.keys(state.objects).map(function(id){return state.objects[id];})
+  var list = Object.keys(state.objects).map(function(id){return state.objects[id];})
     .filter(function(o){
       return !q || o.name.toLowerCase().indexOf(q)>=0 || (o.fullName||'').toLowerCase().indexOf(q)>=0 ||
         (o.tags||[]).join(' ').toLowerCase().indexOf(q)>=0;
     })
     .filter(function(o){ return !typeFilter || o.type===typeFilter; })
     .filter(function(o){ return !tagFilter || (o.tags||[]).indexOf(tagFilter)>=0; })
-    .filter(function(o){ return !statusFilter || o.status===statusFilter; })
     .sort(function(a,b){ return a.name.localeCompare(b.name,'ru'); });
+  return {list:list, active:!!(q || typeFilter || tagFilter)};
+}
 
-  var mechList = Object.keys(state.mechanisms).map(function(id){return state.mechanisms[id];})
+function filteredSideMechanisms(){
+  var q = sideSearch.mechanisms.toLowerCase().trim();
+  var catFilter = document.getElementById('filter-mechcategory').value;
+  var list = Object.keys(state.mechanisms).map(function(id){return state.mechanisms[id];})
     .filter(function(m){ return !q || m.title.toLowerCase().indexOf(q)>=0; })
-    .filter(function(m){ return !mechCategoryFilter || m.category===mechCategoryFilter; })
-    .filter(function(m){ return !statusFilter || m.status===statusFilter; })
+    .filter(function(m){ return !catFilter || m.category===catFilter; })
     .sort(function(a,b){ return a.title.localeCompare(b.title,'ru'); });
+  return {list:list, active:!!(q || catFilter)};
+}
+
+function computeGraphFilter(objs, mechs){
+  var nodes = new Set();
+  if (sideTab === 'objects'){
+    if (!objs.active) return null;
+    objs.list.forEach(function(o){ nodes.add('obj:'+o.id); });
+    /* Механизмы с отобранным участником (узлы-ромбы в полном режиме) — тоже яркие. */
+    Object.keys(state.mechanisms).forEach(function(mid){
+      if (state.mechanisms[mid].participants.some(function(p){ return nodes.has('obj:'+p.objectId); })) nodes.add('mech:'+mid);
+    });
+    return {nodes:nodes, edge:function(e){ return (nodes.has(e.a) && e.a.indexOf('obj:')===0) || (nodes.has(e.b) && e.b.indexOf('obj:')===0); }};
+  }
+  if (!mechs.active) return null;
+  var mechIds = new Set();
+  mechs.list.forEach(function(m){
+    mechIds.add(m.id); nodes.add('mech:'+m.id);
+    m.participants.forEach(function(p){ if (p.objectId && state.objects[p.objectId]) nodes.add('obj:'+p.objectId); });
+  });
+  return {nodes:nodes, edge:function(e){
+    var hit = false; e.mechanismIds.forEach(function(id){ if (mechIds.has(id)) hit = true; }); return hit;
+  }};
+}
+
+function renderSidebar(){
+  refreshTagFilterOptions();
+  var objs = filteredSideObjects(), mechs = filteredSideMechanisms();
+  document.getElementById('side-count-objects').textContent = objs.list.length;
+  document.getElementById('side-count-mechanisms').textContent = mechs.list.length;
+  graphFilter = computeGraphFilter(objs, mechs);
+  requestRender();
 
   var container = document.getElementById('object-list');
-  container.innerHTML =
-    '<div class="list-group"><p class="list-group-title">Объекты ('+objList.length+')</p>' +
-      (objList.length ? objList.map(function(o){
-        return '<button class="list-row" data-kind="object" data-id="'+o.id+'" type="button">' +
-          '<span class="dot" style="background:'+typeColor(o.type)+'"></span>' +
-          '<span class="list-row-main"><span class="list-row-title">'+escapeHtml(o.name)+'</span><span class="list-row-sub">'+escapeHtml(typeTitle(o.type))+'</span></span>' +
-        '</button>';
-      }).join('') : '<p class="ref-empty">Ничего не найдено.</p>') +
-    '</div>' +
-    '<div class="list-group"><p class="list-group-title">Механизмы ('+mechList.length+')</p>' +
-      (mechList.length ? mechList.map(function(m){
-        return '<button class="list-row" data-kind="mechanism" data-id="'+m.id+'" type="button">' +
-          '<span class="dot dot-diamond" style="background:'+categoryAccent(m.category)+'"></span>' +
-          '<span class="list-row-main"><span class="list-row-title">'+escapeHtml(m.title)+'</span><span class="list-row-sub">'+escapeHtml(categoryTitle(m.category))+'</span></span>' +
-        '</button>';
-      }).join('') : '<p class="ref-empty">Ничего не найдено.</p>') +
-    '</div>';
+  if (sideTab === 'objects'){
+    container.innerHTML = objs.list.length ? objs.list.map(function(o){
+      return '<button class="list-row" data-kind="object" data-id="'+o.id+'" type="button">' +
+        '<span class="dot" style="background:'+typeColor(o.type)+'"></span>' +
+        '<span class="list-row-main"><span class="list-row-title">'+escapeHtml(o.name)+'</span><span class="list-row-sub">'+escapeHtml(typeTitle(o.type))+'</span></span>' +
+      '</button>';
+    }).join('') : '<p class="ref-empty">Ничего не найдено.</p>';
+  } else {
+    container.innerHTML = mechs.list.length ? mechs.list.map(function(m){
+      return '<button class="list-row" data-kind="mechanism" data-id="'+m.id+'" type="button">' +
+        '<span class="dot dot-diamond" style="background:'+categoryAccent(m.category)+'"></span>' +
+        '<span class="list-row-main"><span class="list-row-title">'+escapeHtml(m.title)+'</span><span class="list-row-sub">'+escapeHtml(categoryTitle(m.category))+'</span></span>' +
+      '</button>';
+    }).join('') : '<p class="ref-empty">Ничего не найдено.</p>';
+  }
 
   container.querySelectorAll('.list-row').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -2275,26 +2334,47 @@ function attachHandlers(){
   setupResizeHandle('resize-left', 'left');
   setupResizeHandle('resize-right', 'right');
 
-  document.getElementById('btn-add-object').addEventListener('click', function(){
+  function addObjectFromUI(){
     openQuickCreateObject(function(obj){
       pinnedNodeId='obj:'+obj.id; pinnedMechanismId=null; pinnedEdgeKey=null;
       renderObjectPanel(obj); syncSidebarActive(); requestRender();
     });
-  });
-  document.getElementById('btn-add-object-empty').addEventListener('click', function(){
-    document.getElementById('btn-add-object').click();
-  });
-  document.getElementById('btn-add-mechanism').addEventListener('click', function(){
+  }
+  function addMechanismFromUI(){
     var m = createMechanism({title:'Новый механизм'});
     pinnedMechanismId = m.id; pinnedNodeId=null; pinnedEdgeKey=null;
     renderMechanismPanel(m); syncSidebarActive(); requestRender();
+  }
+  document.getElementById('btn-side-add').addEventListener('click', function(){
+    if (sideTab === 'objects') addObjectFromUI(); else addMechanismFromUI();
   });
+  document.getElementById('btn-add-object-empty').addEventListener('click', addObjectFromUI);
 
-  document.getElementById('search-input').addEventListener('input', renderSidebar);
+  document.querySelectorAll('.side-tab').forEach(function(tab){
+    tab.addEventListener('click', function(){
+      var next = tab.getAttribute('data-side');
+      if (next === sideTab) return;
+      sideTab = next;
+      document.querySelectorAll('.side-tab').forEach(function(t){ t.classList.toggle('active', t === tab); });
+      var isObj = sideTab === 'objects';
+      document.getElementById('side-filters-objects').hidden = !isObj;
+      document.getElementById('side-filters-mechanisms').hidden = isObj;
+      var search = document.getElementById('search-input');
+      search.value = sideSearch[sideTab];
+      search.placeholder = isObj ? 'Название или тег' : 'Название механизма';
+      var add = document.getElementById('btn-side-add');
+      add.title = isObj ? 'Добавить объект' : 'Добавить механизм';
+      add.setAttribute('aria-label', add.title);
+      renderSidebar();
+    });
+  });
+  document.getElementById('search-input').addEventListener('input', function(ev){
+    sideSearch[sideTab] = ev.target.value;
+    renderSidebar();
+  });
   document.getElementById('filter-type').addEventListener('change', renderSidebar);
   document.getElementById('filter-tag').addEventListener('change', renderSidebar);
   document.getElementById('filter-mechcategory').addEventListener('change', renderSidebar);
-  document.getElementById('filter-status').addEventListener('change', renderSidebar);
 
   document.getElementById('btn-settings').addEventListener('click', function(){
     openSettingsModal();
