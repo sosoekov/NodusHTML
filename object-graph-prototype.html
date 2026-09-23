@@ -58,12 +58,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .app-title{ font-size:16px; font-weight:700; margin:0; display:flex; align-items:center; gap:8px; }
 .app-logo{ width:22px; height:22px; flex:none; }
 .app-version{ font-size:12px; font-weight:500; color:var(--text-faint); }
-.stats{ display:flex; gap:6px; }
-.stat-chip{
-  font-family:var(--mono); font-size:11px; color:var(--text-muted);
-  background:var(--bg-elevated); border:1px solid var(--border-soft);
-  padding:2px 8px; border-radius:3px;
-}
 .mode-toggle, .view-toggle{ display:flex; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
 #graph-mode-toggle[hidden]{ display:none; }
 .mode-btn{ background:transparent; border:none; color:var(--text-muted); font-size:12.5px; padding:7px 14px; cursor:pointer; }
@@ -239,10 +233,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <svg class="app-logo" viewBox="0 0 24 24" aria-hidden="true"><polyline points="5,19 5,5 19,19 19,5" fill="none" stroke="#E0A73E" stroke-width="2" stroke-linejoin="round"/><circle cx="5" cy="19" r="2.6" fill="#5AD0D9"/><circle cx="5" cy="5" r="2.6" fill="#D9D05A"/><circle cx="19" cy="19" r="2.6" fill="#D96A5A"/><circle cx="19" cy="5" r="2.6" fill="#7DD95A"/></svg>
         Nodus <span class="app-version">v.0.3</span>
       </h1>
-      <div class="stats">
-        <span class="stat-chip" id="stat-objects">0 объектов</span>
-        <span class="stat-chip" id="stat-mechanisms">0 механизмов</span>
-      </div>
     </div>
     <div class="view-toggle" role="tablist">
       <button class="mode-btn active" data-view="graph" type="button">Граф</button>
@@ -2086,8 +2076,6 @@ function syncSidebarActive(){
 
 function updateStats(){
   var oc = Object.keys(state.objects).length, mc = Object.keys(state.mechanisms).length;
-  document.getElementById('stat-objects').textContent = oc + ' ' + pluralRu(oc,'объект','объекта','объектов');
-  document.getElementById('stat-mechanisms').textContent = mc + ' ' + pluralRu(mc,'механизм','механизма','механизмов');
   document.getElementById('empty-state').style.display = (oc===0 && mc===0) ? 'flex' : 'none';
 }
 
