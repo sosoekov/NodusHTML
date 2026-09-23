@@ -254,8 +254,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .graph-legend{ position:absolute; left:16px; bottom:36px; max-width:260px; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); font-size:var(--fs-caption); }
 .graph-legend[hidden]{ display:none; }
 .legend-toggle{ display:flex; align-items:center; gap:6px; width:100%; padding:6px 10px; background:transparent; border:none; color:var(--text-muted); font-size:var(--fs-caption); cursor:pointer; text-align:left; }
-.legend-toggle::after{ content:''; width:6px; height:6px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(-135deg); margin-left:auto; margin-top:3px; }
-.legend-toggle[aria-expanded="false"]::after{ transform:rotate(45deg); margin-top:-3px; }
+.legend-toggle::after{ content:''; width:6px; height:6px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(45deg); margin-left:auto; margin-top:-3px; }
+.legend-toggle[aria-expanded="false"]::after{ transform:rotate(-135deg); margin-top:3px; }
 .legend-toggle:hover{ color:var(--text); }
 .legend-body{ padding:0 10px 8px; max-height:40vh; overflow-y:auto; }
 .legend-body[hidden]{ display:none; }
@@ -274,11 +274,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .canvas-tooltip{ position:absolute; z-index:5; max-width:320px; padding:6px 8px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); font-size:var(--fs-caption); color:var(--text); pointer-events:none; white-space:normal; }
 .canvas-tooltip[hidden]{ display:none; }
 
-/* Мини-карта (над контролами холста) */
-.minimap{ position:absolute; right:14px; bottom:156px; width:182px; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+/* Мини-карта (слева от контролов холста, вровень по нижнему краю) */
+.minimap{ position:absolute; right:62px; bottom:14px; width:182px; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
 .minimap-toggle{ display:flex; align-items:center; width:100%; padding:5px 8px; background:transparent; border:none; color:var(--text-muted); font-size:var(--fs-caption); cursor:pointer; text-align:left; }
-.minimap-toggle::after{ content:''; width:6px; height:6px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(-135deg); margin-left:auto; margin-top:3px; }
-.minimap-toggle[aria-expanded="false"]::after{ transform:rotate(45deg); margin-top:-3px; }
+.minimap-toggle::after{ content:''; width:6px; height:6px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(45deg); margin-left:auto; margin-top:-3px; }
+.minimap-toggle[aria-expanded="false"]::after{ transform:rotate(-135deg); margin-top:3px; }
 .minimap-toggle:hover{ color:var(--text); }
 .minimap-canvas{ display:block; width:180px; height:120px; border-top:1px solid var(--border-soft); cursor:pointer; background:var(--bg); }
 .minimap-canvas[hidden]{ display:none; }
