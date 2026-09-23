@@ -43,6 +43,7 @@
   --success-soft:rgba(111,191,139,0.15);
   --warning:#E5C07B;
   --badge-bg-mix:15%;  /* доля цвета категории в фоне бейджа */
+  --chip-bg-mix:20%;   /* доля цвета типа в фоне чипа-ссылки */
 
   /* Цвета категорий механизмов */
   --cat-calc:hsl(25,55%,64%);
@@ -276,6 +277,50 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .panel-header{ margin-bottom:16px; }
 .panel-eyebrow{ font-size:var(--fs-caption); color:var(--text-faint); margin:0 0 4px; }
 .panel-header h2{ font-size:var(--fs-heading); margin:0; font-weight:600; word-break:break-word; }
+.panel-eyebrow-row{ display:flex; align-items:center; gap:8px; margin:0 0 4px; }
+.panel-eyebrow-row .panel-eyebrow{ margin:0; }
+.inline-title{ cursor:text; border-radius:var(--radius); margin:-2px -4px; padding:2px 4px; }
+.inline-title:hover, .inline-title:focus-visible{ background:var(--bg-elevated); outline:none; }
+.inline-title-input{ font-size:var(--fs-heading); font-weight:600; padding:2px 4px; margin:-3px -5px; width:calc(100% + 10px); }
+.inline-msg{ margin:4px 0 0; font-size:var(--fs-caption); color:var(--danger); }
+.inline-msg[hidden]{ display:none; }
+
+.save-indicator{ margin-left:auto; display:flex; align-items:center; gap:6px; font-size:var(--fs-caption); color:var(--text-faint); white-space:nowrap; }
+.save-indicator.is-error{ color:var(--danger); }
+.save-retry{ background:transparent; border:1px solid var(--danger); color:var(--danger); border-radius:var(--radius); font-size:var(--fs-caption); padding:0 6px; cursor:pointer; }
+.save-retry:hover{ background:var(--danger-soft); }
+
+.field-label-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; }
+.field-label-row .field-label{ margin:0; }
+.link-btn{ background:transparent; border:none; padding:0; color:var(--text-muted); font-size:var(--fs-caption); cursor:pointer; }
+.link-btn:hover{ color:var(--text); text-decoration:underline; }
+.body-view{ white-space:pre-wrap; word-break:break-word; font-size:var(--fs-base); line-height:1.55; padding:7px 9px; min-height:44px; background:var(--bg-elevated); border:1px solid var(--border-soft); border-radius:var(--radius); cursor:text; }
+.body-view:hover{ border-color:var(--border); }
+.body-view.is-empty{ color:var(--text-faint); font-style:italic; }
+.body-edit{ resize:none; overflow:hidden; min-height:80px; line-height:1.55; }
+.obj-chip{ display:inline; font:inherit; color:var(--text); padding:0 5px; border-radius:3px; cursor:pointer; background:color-mix(in srgb, var(--c) var(--chip-bg-mix), transparent); border:1px solid color-mix(in srgb, var(--c) 45%, transparent); }
+.obj-chip:hover{ background:color-mix(in srgb, var(--c) 35%, transparent); }
+
+.role-block + .role-block{ margin-top:12px; }
+.role-block-header{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
+.role-block-title{ margin:0; font-size:var(--fs-caption); color:var(--text-muted); }
+.role-block-empty{ margin:0; font-size:var(--fs-caption); color:var(--text-faint); }
+.pcard{ position:relative; display:flex; align-items:flex-start; gap:8px; padding:6px 6px 6px 8px; background:var(--bg-elevated); border:1px solid var(--border-soft); border-radius:var(--radius); }
+.pcard + .pcard, .role-add + .pcard, .pcard + .role-add{ margin-top:4px; }
+.pcard:hover{ border-color:var(--border); }
+.type-chip{ flex:none; min-width:26px; height:20px; padding:0 4px; margin-top:1px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:var(--c); color:var(--graph-node-text); font-size:var(--fs-caption); font-weight:500; line-height:1; }
+.pcard-main{ flex:1; min-width:0; }
+.pcard-name{ display:block; background:transparent; border:none; padding:0; text-align:left; color:var(--text); font-size:var(--fs-base); line-height:1.4; cursor:pointer; word-break:break-word; }
+.pcard-name:hover{ text-decoration:underline; }
+.pcard-sub{ font-size:var(--fs-caption); color:var(--text-muted); line-height:1.4; cursor:text; word-break:break-word; }
+.pcard-sub.is-empty{ color:var(--text-faint); font-style:italic; }
+.pcard-role{ color:var(--text-faint); font-style:normal; }
+.pcard-note-input{ font-size:var(--fs-caption); padding:3px 6px; margin-top:2px; }
+.pcard-menu-wrap{ position:relative; flex:none; }
+.pcard-menu-btn{ width:26px; height:24px; padding:0; background:transparent; border:1px solid transparent; border-radius:var(--radius); color:var(--text-muted); cursor:pointer; font-size:var(--fs-icon); line-height:1; }
+.pcard-menu-btn:hover, .pcard-menu-btn[aria-expanded="true"]{ border-color:var(--border); color:var(--text); }
+.pcard-menu{ right:0; min-width:220px; }
+.role-add{ padding:6px 8px; background:var(--bg-elevated); border:1px dashed var(--border); border-radius:var(--radius); }
 .field-group{ margin-bottom:12px; flex:1; min-width:0; }
 .field-row{ display:flex; gap:10px; }
 .field-label{ display:block; font-size:var(--fs-caption); color:var(--text-muted); margin-bottom:4px; }
@@ -303,8 +348,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .ref-item-obj .dot{ border-radius:50%; transform:none; }
 .ref-sub-empty{ font-size:var(--fs-caption); color:var(--text-faint); padding:3px 0 3px 2px; margin:0; }
 
-.participant-row{ display:grid; grid-template-columns:1fr 1fr auto; gap:6px 8px; margin-bottom:8px; padding-bottom:8px; border-bottom:1px dashed var(--border-soft); }
-.participant-row .p-note{ grid-column:1 / span 3; }
 .icon-btn{ width:30px; height:30px; display:flex; align-items:center; justify-content:center; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); color:var(--text-muted); cursor:pointer; font-size:var(--fs-icon); line-height:1; }
 .icon-btn:hover{ color:var(--danger); border-color:var(--danger); }
 
@@ -642,13 +685,49 @@ function labelOfRef(refId){
 
 /* ===================== Хранение ===================== */
 
+/* Индикатор сохранения в карточке: «Сохранение…» пока идут правки, «Сохранено» через
+   SAVE_SETTLE_MS после последней записи, «Ошибка сохранения» — если не удалась запись
+   в localStorage или в подключённую папку. Сама механика записи прежняя: каждая правка
+   сразу пишется в localStorage и (если подключена) в папку. */
+var SAVE_SETTLE_MS = 400;
+var saveStatus = 'saved'; /* saved | saving | error */
+var saveSettleTimer = null;
+var lastLocalSaveFailed = false;
+
+function setSaveStatus(s){
+  saveStatus = s;
+  document.querySelectorAll('.save-indicator').forEach(renderSaveIndicator);
+}
+function renderSaveIndicator(el){
+  el.classList.toggle('is-error', saveStatus === 'error');
+  if (saveStatus === 'error'){
+    el.innerHTML = 'Ошибка сохранения <button type="button" class="save-retry">Повторить</button>';
+    el.querySelector('.save-retry').addEventListener('click', retrySave);
+  } else {
+    el.textContent = saveStatus === 'saving' ? 'Сохранение…' : 'Сохранено';
+  }
+}
+function retrySave(){
+  if (folderHandle && autoSaveStatus === 'error') autoSaveStatus = 'connected';
+  persist();
+}
+
 function persist(){
+  lastLocalSaveFailed = false;
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify({objects:state.objects, mechanisms:state.mechanisms}));
   }catch(e){
+    lastLocalSaveFailed = true;
     console.warn('Не удалось сохранить в localStorage (нормально для предпросмотра внутри Claude — при открытии файла напрямую в браузере сохранение работает).', e);
   }
-  saveToFolder();
+  if (saveSettleTimer) clearTimeout(saveSettleTimer);
+  if (lastLocalSaveFailed){ setSaveStatus('error'); return saveToFolder(); }
+  setSaveStatus('saving');
+  var folderDone = saveToFolder();
+  saveSettleTimer = setTimeout(function(){
+    saveSettleTimer = null;
+    folderDone.then(function(ok){ if (!saveSettleTimer && !lastLocalSaveFailed) setSaveStatus(ok ? 'saved' : 'error'); });
+  }, SAVE_SETTLE_MS);
 }
 function loadPersisted(){
   try{
@@ -748,19 +827,23 @@ function tryRestoreFolder(){
     });
   }).catch(function(){ /* сохранённой папки нет, или API недоступен в этом контексте */ });
 }
+/* Возвращает Promise<boolean>: false — запись в подключённую папку не удалась. */
 function saveToFolder(){
-  if (!folderHandle || autoSaveStatus !== 'connected') return;
+  if (!folderHandle) return Promise.resolve(true);
+  if (autoSaveStatus !== 'connected') return Promise.resolve(autoSaveStatus !== 'error');
   var data = JSON.stringify({objects:state.objects, mechanisms:state.mechanisms}, null, 2);
-  folderHandle.getFileHandle('object-graph-data.json', {create:true}).then(function(fh){
+  return folderHandle.getFileHandle('object-graph-data.json', {create:true}).then(function(fh){
     return fh.createWritable();
   }).then(function(writable){
     return writable.write(data).then(function(){ return writable.close(); });
   }).then(function(){
     lastFolderSaveAt = new Date();
     updateSettingsSaveStatus();
+    return true;
   }).catch(function(err){
     console.warn('Не удалось сохранить в папку', err);
     autoSaveStatus = 'error';
+    return false;
   });
 }
 
@@ -939,7 +1022,7 @@ function deleteObject(id, onCancel){
 function deleteMechanism(id, onCancel){
   openModal({
     title:'Удалить механизм?',
-    bodyHTML:'<p>Механизм и описание его связей будут удалены без возможности восстановления.</p>',
+    bodyHTML:'<p>Механизм «' + escapeHtml(state.mechanisms[id] ? state.mechanisms[id].title : '') + '» и описание его связей будут удалены без возможности восстановления.</p>',
     footerButtons:[
       {label:'Отмена', onClick:function(){ if (onCancel) setTimeout(onCancel, 0); return true; }},
       {label:'Удалить', variant:'danger', onClick:function(){
@@ -1257,9 +1340,17 @@ function getFocus(){
   else if (hoverId) f = nodeFocus(hoverId);
   else if (listHover && listHover.kind === 'object' && state.objects[listHover.id]) f = objectFocus(listHover.id);
   else if (listHover && listHover.kind === 'mechanism' && state.mechanisms[listHover.id]) f = mechanismFocus(listHover.id);
+  /* Наведение на чип/участника в карточке: без выделения — подсветка объекта, при
+     выделении — рамка и подпись узла, а для участника ещё и его ребро. */
+  if (graphHint && graphHint.objId && state.objects[graphHint.objId]){
+    if (!f) f = objectFocus(graphHint.objId);
+    f.hint = 'obj:' + graphHint.objId;
+    if (graphHint.mechId) f.hintMech = graphHint.mechId;
+  }
   /* Наведение поверх закреплённого выделения: подсветку не меняет, но подпись
      узла под курсором показывается (см. layoutLabels). */
   if (f && hoverId && hoverId !== f.center) f.hover = hoverId;
+  else if (f && f.hint && f.hint !== f.center) f.hover = f.hint;
   return f;
 }
 
@@ -1272,6 +1363,12 @@ function nodeAlpha(id, focus){
 
 function isEdgeHighlighted(e, focus){
   if (!focus) return false;
+  if (focus.hintMech){
+    /* Ребро участника: объект ↔ механизм (или рёбра этого механизма у объекта без режима механизмов). */
+    var touches = e.a === focus.hint || e.b === focus.hint;
+    if (currentMode === 'full'){ var hm = 'mech:'+focus.hintMech; return touches && (e.a === hm || e.b === hm); }
+    return touches && e.mechanismIds.has(focus.hintMech);
+  }
   if (focus.kind==='edge') return e.key===focus.key;
   if (focus.kind==='node') return e.a===focus.id || e.b===focus.id;
   if (focus.kind==='mechanism'){
@@ -1626,7 +1723,7 @@ function drawNodes(ctx, nodes, focus){
   });
   [0,1,2,3].forEach(function(k){ var l = layers.get(k); if (l) drawNodeBatch(ctx, l.list, l.alpha); });
   nodes.forEach(function(n){
-    var showBracket =
+    var showBracket = (focus.hint === n.id) ||
       (focus.kind==='node' && focus.id===n.id) ||
       (focus.kind==='mechanism' && n.id===('mech:'+focus.id)) ||
       (focus.kind==='edge' && focus.set.has(n.id));
@@ -1843,14 +1940,162 @@ function bindField(panel, sel, evt, handler){
   el.addEventListener(evt, function(){ handler(el.value); });
 }
 
+/* ===================== Общие части карточек ===================== */
+
+function cardHeaderHTML(eyebrow, title){
+  return '<div class="panel-header">' +
+    '<div class="panel-eyebrow-row"><p class="panel-eyebrow">' + escapeHtml(eyebrow) + '</p><span class="save-indicator" aria-live="polite"></span></div>' +
+    '<h2 class="inline-title" tabindex="0" title="Нажмите, чтобы переименовать">' + escapeHtml(title) + '</h2>' +
+    '<p class="inline-msg" hidden></p>' +
+  '</div>';
+}
+
+/* Заголовок карточки редактируется по клику: Enter / уход фокуса — сохранить,
+   Esc — отменить. Пустое название не сохраняется. */
+function bindInlineTitle(panel, getValue, setValue){
+  var h = panel.querySelector('.inline-title');
+  var msg = panel.querySelector('.inline-msg');
+  var msgTimer = null;
+  function showMsg(text){
+    msg.textContent = text; msg.hidden = false;
+    if (msgTimer) clearTimeout(msgTimer);
+    msgTimer = setTimeout(function(){ msg.hidden = true; }, 2500);
+  }
+  function start(){
+    if (panel.querySelector('.inline-title-input')) return;
+    var input = document.createElement('input');
+    input.type = 'text'; input.className = 'field-input inline-title-input';
+    input.value = getValue();
+    input.setAttribute('aria-label', 'Название');
+    h.hidden = true;
+    h.parentNode.insertBefore(input, h.nextSibling);
+    input.focus(); input.select();
+    var finished = false;
+    function finish(save){
+      if (finished) return; finished = true;
+      var v = input.value.trim();
+      if (save && !v) showMsg('Название не может быть пустым — оставлено прежнее.');
+      else if (save && v !== getValue()) setValue(v);
+      h.textContent = getValue();
+      input.remove(); h.hidden = false;
+    }
+    input.addEventListener('keydown', function(e){
+      if (e.key === 'Enter'){ e.preventDefault(); finish(true); h.focus(); }
+      else if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); finish(false); h.focus(); }
+    });
+    input.addEventListener('blur', function(){ finish(true); });
+  }
+  h.addEventListener('click', start);
+  h.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); start(); } });
+  panel.querySelectorAll('.save-indicator').forEach(renderSaveIndicator);
+}
+
+function startInlineTitleEdit(panel){
+  var h = panel && panel.querySelector('.inline-title');
+  if (h) h.click();
+}
+
+/* ----- Подробное описание: просмотр с чипами-ссылками на объекты ----- */
+
+function normWord(w){ return w.toLowerCase().replace(/ё/g, 'е'); }
+function splitWords(s){ return normWord(s).split(/[^0-9a-zа-я]+/i).filter(Boolean); }
+function commonPrefix(a, b){ var i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++; return i; }
+/* Слова считаются одним, если совпадают или отличаются только окончанием (до 2 букв):
+   «Заявки» ~ «Заявка», «Проекта» ~ «Проекты». */
+function wordsMatch(a, b){
+  if (a === b) return 2;
+  var shorter = Math.min(a.length, b.length);
+  if (shorter < 4) return 0;
+  return commonPrefix(a, b) >= Math.max(3, shorter - 2) && Math.abs(a.length - b.length) <= 2 ? 1 : 0;
+}
+function findObjectByMention(text){
+  var words = splitWords(text);
+  if (!words.length) return null;
+  var best = null, bestScore = -1;
+  Object.keys(state.objects).forEach(function(id){
+    var nw = splitWords(state.objects[id].name);
+    if (nw.length !== words.length) return;
+    var score = 0;
+    for (var i = 0; i < nw.length; i++){ var m = wordsMatch(words[i], nw[i]); if (!m) return; score += m; }
+    if (score > bestScore){ bestScore = score; best = id; }
+  });
+  return best;
+}
+function renderBodyHTML(text){
+  var out = '', last = 0, re = /\[([^\[\]\n]{1,160})\]/g, m;
+  while ((m = re.exec(text))){
+    out += escapeHtml(text.slice(last, m.index));
+    var oid = findObjectByMention(m[1]);
+    if (oid){
+      var o = state.objects[oid];
+      out += '<button type="button" class="obj-chip" data-obj="' + oid + '" style="--c:' + typeColor(o.type) + '" title="' + escapeHtml(o.name) + '">' + escapeHtml(m[1]) + '</button>';
+    } else {
+      out += escapeHtml(m[0]);
+    }
+    last = m.index + m[0].length;
+  }
+  return out + escapeHtml(text.slice(last));
+}
+
+/* Подсветка объекта на графе при наведении на чип / участника (не меняет выделение). */
+var graphHint = null; /* {objId, mechId?} */
+function setGraphHint(hint){
+  graphHint = hint;
+  requestRender();
+}
+
+function openObjectFromCard(panel, objId, isSidebar){
+  if (!state.objects[objId]) return;
+  setGraphHint(null);
+  if (isSidebar) selectEntity('obj', objId);
+  else openCardModal('obj', objId);
+}
+
+function bindBodyEditor(panel, isSidebar, getValue, setValue, placeholder){
+  var view = panel.querySelector('.body-view');
+  var ta = panel.querySelector('.body-edit');
+  var editBtn = panel.querySelector('.body-edit-btn');
+  function renderView(){
+    var v = getValue() || '';
+    view.classList.toggle('is-empty', !v.trim());
+    view.innerHTML = v.trim() ? renderBodyHTML(v) : escapeHtml(placeholder);
+  }
+  function autosize(){
+    var scroller = panel.closest('#detail-panel') || panel.closest('.modal-body') || panel;
+    var cap = Math.max(120, scroller.clientHeight * 0.6);
+    ta.style.height = 'auto';
+    var hgt = Math.min(ta.scrollHeight + 2, cap);
+    ta.style.height = hgt + 'px';
+    ta.style.overflowY = ta.scrollHeight + 2 > cap ? 'auto' : 'hidden';
+  }
+  function edit(){
+    view.hidden = true; ta.hidden = false; editBtn.hidden = true;
+    ta.value = getValue() || '';
+    autosize(); ta.focus();
+  }
+  view.addEventListener('click', function(e){
+    var chip = e.target.closest('.obj-chip');
+    if (chip){ openObjectFromCard(panel, chip.getAttribute('data-obj'), isSidebar); return; }
+    edit();
+  });
+  view.addEventListener('mouseover', function(e){
+    var chip = e.target.closest('.obj-chip');
+    var id = chip ? chip.getAttribute('data-obj') : null;
+    if ((graphHint && graphHint.objId) !== id) setGraphHint(id ? {objId:id} : null);
+  });
+  view.addEventListener('mouseleave', function(){ if (graphHint) setGraphHint(null); });
+  editBtn.addEventListener('click', edit);
+  ta.addEventListener('input', function(){ setValue(ta.value); autosize(); });
+  ta.addEventListener('blur', function(){
+    ta.hidden = true; view.hidden = false; editBtn.hidden = false;
+    renderView();
+  });
+  renderView();
+}
+
 function objectPanelTemplate(obj){
   return (
-    '<div class="panel-header">' +
-      '<p class="panel-eyebrow">Объект · ' + escapeHtml(typeTitle(obj.type)) + '</p>' +
-      '<h2 id="obj-name-display">' + escapeHtml(obj.name) + '</h2>' +
-    '</div>' +
-    '<div class="field-group"><label class="field-label">Название</label>' +
-      '<input type="text" class="field-input" id="f-name" value="' + escapeHtml(obj.name) + '"></div>' +
+    cardHeaderHTML('Объект · ' + typeTitle(obj.type), obj.name) +
     '<div class="field-row">' +
       '<div class="field-group"><label class="field-label">Тип</label><select class="field-input" id="f-type">' +
         (typeInfo(obj.type) ? '' : '<option value="" selected>' + UNKNOWN_TYPE_TITLE + '</option>') +
@@ -1891,11 +2136,13 @@ function renderObjectPanel(obj, panel){
   var isSidebar = (panel.id === 'panel-object');
   if (isSidebar) showPanel('object');
   panel.innerHTML = objectPanelTemplate(obj);
-  bindField(panel,'#f-name','input', function(v){
+  bindInlineTitle(panel, function(){ return obj.name; }, function(v){
     obj.name=v; persist(); syncGraphModel(); renderSidebar(); updateStats();
-    var h = panel.querySelector('#obj-name-display'); if (h) h.textContent = v;
   });
-  bindField(panel,'#f-type','change', function(v){ obj.type=v; persist(); syncGraphModel(); renderSidebar(); });
+  bindField(panel,'#f-type','change', function(v){
+    obj.type=v; persist(); syncGraphModel(); renderSidebar();
+    var eb = panel.querySelector('.panel-eyebrow'); if (eb) eb.textContent = 'Объект · ' + typeTitle(v);
+  });
   bindField(panel,'#f-status','change', function(v){ obj.status=v; persist(); syncGraphModel(); renderSidebar(); });
   bindField(panel,'#f-fullname','input', function(v){ obj.fullName=v; persist(); });
   bindField(panel,'#f-subsystem','input', function(v){ obj.subsystem=v; persist(); });
@@ -2049,12 +2296,7 @@ function buildObjectCombobox(container, selectedId, onChange, reopenAfterCreate)
 
 function mechanismPanelTemplate(mech){
   return (
-    '<div class="panel-header">' +
-      '<p class="panel-eyebrow">Механизм · ' + escapeHtml(categoryTitle(mech.category)) + '</p>' +
-      '<h2 id="mech-title-display">' + escapeHtml(mech.title) + '</h2>' +
-    '</div>' +
-    '<div class="field-group"><label class="field-label">Заголовок</label>' +
-      '<input type="text" class="field-input" id="f-title" value="' + escapeHtml(mech.title) + '"></div>' +
+    cardHeaderHTML('Механизм · ' + categoryTitle(mech.category), mech.title) +
     '<div class="field-row">' +
       '<div class="field-group"><label class="field-label">Категория</label><select class="field-input" id="f-category">' +
         MECH_CATEGORIES.map(function(c){ return '<option value="'+c.code+'"'+(c.code===mech.category?' selected':'')+'>'+escapeHtml(c.title)+'</option>'; }).join('') +
@@ -2066,12 +2308,14 @@ function mechanismPanelTemplate(mech){
       '</select></div>' +
     '</div>' +
     '<div class="field-group"><label class="field-label">Краткое описание (подсказка на графе)</label>' +
-      '<input type="text" class="field-input" id="f-summary" value="' + escapeHtml(mech.summary||'') + '"></div>' +
-    '<div class="field-group"><label class="field-label">Подробное описание</label>' +
-      '<textarea class="field-input field-textarea field-textarea-lg" id="f-body">' + escapeHtml(mech.body||'') + '</textarea></div>' +
+      '<input type="text" class="field-input" id="f-summary" value="' + escapeHtml(mech.summary||'') + '" placeholder="Одна фраза: что делает механизм. Показывается при наведении на граф"></div>' +
+    '<div class="field-group">' +
+      '<div class="field-label-row"><span class="field-label">Подробное описание</span><button type="button" class="link-btn body-edit-btn">Редактировать</button></div>' +
+      '<div class="body-view" tabindex="0"></div>' +
+      '<textarea class="field-input body-edit" id="f-body" hidden aria-label="Подробное описание"></textarea>' +
+    '</div>' +
     '<div class="panel-section">' +
-      '<div class="panel-section-header"><p class="panel-section-title">Участники</p>' +
-        '<button class="btn btn-sm" id="btn-add-participant" type="button">Добавить участника</button></div>' +
+      '<p class="panel-section-title">Участники</p>' +
       '<div id="participants-list"></div>' +
     '</div>' +
     '<div class="panel-section">' +
@@ -2089,21 +2333,18 @@ function renderMechanismPanel(mech, panel){
   var isSidebar = (panel.id === 'panel-mechanism');
   if (isSidebar) showPanel('mechanism');
   panel.innerHTML = mechanismPanelTemplate(mech);
-  bindField(panel,'#f-title','input', function(v){
+  bindInlineTitle(panel, function(){ return mech.title; }, function(v){
     mech.title=v; persist(); syncGraphModel(); renderSidebar();
-    var h = panel.querySelector('#mech-title-display'); if (h) h.textContent = v;
   });
-  bindField(panel,'#f-category','change', function(v){ mech.category=v; persist(); syncGraphModel(); renderSidebar(); });
+  bindField(panel,'#f-category','change', function(v){
+    mech.category=v; persist(); syncGraphModel(); renderSidebar();
+    var eb = panel.querySelector('.panel-eyebrow'); if (eb) eb.textContent = 'Механизм · ' + categoryTitle(v);
+  });
   bindField(panel,'#f-mstatus','change', function(v){ mech.status=v; persist(); syncGraphModel(); });
   bindField(panel,'#f-summary','input', function(v){ mech.summary=v; persist(); renderSidebar(); });
-  bindField(panel,'#f-body','input', function(v){ mech.body=v; persist(); });
+  bindBodyEditor(panel, isSidebar, function(){ return mech.body; }, function(v){ mech.body=v; persist(); }, 'Нет описания. Нажмите, чтобы добавить.');
   panel.querySelector('#btn-delete-mechanism').addEventListener('click', function(){
     deleteMechanism(mech.id, isSidebar ? undefined : function(){ openCardModal('mech', mech.id); });
-  });
-  panel.querySelector('#btn-add-participant').addEventListener('click', function(){
-    mech.participants.push({objectId:'', role:PARTICIPANT_ROLES[0].code, note:''});
-    persist();
-    renderParticipantsList(mech, panel);
   });
   panel.querySelector('#btn-attach-mechanism').addEventListener('click', function(){
     attachFilesToEntity('mech', mech.id, function(){ renderAttachmentsList(panel, '#mech-attachments-list', 'mech', mech.id); });
@@ -2112,35 +2353,131 @@ function renderMechanismPanel(mech, panel){
   renderAttachmentsList(panel, '#mech-attachments-list', 'mech', mech.id);
 }
 
+/* ----- Участники механизма, сгруппированные по направлению роли ----- */
+var ROLE_GROUPS = [
+  {dir:'source', title:'Источники', add:'+ источник', baseRole:'source'},
+  {dir:'target', title:'Приёмники', add:'+ приёмник', baseRole:'target'},
+  {dir:'neutral', title:'Прочие', add:null, baseRole:null}
+];
+var BASE_ROLE_ACTIONS = { source:'Сделать источником', target:'Сделать приёмником' };
+
+function participantCardHTML(p, idx){
+  var o = p.objectId ? state.objects[p.objectId] : null;
+  var role = roleInfo(p.role);
+  var isBase = (role.code === 'source' || role.code === 'target');
+  var roleLabel = isBase ? '' : '<span class="pcard-role">' + escapeHtml(role.title) + (p.note ? ' · ' : '') + '</span>';
+  var tag = o ? (typeShort(o.type) || '•') : '?';
+  var menu = PARTICIPANT_ROLES.filter(function(r){ return r.code !== p.role; }).map(function(r){
+    return '<button type="button" class="menu-item" data-role="' + r.code + '">' + escapeHtml(BASE_ROLE_ACTIONS[r.code] || ('Роль: ' + r.title)) + '</button>';
+  }).join('') + '<div class="menu-sep" role="separator"></div><button type="button" class="menu-item menu-item-danger" data-remove="1">Удалить из механизма</button>';
+  return '<div class="pcard" data-idx="' + idx + '">' +
+    '<span class="type-chip" style="--c:' + (o ? typeColor(o.type) : THEME.typeUnknown) + '" title="' + escapeHtml(o ? typeTitle(o.type) : 'Объект не выбран') + '">' + escapeHtml(tag) + '</span>' +
+    '<div class="pcard-main">' +
+      (o ? '<button type="button" class="pcard-name" title="Перейти к объекту">' + escapeHtml(o.name) + '</button>'
+         : '<div class="pcard-combo"></div>') +
+      '<div class="pcard-sub' + (p.note ? '' : ' is-empty') + '" tabindex="0" title="Нажмите, чтобы изменить описание">' + roleLabel +
+        (p.note ? escapeHtml(p.note) : (isBase ? 'Описать передачу…' : '')) + '</div>' +
+    '</div>' +
+    '<div class="pcard-menu-wrap">' +
+      '<button type="button" class="pcard-menu-btn" aria-haspopup="menu" aria-expanded="false" aria-label="Действия с участником">⋯</button>' +
+      '<div class="menu pcard-menu" role="menu" hidden>' + menu + '</div>' +
+    '</div>' +
+  '</div>';
+}
+
 function renderParticipantsList(mech, panel){
   var container = panel.querySelector('#participants-list');
   if (!container) return;
   var isSidebar = (panel.id === 'panel-mechanism');
-  if (mech.participants.length===0){
-    container.innerHTML = '<p class="ref-empty">Пока нет участников. Добавьте первого.</p>';
-    return;
-  }
-  container.innerHTML = mech.participants.map(function(p, idx){
-    return '<div class="participant-row" data-idx="'+idx+'">' +
-      '<div class="p-object-combo"></div>' +
-      '<select class="field-input p-role">' +
-        PARTICIPANT_ROLES.map(function(r){ return '<option value="'+r.code+'"'+(r.code===p.role?' selected':'')+'>'+escapeHtml(r.title)+'</option>'; }).join('') +
-      '</select>' +
-      '<button class="icon-btn p-remove" type="button" aria-label="Удалить участника">×</button>' +
-      '<input type="text" class="field-input p-note" placeholder="Чем именно участвует" value="'+escapeHtml(p.note||'')+'">' +
+  function rerender(){ renderParticipantsList(mech, panel); }
+  function changed(){ persist(); syncGraphModel(); renderSidebar(); updateStats(); }
+
+  container.innerHTML = ROLE_GROUPS.map(function(g){
+    var items = [];
+    mech.participants.forEach(function(p, idx){ if (roleInfo(p.role).direction === g.dir) items.push(participantCardHTML(p, idx)); });
+    if (g.dir === 'neutral' && !items.length) return '';
+    return '<div class="role-block" data-dir="' + g.dir + '">' +
+      '<div class="role-block-header"><p class="role-block-title">' + g.title + ' · ' + items.length + '</p>' +
+        (g.add ? '<button type="button" class="btn btn-sm role-add-btn" data-role="' + g.baseRole + '">' + g.add + '</button>' : '') +
+      '</div>' +
+      '<div class="role-items">' + (items.join('') || '<p class="role-block-empty">Пока нет</p>') + '</div>' +
     '</div>';
   }).join('');
-  container.querySelectorAll('.participant-row').forEach(function(row){
-    var idx = Number(row.getAttribute('data-idx'));
-    var p = mech.participants[idx];
-    buildObjectCombobox(row.querySelector('.p-object-combo'), p.objectId, function(newId){
-      p.objectId = newId; persist(); syncGraphModel(); renderSidebar(); updateStats();
-    }, isSidebar ? null : function(){ openCardModal('mech', mech.id); });
-    row.querySelector('.p-role').addEventListener('change', function(e){ p.role=e.target.value; persist(); syncGraphModel(); renderSidebar(); });
-    row.querySelector('.p-note').addEventListener('input', function(e){ p.note=e.target.value; persist(); });
-    row.querySelector('.p-remove').addEventListener('click', function(){
-      mech.participants.splice(idx,1); persist(); syncGraphModel(); renderSidebar(); renderParticipantsList(mech, panel);
+
+  /* Добавление: комбобокс поиска объекта прямо в блоке; выбранный объект становится участником. */
+  container.querySelectorAll('.role-add-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var block = btn.closest('.role-block');
+      if (block.querySelector('.role-add')) return;
+      var slot = document.createElement('div');
+      slot.className = 'role-add';
+      var itemsEl = block.querySelector('.role-items');
+      itemsEl.insertBefore(slot, itemsEl.firstChild);
+      var empty = itemsEl.querySelector('.role-block-empty'); if (empty) empty.hidden = true;
+      var role = btn.getAttribute('data-role');
+      buildObjectCombobox(slot, '', function(newId){
+        mech.participants.push({objectId:newId, role:role, note:''});
+        changed(); rerender();
+      }, isSidebar ? null : function(){ openCardModal('mech', mech.id); });
+      var input = slot.querySelector('.combo-input');
+      input.addEventListener('blur', function(){ setTimeout(function(){ if (slot.isConnected && !input.matches(':focus')) rerender(); }, 200); });
+      input.focus();
     });
+  });
+
+  container.querySelectorAll('.pcard').forEach(function(card){
+    var idx = Number(card.getAttribute('data-idx'));
+    var p = mech.participants[idx];
+
+    var nameBtn = card.querySelector('.pcard-name');
+    if (nameBtn) nameBtn.addEventListener('click', function(){ openObjectFromCard(panel, p.objectId, isSidebar); });
+    var comboSlot = card.querySelector('.pcard-combo');
+    if (comboSlot) buildObjectCombobox(comboSlot, '', function(newId){ p.objectId = newId; changed(); rerender(); },
+      isSidebar ? null : function(){ openCardModal('mech', mech.id); });
+
+    /* Описание передачи — правка по клику. */
+    var sub = card.querySelector('.pcard-sub');
+    function editNote(){
+      var input = document.createElement('input');
+      input.type = 'text'; input.className = 'field-input pcard-note-input';
+      input.value = p.note || ''; input.placeholder = 'Что передаётся';
+      sub.replaceWith(input); input.focus();
+      var done = false;
+      function finish(save){
+        if (done) return; done = true;
+        if (save && input.value !== (p.note||'')){ p.note = input.value; persist(); }
+        rerender();
+      }
+      input.addEventListener('keydown', function(e){
+        if (e.key === 'Enter'){ e.preventDefault(); finish(true); }
+        else if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); finish(false); }
+      });
+      input.addEventListener('blur', function(){ finish(true); });
+    }
+    sub.addEventListener('click', editNote);
+    sub.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); editNote(); } });
+
+    /* Меню «⋯»: смена роли, удаление. */
+    var menuBtn = card.querySelector('.pcard-menu-btn'), menu = card.querySelector('.pcard-menu');
+    function setMenu(open){
+      menu.hidden = !open; menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open){
+        var close = function(ev){ if (!card.querySelector('.pcard-menu-wrap').contains(ev.target)){ setMenu(false); document.removeEventListener('mousedown', close); } };
+        document.addEventListener('mousedown', close);
+      }
+    }
+    menuBtn.addEventListener('click', function(){ setMenu(menu.hidden); });
+    menu.addEventListener('keydown', function(e){ if (e.key === 'Escape'){ e.stopPropagation(); setMenu(false); menuBtn.focus(); } });
+    menu.querySelectorAll('.menu-item[data-role]').forEach(function(item){
+      item.addEventListener('click', function(){ p.role = item.getAttribute('data-role'); changed(); rerender(); });
+    });
+    menu.querySelector('[data-remove]').addEventListener('click', function(){
+      mech.participants.splice(idx, 1); setGraphHint(null); changed(); rerender();
+    });
+
+    /* Наведение на участника подсвечивает его ребро на графе. */
+    card.addEventListener('mouseenter', function(){ if (p.objectId) setGraphHint({objId:p.objectId, mechId:mech.id}); });
+    card.addEventListener('mouseleave', function(){ setGraphHint(null); });
   });
 }
 
@@ -2940,20 +3277,17 @@ function attachHandlers(){
       document.getElementById('filter-mechcategory').value = '';
     }
   }
-  function focusNameField(selector){
-    var el = document.querySelector(selector);
-    if (el){ el.focus(); el.select(); }
-  }
+  function focusNameField(selector){ startInlineTitleEdit(document.querySelector(selector)); }
   document.getElementById('btn-side-add').addEventListener('click', function(){
     resetSideFilters();
     if (sideTab === 'objects'){
       var obj = createObject({name:'Новый объект'});
       pinnedNodeId='obj:'+obj.id; pinnedMechanismId=null; pinnedEdgeKey=null;
       renderObjectPanel(obj); syncSidebarActive(); requestRender();
-      focusNameField('#panel-object #f-name');
+      focusNameField('#panel-object');
     } else {
       addMechanismFromUI();
-      focusNameField('#panel-mechanism #f-title');
+      focusNameField('#panel-mechanism');
     }
   });
 
