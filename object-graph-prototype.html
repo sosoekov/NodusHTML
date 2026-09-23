@@ -47,11 +47,10 @@
 
   /* Цвета категорий механизмов */
   --cat-calc:hsl(25,55%,64%);
-  --cat-fill:hsl(85,55%,64%);
+  --cat-fill:hsl(325,55%,66%);
   --cat-check:hsl(145,55%,64%);
   --cat-exchange:hsl(205,55%,64%);
   --cat-access:hsl(265,55%,64%);
-  --cat-print:hsl(325,55%,64%);
   --cat-unknown:hsl(40,55%,64%);
 
   /* Цвета типов объектов */
@@ -67,6 +66,10 @@
   --type-role:hsl(270,58%,62%);
   --type-subsystem:hsl(300,58%,62%);
   --type-commonmod:hsl(330,58%,62%);
+  --type-doclog:hsl(45,55%,52%);
+  --type-bproc:hsl(210,25%,82%);
+  --type-task:hsl(195,70%,72%);
+  --type-extsrc:hsl(165,40%,52%);
   --type-unknown:hsl(215,12%,56%);  /* тип не указан — нейтральный */
 
   /* Граф: рёбра, сетка, обводка заглушки, бейдж числа механизмов, логотип */
@@ -237,6 +240,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .list-row-meta{ display:flex; align-items:center; gap:6px; flex:none; margin-left:auto; }
 .list-row-count{ font-size:var(--fs-caption); color:var(--text-muted); font-variant-numeric:tabular-nums; min-width:14px; text-align:right; }
 .list-row-warn{ font-size:var(--fs-caption); color:var(--warning); cursor:help; }
+.type-icon{ width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:1.3; stroke-linecap:round; stroke-linejoin:round; }
+.side-group-header{ width:100%; display:flex; align-items:center; gap:7px; padding:7px 14px 7px 8px; background:transparent; border:none; text-align:left; cursor:pointer; color:var(--text); font-size:var(--fs-base); }
+.side-group-header:hover{ background:var(--bg-elevated); }
+.side-group-chevron{ width:12px; flex:none; display:flex; justify-content:center; color:var(--text-muted); }
+.side-group-chevron::before{ content:''; width:6px; height:6px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(45deg); margin-top:-3px; }
+.side-group-header[aria-expanded="false"] .side-group-chevron::before{ transform:rotate(-45deg); margin-top:0; margin-left:-2px; }
+.side-group-header .type-icon{ color:var(--c); }
+.side-group-title{ flex:1; min-width:0; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.side-group-count{ font-size:var(--fs-caption); color:var(--text-muted); font-variant-numeric:tabular-nums; }
+.side-group-items[hidden]{ display:none; }
+.side-group-items .list-row{ padding-left:27px; }
 .cat-badge{ font-size:var(--fs-caption); line-height:1.4; padding:0 6px; border-radius:3px; color:var(--cat); background:color-mix(in srgb, var(--cat) var(--badge-bg-mix), transparent); }
 .no-summary{ font-size:var(--fs-caption); color:var(--text-faint); font-style:italic; }
 .ref-empty{ font-size:var(--fs-caption); color:var(--text-faint); padding:8px 14px; margin:0; }
@@ -564,21 +578,52 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
 /* ===================== Справочники ===================== */
 
-/* short — метка типа внутри круга на графе. */
+/* Порядок — как в дереве конфигуратора 1С («Общие» сначала).
+   short — метка типа внутри круга на графе; plural — заголовок группы в списке слева. */
 var OBJECT_TYPES = [
-  {code:'const', title:'Константа', short:'Кон'},
-  {code:'catalog', title:'Справочник', short:'Спр'},
-  {code:'document', title:'Документ', short:'Док'},
-  {code:'infreg', title:'РегистрСведений', short:'РС'},
-  {code:'accumreg', title:'РегистрНакопления', short:'РН'},
-  {code:'enumt', title:'Перечисление', short:'Пер'},
-  {code:'process', title:'Обработка', short:'Обр'},
-  {code:'report', title:'Отчёт', short:'Отч'},
-  {code:'charchart', title:'ПланВидовХарактеристик', short:'ПВХ'},
-  {code:'role', title:'Роль', short:'Роль'},
-  {code:'subsystem', title:'Подсистема', short:'Под'},
-  {code:'commonmod', title:'ОбщийМодуль', short:'ОМ'}
+  {code:'subsystem', title:'Подсистема', short:'Под', plural:'Подсистемы'},
+  {code:'commonmod', title:'ОбщийМодуль', short:'ОМ', plural:'Общие модули'},
+  {code:'role', title:'Роль', short:'Роль', plural:'Роли'},
+  {code:'const', title:'Константа', short:'Кон', plural:'Константы'},
+  {code:'catalog', title:'Справочник', short:'Спр', plural:'Справочники'},
+  {code:'document', title:'Документ', short:'Док', plural:'Документы'},
+  {code:'doclog', title:'ЖурналДокументов', short:'ЖД', plural:'Журналы документов'},
+  {code:'enumt', title:'Перечисление', short:'Пер', plural:'Перечисления'},
+  {code:'report', title:'Отчёт', short:'Отч', plural:'Отчеты'},
+  {code:'process', title:'Обработка', short:'Обр', plural:'Обработки'},
+  {code:'charchart', title:'ПланВидовХарактеристик', short:'ПВХ', plural:'Планы видов характеристик'},
+  {code:'infreg', title:'РегистрСведений', short:'РС', plural:'Регистры сведений'},
+  {code:'accumreg', title:'РегистрНакопления', short:'РН', plural:'Регистры накопления'},
+  {code:'bproc', title:'БизнесПроцесс', short:'БП', plural:'Бизнес-процессы'},
+  {code:'task', title:'Задача', short:'Зад', plural:'Задачи'},
+  {code:'extsrc', title:'ВнешнийИсточникДанных', short:'ВИД', plural:'Внешние источники данных'}
 ];
+var DEFAULT_OBJECT_TYPE = 'const';
+
+/* Иконки типов (контурные, 16×16, цвет — currentColor). */
+var TYPE_ICON_PATHS = {
+  subsystem:'<rect x="2" y="2" width="12" height="4" rx="1"/><rect x="2" y="10" width="12" height="4" rx="1"/><path d="M8 6v4"/>',
+  commonmod:'<path d="M3 2h7l3 3v9H3z"/><path d="M6.5 8 5 9.5 6.5 11M9.5 8 11 9.5 9.5 11"/>',
+  role:'<circle cx="8" cy="5" r="2.5"/><path d="M3 14c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/>',
+  'const':'<rect x="6" y="1.5" width="4" height="4" rx=".6"/><rect x="1.5" y="10.5" width="4" height="4" rx=".6"/><rect x="10.5" y="10.5" width="4" height="4" rx=".6"/><path d="M8 5.5v2.5M3.5 10.5V8h9v2.5"/>',
+  catalog:'<rect x="2" y="2" width="3.4" height="12" rx=".6"/><rect x="6.3" y="2" width="3.4" height="12" rx=".6"/><rect x="10.6" y="2" width="3.4" height="12" rx=".6"/><path d="M3 5h1.4M7.3 5h1.4M11.6 5h1.4M3 11h1.4M7.3 11h1.4M11.6 11h1.4"/>',
+  document:'<rect x="3" y="1.5" width="10" height="13" rx="1"/><path d="M5.5 5h5M5.5 8h5M5.5 11h5"/>',
+  doclog:'<rect x="2" y="1.5" width="12" height="13" rx="1"/><path d="M4.5 1.5v13"/><rect x="6.5" y="4" width="5.5" height="7.5" rx=".4"/><path d="M6.5 6.5h5.5M6.5 9h5.5M9.2 4v7.5"/>',
+  enumt:'<path d="M2 5V3a1 1 0 0 1 1-1h2M11 2h2a1 1 0 0 1 1 1v2M14 11v2a1 1 0 0 1-1 1h-2M5 14H3a1 1 0 0 1-1-1v-2M7 2h2M7 14h2M2 7v2M14 7v2"/>',
+  report:'<path d="M3 1.5h6.5L13 5v9.5H3z"/><path d="M6 12V9M8 12V7M10 12v-4"/>',
+  process:'<path d="M9 14.5H3v-13h6.5L13 5v3"/><circle cx="11.5" cy="11.5" r="1.6"/><path d="M11.5 8.3v1.2M11.5 13.5v1.2M8.3 11.5h1.2M13.5 11.5h1.2M9.3 9.3l.8.8M12.9 12.9l.8.8M9.3 13.7l.8-.8M12.9 10.1l.8-.8"/>',
+  charchart:'<rect x="1.5" y="2.5" width="13" height="11" rx="1"/><path d="M1.5 5.5h13M5 5.5v8M8 5.5v8M11 5.5v8M3 8h1M3 10.5h1M6.3 8h.5M9.3 10.5h.5M12.3 8h.5"/>',
+  infreg:'<rect x="1.5" y="2" width="10" height="10" rx="1"/><path d="M1.5 5h10M1.5 8h10M5 5v7"/><path d="M10 13.5h4.5M12.8 11.8l1.7 1.7-1.7 1.7"/>',
+  accumreg:'<ellipse cx="7" cy="3.5" rx="5" ry="2"/><path d="M2 3.5v8c0 1.1 2.2 2 5 2M12 3.5v4.5M2 7.5c0 1.1 2.2 2 5 2s5-.9 5-2"/><path d="M9.5 13h5M12.8 11.3l1.7 1.7-1.7 1.7"/>',
+  bproc:'<rect x="5.5" y="1.5" width="5" height="3.5" rx=".5"/><path d="M8 5v2.5M4 7.5h8M4 7.5V10M12 7.5V10"/><rect x="2" y="10" width="4" height="4" rx=".5"/><path d="M12 9.5 14.5 12 12 14.5 9.5 12z"/>',
+  task:'<rect x="3" y="2.5" width="10" height="12" rx="1"/><rect x="6" y="1.5" width="4" height="2" rx=".5"/><path d="M5.5 7h.5M8 7h3M5.5 9.5h.5M8 9.5h3M5.5 12h.5M8 12h3"/>',
+  extsrc:'<path d="M4.5 12.5H4a3 3 0 0 1-.3-6A4.5 4.5 0 0 1 12.4 6a3.3 3.3 0 0 1-.4 6.5h-.5"/><path d="M8 14.5V8.5M5.8 10.6 8 8.4l2.2 2.2"/>'
+};
+function typeIconSVG(code){
+  var body = TYPE_ICON_PATHS[code];
+  if (!body) return '<svg class="type-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5"/></svg>';
+  return '<svg class="type-icon" viewBox="0 0 16 16" aria-hidden="true">' + body + '</svg>';
+}
 var UNKNOWN_TYPE_TITLE = 'Тип не указан';
 
 var MECH_CATEGORIES = [
@@ -586,9 +631,9 @@ var MECH_CATEGORIES = [
   {code:'fill', title:'Заполнение'},
   {code:'check', title:'Проверка'},
   {code:'exchange', title:'Обмен'},
-  {code:'access', title:'ПраваДоступа'},
-  {code:'print', title:'Печать'}
+  {code:'access', title:'ПраваДоступа'}
 ];
+var UNKNOWN_CATEGORY_TITLE = 'Без категории';
 
 var PARTICIPANT_ROLES = [
   {code:'source', title:'Источник', direction:'source'},
@@ -699,7 +744,8 @@ function pluralRu(n, one, few, many){
 function typeInfo(code){ return OBJECT_TYPES.filter(function(x){return x.code===code;})[0] || null; }
 function typeTitle(code){ var t = typeInfo(code); return t ? t.title : UNKNOWN_TYPE_TITLE; }
 function typeShort(code){ var t = typeInfo(code); return t ? t.short : ''; }
-function categoryTitle(code){ var c = MECH_CATEGORIES.filter(function(x){return x.code===code;})[0]; return c ? c.title : code; }
+function categoryInfo(code){ return MECH_CATEGORIES.filter(function(x){return x.code===code;})[0] || null; }
+function categoryTitle(code){ var c = categoryInfo(code); return c ? c.title : UNKNOWN_CATEGORY_TITLE; }
 function roleInfo(code){ return PARTICIPANT_ROLES.filter(function(x){return x.code===code;})[0] || {code:code, title:code, direction:'neutral'}; }
 function objectStatusTitle(s){ return s==='stub' ? 'Заглушка' : (s==='deprecated' ? 'Устарел' : 'Активен'); }
 function mechanismStatusTitle(s){ return s==='draft' ? 'Черновик' : (s==='deprecated' ? 'Устарел' : 'Активен'); }
@@ -1004,7 +1050,7 @@ function createObject(partial){
   var id = uid('obj');
   var obj = {
     id:id,
-    type: (partial && partial.type) || OBJECT_TYPES[0].code,
+    type: (partial && partial.type) || DEFAULT_OBJECT_TYPE,
     name: (partial && partial.name) || 'Новый объект',
     fullName:'', subsystem:'', tags:[], description:'', status:'stub',
     attachments:[], fx:null, fy:null
@@ -2357,6 +2403,7 @@ function mechanismPanelTemplate(mech){
     cardHeaderHTML('Механизм · ' + categoryTitle(mech.category), mech.title) +
     '<div class="field-row">' +
       '<div class="field-group"><label class="field-label">Категория</label><select class="field-input" id="f-category">' +
+        (categoryInfo(mech.category) ? '' : '<option value="" selected>' + UNKNOWN_CATEGORY_TITLE + '</option>') +
         MECH_CATEGORIES.map(function(c){ return '<option value="'+c.code+'"'+(c.code===mech.category?' selected':'')+'>'+escapeHtml(c.title)+'</option>'; }).join('') +
       '</select></div>' +
       '<div class="field-group"><label class="field-label">Статус</label><select class="field-input" id="f-mstatus">' +
@@ -2816,6 +2863,15 @@ function objectMechanismCounts(){
   return counts;
 }
 
+/* Свёрнутые группы списка объектов — удобство интерфейса, хранится отдельно от данных. */
+var SIDE_GROUPS_KEY = 'nodusSideGroupsCollapsed';
+var sideGroupCollapsed = (function(){
+  try{ return JSON.parse(localStorage.getItem(SIDE_GROUPS_KEY) || '{}') || {}; }catch(e){ return {}; }
+})();
+function saveSideGroupState(){
+  try{ localStorage.setItem(SIDE_GROUPS_KEY, JSON.stringify(sideGroupCollapsed)); }catch(e){}
+}
+
 function renderSidebar(){
   refreshTagFilterOptions();
   var objs = filteredSideObjects(), mechs = filteredSideMechanisms();
@@ -2827,14 +2883,43 @@ function renderSidebar(){
   var container = document.getElementById('object-list');
   if (sideTab === 'objects'){
     var mechCount = objectMechanismCounts();
-    container.innerHTML = objs.list.length ? objs.list.map(function(o){
+    function objectRow(o){
       var mc = mechCount[o.id] || 0;
       return '<button class="list-row" data-kind="object" data-id="'+o.id+'" type="button">' +
         '<span class="dot" style="background:'+typeColor(o.type)+'"></span>' +
-        '<span class="list-row-main"><span class="list-row-title">'+escapeHtml(o.name)+'</span><span class="list-row-sub">'+escapeHtml(typeTitle(o.type))+'</span></span>' +
+        '<span class="list-row-main"><span class="list-row-title">'+escapeHtml(o.name)+'</span>' +
+          '<span class="list-row-sub"><span class="cat-badge" style="--cat:'+typeColor(o.type)+'">'+escapeHtml(typeTitle(o.type))+'</span></span></span>' +
         '<span class="list-row-meta"><span class="list-row-count" title="Участвует в '+mc+' '+pluralRu(mc,'механизме','механизмах','механизмах')+'">'+mc+'</span></span>' +
       '</button>';
+    }
+    /* Группы по типу, как в дереве конфигуратора; пустые не показываются.
+       При активном поиске/отборе группы с совпадениями раскрыты принудительно. */
+    var byType = {};
+    objs.list.forEach(function(o){ var k = typeInfo(o.type) ? o.type : ''; (byType[k] = byType[k] || []).push(o); });
+    var groups = OBJECT_TYPES.filter(function(t){ return byType[t.code]; })
+      .map(function(t){ return {code:t.code, title:t.plural, color:typeColor(t.code), items:byType[t.code]}; });
+    if (byType['']) groups.push({code:'', title:UNKNOWN_TYPE_TITLE, color:THEME.typeUnknown, items:byType['']});
+    container.innerHTML = groups.length ? groups.map(function(g){
+      var open = objs.active || !sideGroupCollapsed[g.code || '_unknown'];
+      return '<div class="side-group">' +
+        '<button type="button" class="side-group-header" data-group="' + (g.code || '_unknown') + '" aria-expanded="' + open + '" style="--c:' + g.color + '">' +
+          '<span class="side-group-chevron" aria-hidden="true"></span>' + typeIconSVG(g.code) +
+          '<span class="side-group-title">' + escapeHtml(g.title) + '</span>' +
+          '<span class="side-group-count">' + g.items.length + '</span>' +
+        '</button>' +
+        '<div class="side-group-items"' + (open ? '' : ' hidden') + '>' + g.items.map(objectRow).join('') + '</div>' +
+      '</div>';
     }).join('') : '<p class="ref-empty">Ничего не найдено.</p>';
+    container.querySelectorAll('.side-group-header').forEach(function(hd){
+      hd.addEventListener('click', function(){
+        var code = hd.getAttribute('data-group');
+        var nowOpen = hd.getAttribute('aria-expanded') !== 'true';
+        hd.setAttribute('aria-expanded', nowOpen ? 'true' : 'false');
+        hd.nextElementSibling.hidden = !nowOpen;
+        if (nowOpen) delete sideGroupCollapsed[code]; else sideGroupCollapsed[code] = true;
+        saveSideGroupState();
+      });
+    });
   } else {
     container.innerHTML = mechs.list.length ? mechs.list.map(function(m){
       var info = mechanismParticipantInfo(m);
@@ -2976,6 +3061,9 @@ function syncSidebarActive(){
     var isActive = (btn.getAttribute('data-kind')==='object' && pinnedNodeId==='obj:'+btn.getAttribute('data-id')) ||
                    (btn.getAttribute('data-kind')==='mechanism' && pinnedMechanismId===btn.getAttribute('data-id'));
     btn.classList.toggle('active', isActive);
+    /* Выбранный объект в свёрнутой группе: раскрываем группу (без записи в сохранённое состояние). */
+    var items = isActive && btn.closest('.side-group-items');
+    if (items && items.hidden){ items.hidden = false; items.previousElementSibling.setAttribute('aria-expanded','true'); }
   });
 }
 
