@@ -373,6 +373,7 @@ var currentView = 'graph';
 var currentNodes = [];
 var currentEdges = [];
 var nodeById = new Map();
+var labelOrder = [];
 
 var hoverId = null;
 var pinnedNodeId = null;
@@ -821,8 +822,36 @@ function buildGraph(mode){
   return {nodes:nodes, edges:Array.from(edgesMap.values())};
 }
 
+/* Вес объекта = число разных связанных с ним объектов + число механизмов, где он участвует.
+   Вес механизма = число разных объектов-участников. Не зависит от режима отображения. */
+function computeWeights(){
+  var neighbors = {}, mechCount = {}, mechWeight = {};
+  Object.keys(state.mechanisms).forEach(function(mid){
+    var seen = {}, ids = [];
+    state.mechanisms[mid].participants.forEach(function(p){
+      if (p.objectId && state.objects[p.objectId] && !seen[p.objectId]){ seen[p.objectId] = true; ids.push(p.objectId); }
+    });
+    mechWeight[mid] = ids.length;
+    ids.forEach(function(a){
+      mechCount[a] = (mechCount[a]||0) + 1;
+      var set = neighbors[a] || (neighbors[a] = new Set());
+      ids.forEach(function(b){ if (b !== a) set.add(b); });
+    });
+  });
+  var objWeight = {};
+  Object.keys(state.objects).forEach(function(id){
+    objWeight[id] = (neighbors[id] ? neighbors[id].size : 0) + (mechCount[id] || 0);
+  });
+  return {objects:objWeight, mechanisms:mechWeight};
+}
+
+/* Разброс случайного начального положения растёт с числом узлов,
+   иначе тысяча узлов стартует в одной точке и долго разлетается. */
+function initialSpread(count, minHalf){ return Math.max(minHalf, 25*Math.sqrt(count)); }
+
 function syncGraphModel(){
   var built = buildGraph(currentMode);
+  var spread = initialSpread(built.nodes.length, 130);
   var freshIds = new Set(built.nodes.map(function(n){return n.id;}));
   Array.from(nodeById.keys()).forEach(function(id){ if (!freshIds.has(id)) nodeById.delete(id); });
   built.nodes.forEach(function(fn){
@@ -831,7 +860,7 @@ function syncGraphModel(){
       nodeById.set(fn.id, {
         id:fn.id, refId:fn.refId, kind:fn.kind, type:fn.type, category:fn.category,
         label:fn.label, status:fn.status,
-        x:(Math.random()-0.5)*260, y:(Math.random()-0.5)*260,
+        x:(Math.random()-0.5)*2*spread, y:(Math.random()-0.5)*2*spread,
         vx:0, vy:0, fx:fn.fx, fy:fn.fy
       });
     } else {
@@ -842,30 +871,88 @@ function syncGraphModel(){
   });
   currentNodes = built.nodes.map(function(fn){ return nodeById.get(fn.id); });
   currentEdges = built.edges;
-  var deg = new Map();
-  currentEdges.forEach(function(e){ deg.set(e.a,(deg.get(e.a)||0)+1); deg.set(e.b,(deg.get(e.b)||0)+1); });
-  currentNodes.forEach(function(n){ n.degree = deg.get(n.id) || 0; });
+  var weights = computeWeights();
+  currentNodes.forEach(function(n){
+    n.weight = (n.kind==='mechanism' ? weights.mechanisms[n.refId] : weights.objects[n.refId]) || 0;
+  });
+  /* Порядок, в котором подписи претендуют на место: сначала «тяжёлые». */
+  labelOrder = currentNodes.slice().sort(function(a,b){
+    return (b.weight - a.weight) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  });
   sim.alpha = Math.max(sim.alpha, 0.35);
   requestRender();
 }
 
 /* ===================== Симуляция сил ===================== */
 
+/* Отталкивание считается через квадродерево (Barnes–Hut): далёкая группа узлов
+   действует как один узел в своём центре масс. O(n log n) вместо O(n²). */
+var BH_THETA_SQ = 0.81;
+var BH_MAX_DEPTH = 40;
+
+function bhCell(x0, y0, size){ return {x0:x0, y0:y0, size:size, mass:0, cx:0, cy:0, node:null, children:null}; }
+
+function bhInsert(cell, n){
+  var depth = 0;
+  while (true){
+    cell.cx = (cell.cx*cell.mass + n.x) / (cell.mass+1);
+    cell.cy = (cell.cy*cell.mass + n.y) / (cell.mass+1);
+    cell.mass++;
+    if (cell.mass === 1 && !cell.children){ cell.node = n; return; }
+    if (depth >= BH_MAX_DEPTH) return; /* совпадающие точки: копим только массу */
+    if (!cell.children){
+      var half = cell.size/2;
+      cell.children = [
+        bhCell(cell.x0, cell.y0, half), bhCell(cell.x0+half, cell.y0, half),
+        bhCell(cell.x0, cell.y0+half, half), bhCell(cell.x0+half, cell.y0+half, half)
+      ];
+      var old = cell.node; cell.node = null;
+      var oc = bhChild(cell, old);
+      oc.node = old; oc.mass = 1; oc.cx = old.x; oc.cy = old.y;
+    }
+    cell = bhChild(cell, n);
+    depth++;
+  }
+}
+function bhChild(cell, n){
+  var half = cell.size/2;
+  return cell.children[(n.x >= cell.x0+half ? 1 : 0) + (n.y >= cell.y0+half ? 2 : 0)];
+}
+
+function buildQuadTree(nodes){
+  var minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+  nodes.forEach(function(n){
+    if (n.x<minX) minX=n.x; if (n.x>maxX) maxX=n.x;
+    if (n.y<minY) minY=n.y; if (n.y>maxY) maxY=n.y;
+  });
+  var root = bhCell(minX-1, minY-1, Math.max(maxX-minX, maxY-minY) + 2);
+  nodes.forEach(function(n){ bhInsert(root, n); });
+  return root;
+}
+
 function tickSimulation(){
   var n = currentNodes.length;
   if (n === 0) return;
-  var k = 900;
+  var kk = 900*900;
+  var root = buildQuadTree(currentNodes);
+  var stack = [];
   for (var i=0;i<n;i++){
     var ni = currentNodes[i];
     var fx=0, fy=0;
-    for (var j=0;j<n;j++){
-      if (i===j) continue;
-      var nj = currentNodes[j];
-      var dx = ni.x-nj.x, dy = ni.y-nj.y;
+    stack.length = 0; stack.push(root);
+    while (stack.length){
+      var c = stack.pop();
+      if (c.mass === 0 || c.node === ni && c.mass === 1) continue;
+      var dx = ni.x-c.cx, dy = ni.y-c.cy;
       var distSq = dx*dx+dy*dy;
+      if (c.children && c.size*c.size >= BH_THETA_SQ*distSq){
+        for (var q=0;q<4;q++) stack.push(c.children[q]);
+        continue;
+      }
+      var mass = c.node === ni ? c.mass-1 : c.mass;
       if (distSq < 0.02){ dx=(Math.random()-0.5); dy=(Math.random()-0.5); distSq=1; }
       var dist = Math.sqrt(distSq);
-      var force = (k*k)/distSq;
+      var force = mass*kk/distSq;
       fx += (dx/dist)*force; fy += (dy/dist)*force;
     }
     ni.vx += fx*0.0022*sim.alpha; ni.vy += fy*0.0022*sim.alpha;
@@ -931,10 +1018,79 @@ function isEdgeHighlighted(e, focus){
   return false;
 }
 
-function shouldShowLabel(n, focus){
-  if (focus && focus.set.has(n.id)) return true;
-  if (currentNodes.length <= 40) return true;
-  return view.scale > 1.15;
+/* Подпись видна, пока узел на экране не меньше LABEL_MIN_PX в радиусе; у «тяжёлых»
+   радиус больше, поэтому при отдалении они теряют подпись последними. В полосе
+   LABEL_FADE_PX подпись плавно гаснет. Подписи, наезжающие на уже размещённую
+   (более «тяжёлую») подпись, не рисуются. Узлы в фокусе подписаны всегда. */
+var LABEL_MIN_PX = 7;
+var LABEL_FADE_PX = 3;
+var LABEL_FONT = '500 12px "IBM Plex Sans", sans-serif';
+var LABEL_CELL = 64;
+
+function labelWidth(ctx, n){
+  if (n._labelFor !== n.label){ n._labelW = ctx.measureText(n.label).width; n._labelFor = n.label; }
+  return n._labelW;
+}
+
+function layoutLabels(ctx, focus){
+  ctx.font = LABEL_FONT;
+  var placed = [], grid = new Map();
+  function overlaps(b){
+    for (var gx=Math.floor(b.x0/LABEL_CELL); gx<=Math.floor(b.x1/LABEL_CELL); gx++){
+      for (var gy=Math.floor(b.y0/LABEL_CELL); gy<=Math.floor(b.y1/LABEL_CELL); gy++){
+        var list = grid.get(gx+':'+gy);
+        if (!list) continue;
+        for (var i=0;i<list.length;i++){
+          var o = list[i];
+          if (b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0) return true;
+        }
+      }
+    }
+    return false;
+  }
+  function add(b){
+    for (var gx=Math.floor(b.x0/LABEL_CELL); gx<=Math.floor(b.x1/LABEL_CELL); gx++){
+      for (var gy=Math.floor(b.y0/LABEL_CELL); gy<=Math.floor(b.y1/LABEL_CELL); gy++){
+        var key = gx+':'+gy, list = grid.get(key);
+        if (list) list.push(b); else grid.set(key, [b]);
+      }
+    }
+    placed.push(b);
+  }
+  function tryPlace(n, inFocus){
+    var r = nodeRadius(n)*view.scale;
+    var alpha = 1;
+    if (!inFocus){
+      var sizePx = labelRadius(n)*view.scale;
+      if (sizePx < LABEL_MIN_PX) return;
+      alpha = Math.min(1, (sizePx-LABEL_MIN_PX)/LABEL_FADE_PX + 0.25);
+      if (focus) alpha *= 0.15;
+    }
+    var sx = n.x*view.scale + view.offsetX, sy = n.y*view.scale + view.offsetY;
+    var baseY = sy + r + 14;
+    var w = labelWidth(ctx, n);
+    var b = {x0:sx-w/2-2, x1:sx+w/2+2, y0:baseY-12, y1:baseY+4, n:n, sx:sx, baseY:baseY, alpha:alpha};
+    if (b.x1 < 0 || b.x0 > viewportWidth || b.y1 < 0 || b.y0 > viewportHeight) return;
+    if (!inFocus && overlaps(b)) return;
+    add(b);
+  }
+  if (focus) labelOrder.forEach(function(n){ if (focus.set.has(n.id)) tryPlace(n, true); });
+  labelOrder.forEach(function(n){ if (!focus || !focus.set.has(n.id)) tryPlace(n, false); });
+  return placed;
+}
+
+function drawLabels(ctx, labels){
+  ctx.font = LABEL_FONT;
+  ctx.textAlign = 'center';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 3;
+  labels.forEach(function(b){
+    /* Тёмная обводка — чтобы подпись читалась поверх цветных узлов и рёбер. */
+    ctx.strokeStyle = 'rgba(14,21,32,' + (b.alpha*0.85).toFixed(3) + ')';
+    ctx.strokeText(b.n.label, b.sx, b.baseY);
+    ctx.fillStyle = 'rgba(220,228,240,' + b.alpha.toFixed(3) + ')';
+    ctx.fillText(b.n.label, b.sx, b.baseY);
+  });
 }
 
 /* ===================== Отрисовка ===================== */
@@ -948,24 +1104,29 @@ function drawGrid(ctx){
   while (cols*rows > 3000 && spacing < 4000){ spacing*=2; cols=(br.x-tl.x)/spacing; rows=(br.y-tl.y)/spacing; }
   var startX = Math.floor(tl.x/spacing)*spacing, startY = Math.floor(tl.y/spacing)*spacing;
   ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  ctx.beginPath();
   for (var x=startX; x<br.x; x+=spacing){
     for (var y=startY; y<br.y; y+=spacing){
-      ctx.beginPath(); ctx.arc(x,y,1.1,0,Math.PI*2); ctx.fill();
+      ctx.moveTo(x+1.1, y); ctx.arc(x,y,1.1,0,Math.PI*2);
     }
   }
+  ctx.fill();
 }
 
+function radiusForWeight(w){ return Math.min(40, 8 + 4*Math.sqrt(w || 0)); }
 function nodeRadius(n){
   if (n.kind==='mechanism') return 12;
-  var d = n.degree || 0;
-  return 11 + Math.min(d,8)*1.1;
+  return radiusForWeight(n.weight);
 }
+/* Радиус, по которому решается видимость подписи: у механизма ромб постоянного
+   размера, но подпись гаснет по числу участников — как у объекта того же веса. */
+function labelRadius(n){ return radiusForWeight(n.weight); }
 
-function drawDiamond(ctx, x, y, r, color){
-  ctx.beginPath();
+/* Отрисовка пакетами: элементы одного стиля собираются в один path и рисуются
+   одним fill/stroke — на тысячах узлов это в разы быстрее поштучных вызовов. */
+
+function diamondPath(ctx, x, y, r){
   ctx.moveTo(x, y-r); ctx.lineTo(x+r, y); ctx.lineTo(x, y+r); ctx.lineTo(x-r, y); ctx.closePath();
-  ctx.fillStyle = COLORS.panel; ctx.fill();
-  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
 }
 
 function drawFocusBrackets(ctx, x, y, half){
@@ -978,75 +1139,114 @@ function drawFocusBrackets(ctx, x, y, half){
   });
 }
 
-function drawArrowhead(ctx, fromX, fromY, toX, toY, highlighted){
+function arrowheadPath(ctx, fromX, fromY, toX, toY){
   var angle = Math.atan2(toY-fromY, toX-fromX);
   var size = 7;
-  ctx.fillStyle = highlighted ? COLORS.accent : 'rgba(140,155,180,0.75)';
-  ctx.beginPath();
   ctx.moveTo(toX, toY);
   ctx.lineTo(toX - size*Math.cos(angle-Math.PI/6), toY - size*Math.sin(angle-Math.PI/6));
   ctx.lineTo(toX - size*Math.cos(angle+Math.PI/6), toY - size*Math.sin(angle+Math.PI/6));
-  ctx.closePath(); ctx.fill();
+  ctx.closePath();
 }
 
-function drawEdge(ctx, e, focus){
+function edgeGeometry(e){
   var a = nodeById.get(e.a), b = nodeById.get(e.b);
-  if (!a || !b) return;
-  var hl = isEdgeHighlighted(e, focus);
-  var dim = !!focus && !hl;
-  ctx.globalAlpha = dim ? 0.08 : 1;
-  ctx.strokeStyle = hl ? COLORS.accent : 'rgba(90,105,130,0.55)';
-  ctx.lineWidth = hl ? 2 : 1;
   var ra = nodeRadius(a), rb = nodeRadius(b);
   var dx=b.x-a.x, dy=b.y-a.y, dist=Math.hypot(dx,dy)||1;
   var ux=dx/dist, uy=dy/dist;
-  var sx=a.x+ux*ra, sy=a.y+uy*ra, ex=b.x-ux*rb, ey=b.y-uy*rb;
-  ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,ey); ctx.stroke();
-  if (e.abDirected) drawArrowhead(ctx, sx,sy,ex,ey, hl);
-  if (e.baDirected) drawArrowhead(ctx, ex,ey,sx,sy, hl);
-  if (e.mechanismIds.size > 1){
-    var mx=(sx+ex)/2, my=(sy+ey)/2;
-    ctx.globalAlpha = dim ? 0.15 : 1;
-    ctx.fillStyle = COLORS.bg; ctx.beginPath(); ctx.arc(mx,my,8,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle = 'rgba(224,167,62,0.7)'; ctx.lineWidth=1; ctx.stroke();
-    ctx.fillStyle = COLORS.accent; ctx.font = '600 10px "IBM Plex Mono", monospace';
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(String(e.mechanismIds.size), mx, my+0.5);
-    ctx.textBaseline='alphabetic';
-  }
+  return {e:e, sx:a.x+ux*ra, sy:a.y+uy*ra, ex:b.x-ux*rb, ey:b.y-uy*rb};
+}
+
+function drawEdgeBatch(ctx, list, hl, alpha, badgeAlpha){
+  if (!list.length) return;
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = hl ? COLORS.accent : 'rgba(90,105,130,0.55)';
+  ctx.lineWidth = hl ? 2 : 1;
+  ctx.beginPath();
+  list.forEach(function(g){ ctx.moveTo(g.sx,g.sy); ctx.lineTo(g.ex,g.ey); });
+  ctx.stroke();
+
+  ctx.fillStyle = hl ? COLORS.accent : 'rgba(140,155,180,0.75)';
+  ctx.beginPath();
+  list.forEach(function(g){
+    if (g.e.abDirected) arrowheadPath(ctx, g.sx,g.sy,g.ex,g.ey);
+    if (g.e.baDirected) arrowheadPath(ctx, g.ex,g.ey,g.sx,g.sy);
+  });
+  ctx.fill();
+
+  var multi = list.filter(function(g){ return g.e.mechanismIds.size > 1; });
+  if (!multi.length) return;
+  ctx.globalAlpha = badgeAlpha;
+  ctx.beginPath();
+  multi.forEach(function(g){
+    var mx=(g.sx+g.ex)/2, my=(g.sy+g.ey)/2;
+    ctx.moveTo(mx+8, my); ctx.arc(mx,my,8,0,Math.PI*2);
+  });
+  ctx.fillStyle = COLORS.bg; ctx.fill();
+  ctx.strokeStyle = 'rgba(224,167,62,0.7)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.fillStyle = COLORS.accent; ctx.font = '600 10px "IBM Plex Mono", monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  multi.forEach(function(g){ ctx.fillText(String(g.e.mechanismIds.size), (g.sx+g.ex)/2, (g.sy+g.ey)/2+0.5); });
+  ctx.textBaseline='alphabetic';
+}
+
+function drawEdges(ctx, edges, focus){
+  var normal = [], highlighted = [];
+  edges.forEach(function(e){ (isEdgeHighlighted(e, focus) ? highlighted : normal).push(edgeGeometry(e)); });
+  drawEdgeBatch(ctx, normal, false, focus ? 0.08 : 1, focus ? 0.15 : 1);
+  drawEdgeBatch(ctx, highlighted, true, 1, 1);
   ctx.globalAlpha = 1;
 }
 
-function drawNode(ctx, n, focus){
-  var inSet = !!focus && focus.set.has(n.id);
-  var dim = !!focus && !inSet;
-  ctx.globalAlpha = dim ? 0.15 : 1;
-  var r = nodeRadius(n);
-  if (n.kind==='mechanism'){
-    drawDiamond(ctx, n.x, n.y, r, categoryAccent(n.category));
-  } else {
-    if (n.status==='deprecated') ctx.globalAlpha = (dim?0.15:1)*0.5;
-    ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2);
-    ctx.fillStyle = typeColor(n.type); ctx.fill();
-    if (n.status==='stub'){
-      ctx.setLineDash([3,3]); ctx.strokeStyle='rgba(255,255,255,0.55)'; ctx.lineWidth=1.4; ctx.stroke(); ctx.setLineDash([]);
+/* Узлы одного прохода имеют одну базовую прозрачность; приглушённые рисуются
+   первым проходом, чтобы не перекрывать узлы в фокусе. */
+function drawNodeBatch(ctx, nodes, baseAlpha){
+  var fills = new Map(), stubs = [], mechs = new Map();
+  nodes.forEach(function(n){
+    if (n.kind==='mechanism'){
+      var color = categoryAccent(n.category);
+      (mechs.get(color) || mechs.set(color, []).get(color)).push(n);
+      return;
     }
-    ctx.globalAlpha = dim ? 0.15 : 1;
+    var key = typeColor(n.type) + '|' + (n.status==='deprecated' ? 0.5 : 1);
+    (fills.get(key) || fills.set(key, []).get(key)).push(n);
+    if (n.status==='stub') stubs.push(n);
+  });
+  fills.forEach(function(list, key){
+    var parts = key.split('|');
+    ctx.globalAlpha = baseAlpha * Number(parts[1]);
+    ctx.fillStyle = parts[0];
+    ctx.beginPath();
+    list.forEach(function(n){ var r = nodeRadius(n); ctx.moveTo(n.x+r, n.y); ctx.arc(n.x,n.y,r,0,Math.PI*2); });
+    ctx.fill();
+  });
+  if (stubs.length){
+    ctx.globalAlpha = baseAlpha;
+    ctx.setLineDash([3,3]); ctx.strokeStyle='rgba(255,255,255,0.55)'; ctx.lineWidth=1.4;
+    ctx.beginPath();
+    stubs.forEach(function(n){ var r = nodeRadius(n); ctx.moveTo(n.x+r, n.y); ctx.arc(n.x,n.y,r,0,Math.PI*2); });
+    ctx.stroke(); ctx.setLineDash([]);
   }
-  var showBracket = false;
-  if (focus){
-    if (focus.kind==='node' && focus.id===n.id) showBracket = true;
-    else if (focus.kind==='mechanism' && n.id===('mech:'+focus.id)) showBracket = true;
-    else if (focus.kind==='edge' && focus.set.has(n.id)) showBracket = true;
-  }
-  if (showBracket) drawFocusBrackets(ctx, n.x, n.y, r+6);
-  if (shouldShowLabel(n, focus)){
-    ctx.fillStyle = 'rgba(220,228,240,' + (dim?0.15:1) + ')';
-    ctx.font = '500 12px "IBM Plex Sans", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(n.label, n.x, n.y + r + 14);
-  }
+  mechs.forEach(function(list, color){
+    ctx.globalAlpha = baseAlpha;
+    ctx.beginPath();
+    list.forEach(function(n){ diamondPath(ctx, n.x, n.y, nodeRadius(n)); });
+    ctx.fillStyle = COLORS.panel; ctx.fill();
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+  });
   ctx.globalAlpha = 1;
+}
+
+function drawNodes(ctx, nodes, focus){
+  if (!focus){ drawNodeBatch(ctx, nodes, 1); return; }
+  drawNodeBatch(ctx, nodes.filter(function(n){ return !focus.set.has(n.id); }), 0.15);
+  drawNodeBatch(ctx, nodes.filter(function(n){ return focus.set.has(n.id); }), 1);
+  nodes.forEach(function(n){
+    var showBracket =
+      (focus.kind==='node' && focus.id===n.id) ||
+      (focus.kind==='mechanism' && n.id===('mech:'+focus.id)) ||
+      (focus.kind==='edge' && focus.set.has(n.id));
+    if (showBracket) drawFocusBrackets(ctx, n.x, n.y, nodeRadius(n)+6);
+  });
 }
 
 function render(){
@@ -1056,9 +1256,20 @@ function render(){
   ctx2d.translate(view.offsetX, view.offsetY);
   ctx2d.scale(view.scale, view.scale);
   drawGrid(ctx2d);
-  currentEdges.forEach(function(e){ drawEdge(ctx2d, e, focus); });
-  currentNodes.forEach(function(n){ drawNode(ctx2d, n, focus); });
+  /* Отсечение: не рисуем то, что целиком за пределами экрана. */
+  var tl = screenToWorld(0,0), br = screenToWorld(viewportWidth, viewportHeight);
+  var pad = 60;
+  var x0 = tl.x-pad, y0 = tl.y-pad, x1 = br.x+pad, y1 = br.y+pad;
+  drawEdges(ctx2d, currentEdges.filter(function(e){
+    var a = nodeById.get(e.a), b = nodeById.get(e.b);
+    if (!a || !b) return false;
+    return !((a.x<x0 && b.x<x0) || (a.x>x1 && b.x>x1) || (a.y<y0 && b.y<y0) || (a.y>y1 && b.y>y1));
+  }), focus);
+  drawNodes(ctx2d, currentNodes.filter(function(n){
+    return n.x>=x0 && n.x<=x1 && n.y>=y0 && n.y<=y1;
+  }), focus);
   ctx2d.restore();
+  drawLabels(ctx2d, layoutLabels(ctx2d, focus));
 }
 
 function requestRender(){
@@ -2048,9 +2259,10 @@ function attachHandlers(){
   document.getElementById('btn-relayout').addEventListener('click', function(){
     Object.keys(state.objects).forEach(function(id){ state.objects[id].fx=null; state.objects[id].fy=null; });
     Object.keys(state.mechanisms).forEach(function(id){ state.mechanisms[id].fx=null; state.mechanisms[id].fy=null; });
+    var spread = initialSpread(nodeById.size, 200);
     nodeById.forEach(function(n){
       n.fx=null; n.fy=null;
-      n.x=(Math.random()-0.5)*400; n.y=(Math.random()-0.5)*400; n.vx=0; n.vy=0;
+      n.x=(Math.random()-0.5)*2*spread; n.y=(Math.random()-0.5)*2*spread; n.vx=0; n.vy=0;
     });
     sim.alpha = 1;
     persist();
