@@ -146,6 +146,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .ref-item-main{ display:flex; flex-direction:column; min-width:0; }
 .ref-item-title{ font-size:12.5px; color:var(--text); }
 .ref-item-role{ font-size:11px; color:var(--text-faint); }
+.ref-group{ display:flex; flex-direction:column; gap:3px; }
+.ref-group + .ref-group{ margin-top:6px; }
+.ref-sublist{ display:flex; flex-direction:column; gap:3px; margin-left:14px; padding-left:8px; border-left:1px solid var(--border-soft); }
+.ref-item-obj{ padding:5px 8px; }
+.ref-item-obj .dot{ border-radius:50%; transform:none; }
+.ref-sub-empty{ font-size:11.5px; color:var(--text-faint); padding:3px 0 3px 2px; margin:0; }
 
 .participant-row{ display:grid; grid-template-columns:1fr 1fr auto; gap:6px 8px; margin-bottom:8px; padding-bottom:8px; border-bottom:1px dashed var(--border-soft); }
 .participant-row .p-note{ grid-column:1 / span 3; }
@@ -1523,6 +1529,19 @@ function renderObjectPanel(obj, panel){
   renderAttachmentsList(panel, '#obj-attachments-list', 'obj', obj.id);
 }
 
+/* Механизмы, где участвует объект, и под каждым — остальные участники этого механизма.
+   Если объект входит в механизм несколькими ролями, роли перечисляются через запятую. */
+function participantRolesByObject(mech){
+  var order = [], roles = {};
+  mech.participants.forEach(function(p){
+    if (!p.objectId || !state.objects[p.objectId]) return;
+    if (!roles[p.objectId]){ roles[p.objectId] = []; order.push(p.objectId); }
+    var title = roleInfo(p.role).title;
+    if (roles[p.objectId].indexOf(title) < 0) roles[p.objectId].push(title);
+  });
+  return {order:order, roles:roles};
+}
+
 function renderObjectMechList(obj, panel){
   var container = panel.querySelector('#obj-mech-list');
   if (!container) return;
@@ -1531,14 +1550,27 @@ function renderObjectMechList(obj, panel){
     .filter(function(m){ return m.participants.some(function(p){return p.objectId===obj.id;}); });
   if (rows.length===0){ container.innerHTML = '<p class="ref-empty">Пока не участвует ни в одном механизме.</p>'; return; }
   container.innerHTML = rows.map(function(m){
-    var part = m.participants.filter(function(p){return p.objectId===obj.id;})[0];
-    var roleTitle = roleInfo(part.role).title;
-    return '<button class="ref-item" data-mech="'+m.id+'" type="button">' +
-      '<span class="dot" style="background:'+categoryAccent(m.category)+'"></span>' +
-      '<span class="ref-item-main"><span class="ref-item-title">'+escapeHtml(m.title)+'</span><span class="ref-item-role">'+escapeHtml(roleTitle)+'</span></span>' +
-    '</button>';
+    var parts = participantRolesByObject(m);
+    var others = parts.order.filter(function(id){ return id !== obj.id; });
+    var sub = others.length
+      ? others.map(function(id){
+          var o = state.objects[id];
+          return '<button class="ref-item ref-item-obj" data-obj="'+id+'" type="button">' +
+            '<span class="dot" style="background:'+typeColor(o.type)+'"></span>' +
+            '<span class="ref-item-main"><span class="ref-item-title">'+escapeHtml(o.name)+'</span>' +
+            '<span class="ref-item-role">'+escapeHtml(typeTitle(o.type))+' · '+escapeHtml(parts.roles[id].join(', '))+'</span></span>' +
+          '</button>';
+        }).join('')
+      : '<p class="ref-sub-empty">Других участников нет</p>';
+    return '<div class="ref-group">' +
+      '<button class="ref-item" data-mech="'+m.id+'" type="button">' +
+        '<span class="dot" style="background:'+categoryAccent(m.category)+'"></span>' +
+        '<span class="ref-item-main"><span class="ref-item-title">'+escapeHtml(m.title)+'</span><span class="ref-item-role">'+escapeHtml((parts.roles[obj.id]||[]).join(', '))+'</span></span>' +
+      '</button>' +
+      '<div class="ref-sublist">'+sub+'</div>' +
+    '</div>';
   }).join('');
-  container.querySelectorAll('.ref-item').forEach(function(btn){
+  container.querySelectorAll('.ref-item[data-mech]').forEach(function(btn){
     btn.addEventListener('click', function(){
       var mechId = btn.getAttribute('data-mech');
       if (isSidebar){
@@ -1547,6 +1579,18 @@ function renderObjectMechList(obj, panel){
         syncSidebarActive(); requestRender();
       } else {
         openCardModal('mech', mechId);
+      }
+    });
+  });
+  container.querySelectorAll('.ref-item[data-obj]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var objId = btn.getAttribute('data-obj');
+      if (isSidebar){
+        pinnedNodeId = 'obj:'+objId; pinnedMechanismId=null; pinnedEdgeKey=null;
+        renderObjectPanel(state.objects[objId]);
+        syncSidebarActive(); requestRender();
+      } else {
+        openCardModal('obj', objId);
       }
     });
   });
