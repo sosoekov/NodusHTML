@@ -92,6 +92,7 @@
   --alpha-label-background:0.45;/* подпись фонового узла при выделении */
   --alpha-label-plate:0.85;     /* подложка подписи */
   --alpha-deprecated:0.5;
+  --alpha-focus-other:0.2;      /* узлы вне механизма в фокус-режиме */
 
   /* Размеры шрифтов */
   --fs-caption:12px;   /* вторичный текст: подписи полей, категории, подсказки */
@@ -263,6 +264,24 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .legend-item .dot{ width:10px; height:10px; border-radius:50%; flex:none; }
 .legend-item .dot-diamond{ width:9px; height:9px; border-radius:1px; transform:rotate(45deg); background:transparent !important; border:2px solid var(--c); }
 .legend-tag{ margin-left:auto; color:var(--text-faint); font-family:var(--mono); font-size:var(--fs-caption); }
+
+/* Фокус-режим механизма */
+.focus-banner{ position:absolute; top:12px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:10px; padding:6px 8px 6px 12px; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); font-size:var(--fs-base); color:var(--text); max-width:calc(100% - 32px); }
+.focus-banner[hidden]{ display:none; }
+.focus-banner-title{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.focus-banner-title b{ font-weight:600; }
+.card-actions{ margin-top:8px; display:flex; gap:6px; }
+.canvas-tooltip{ position:absolute; z-index:5; max-width:320px; padding:6px 8px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); font-size:var(--fs-caption); color:var(--text); pointer-events:none; white-space:normal; }
+.canvas-tooltip[hidden]{ display:none; }
+
+/* Мини-карта (над контролами холста) */
+.minimap{ position:absolute; right:14px; bottom:156px; width:182px; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.minimap-toggle{ display:flex; align-items:center; width:100%; padding:5px 8px; background:transparent; border:none; color:var(--text-muted); font-size:var(--fs-caption); cursor:pointer; text-align:left; }
+.minimap-toggle::after{ content:''; width:6px; height:6px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(-135deg); margin-left:auto; margin-top:3px; }
+.minimap-toggle[aria-expanded="false"]::after{ transform:rotate(45deg); margin-top:-3px; }
+.minimap-toggle:hover{ color:var(--text); }
+.minimap-canvas{ display:block; width:180px; height:120px; border-top:1px solid var(--border-soft); cursor:pointer; background:var(--bg); }
+.minimap-canvas[hidden]{ display:none; }
 
 /* Контролы холста (правый нижний угол) */
 .canvas-controls{ position:absolute; right:14px; bottom:14px; display:flex; flex-direction:column; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
@@ -499,6 +518,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <button class="legend-toggle" id="legend-toggle" type="button" aria-expanded="true" aria-controls="legend-body">Легенда</button>
         <div class="legend-body" id="legend-body"></div>
       </div>
+      <div class="focus-banner" id="focus-banner" hidden>
+        <span class="focus-banner-title" id="focus-banner-title"></span>
+        <button class="btn btn-sm" id="btn-exit-focus" type="button">Выйти из фокуса</button>
+      </div>
+      <div class="canvas-tooltip" id="canvas-tooltip" role="tooltip" hidden></div>
+      <div class="minimap" id="minimap">
+        <button class="minimap-toggle" id="minimap-toggle" type="button" aria-expanded="false" aria-controls="minimap-canvas">Мини-карта</button>
+        <canvas class="minimap-canvas" id="minimap-canvas" hidden></canvas>
+      </div>
       <div class="canvas-controls" role="toolbar" aria-label="Управление холстом">
         <button class="canvas-ctl" id="btn-zoom-in" type="button" title="Приблизить" aria-label="Приблизить">+</button>
         <button class="canvas-ctl" id="btn-zoom-out" type="button" title="Отдалить" aria-label="Отдалить">−</button>
@@ -582,6 +610,7 @@ function readTheme(){
   var t = {
     bg:v('--bg'), panel:v('--bg-panel'), accent:v('--accent'), text:v('--text'),
     edge:v('--graph-edge'), arrow:v('--graph-arrow'), grid:v('--graph-grid'),
+    textMuted:v('--text-muted'), textFaint:v('--text-faint'),
     stubStroke:v('--graph-stub-stroke'), badgeStroke:v('--graph-badge-stroke'),
     typeUnknown:v('--type-unknown'), catUnknown:v('--cat-unknown'),
     types:{}, cats:{},
@@ -591,7 +620,8 @@ function readTheme(){
       nodeSecond:n('--alpha-node-second'), nodeBackground:n('--alpha-node-background'),
       nodeFiltered:n('--alpha-node-filtered'), edgeFiltered:n('--alpha-edge-filtered'),
       labelSecond:n('--alpha-label-second'), labelBackground:n('--alpha-label-background'),
-      labelPlate:n('--alpha-label-plate'), deprecated:n('--alpha-deprecated')
+      labelPlate:n('--alpha-label-plate'), deprecated:n('--alpha-deprecated'),
+      focusOther:n('--alpha-focus-other')
     },
     labelFont:'500 ' + v('--fs-graph-label') + ' ' + v('--sans'),
     labelSize:parseFloat(v('--fs-graph-label')),
@@ -1158,6 +1188,8 @@ function syncGraphModel(){
     n.weight = (n.kind==='mechanism' ? weights.mechanisms[n.refId] : weights.objects[n.refId]) || 0;
   });
   /* Порядок, в котором подписи претендуют на место: сначала «тяжёлые». */
+  if (focusMode && !focusMode.exiting) refreshFocusLayout();
+  updateMinimapVisibility();
   labelOrder = currentNodes.slice().sort(function(a,b){
     return (b.weight - a.weight) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
   });
@@ -1324,6 +1356,12 @@ function nodeFocus(nid){
 
 function getFocus(){
   var f = null;
+  if (focusMode){
+    f = mechanismFocus(focusMode.mechId);
+    f.focusMode = true; f.second = new Set();
+    if (hoverId && hoverId !== f.center) f.hover = hoverId;
+    return f;
+  }
   if (pinnedMechanismId && state.mechanisms[pinnedMechanismId]) f = mechanismFocus(pinnedMechanismId);
   else if (pinnedEdgeKey){
     var e = currentEdges.filter(function(x){return x.key===pinnedEdgeKey;})[0];
@@ -1355,6 +1393,7 @@ function getFocus(){
 }
 
 function nodeAlpha(id, focus){
+  if (focus.focusMode) return focus.set.has(id) ? THEME.alpha.nodeActive : THEME.alpha.focusOther;
   if (id === focus.center) return THEME.alpha.nodeActive;
   if (focus.set.has(id)) return THEME.alpha.nodeNeighbor;
   if (focus.second.has(id)) return THEME.alpha.nodeSecond;
@@ -1452,6 +1491,12 @@ function layoutLabels(ctx, focus){
     return Math.min(1, (sizePx-LABEL_MIN_PX)/LABEL_FADE_PX + 0.25);
   }
 
+  if (focus && focus.focusMode){
+    if (focus.center && nodeById.has(focus.center)) place(nodeById.get(focus.center), true, 1);
+    labelOrder.forEach(function(n){ if (focus.set.has(n.id)) place(n, true, 1); });
+    if (focus.hover && nodeById.has(focus.hover)) place(nodeById.get(focus.hover), true, 1);
+    return placed;
+  }
   if (focus){
     if (focus.center && nodeById.has(focus.center)) place(nodeById.get(focus.center), true, 1);
     labelOrder.forEach(function(n){ if (focus.set.has(n.id)) place(n, true, 1); });
@@ -1751,7 +1796,10 @@ function render(){
     return n.x>=x0 && n.x<=x1 && n.y>=y0 && n.y<=y1;
   }), focus);
   ctx2d.restore();
-  drawLabels(ctx2d, layoutLabels(ctx2d, focus));
+  var labels = layoutLabels(ctx2d, focus);
+  drawLabels(ctx2d, labels);
+  edgeLabelBoxes = focusMode ? drawFocusEdgeLabels(ctx2d, labels) : [];
+  drawMinimap();
 }
 
 function requestRender(){
@@ -1759,7 +1807,8 @@ function requestRender(){
   renderRequested = true;
   requestAnimationFrame(function(){
     renderRequested = false;
-    if (sim.alpha > sim.alphaMin){ tickSimulation(); requestRender(); }
+    /* В фокус-режиме физика стоит: раскладка фокуса временная и не должна плыть. */
+    if (!focusMode && sim.alpha > sim.alphaMin){ tickSimulation(); requestRender(); }
     render();
   });
 }
@@ -1828,6 +1877,7 @@ function onMouseMove(ev){
     if (moved > 3) didDrag = true;
   }
   if (dragNode){
+    if (focusMode) return; /* в фокусе узлы не перетаскиваются — раскладка временная */
     var w = screenToWorld(sx,sy);
     dragNode.x = w.x; dragNode.y = w.y; dragNode.fx = w.x; dragNode.fy = w.y; dragNode.vx=0; dragNode.vy=0;
     requestRender();
@@ -1840,6 +1890,7 @@ function onMouseMove(ev){
     return;
   }
   var wp = screenToWorld(sx,sy);
+  if (focusMode) updateCanvasTooltip(sx, sy);
   var node = hitTestNode(wp.x,wp.y);
   var newHoverId = node ? node.id : null;
   if (newHoverId !== hoverId){
@@ -1853,8 +1904,8 @@ function onMouseUp(ev){
   var sx = ev.clientX-rect.left, sy = ev.clientY-rect.top;
   var w = screenToWorld(sx,sy);
   if (dragNode){
-    if (!didDrag){
-      selectNode(dragNode);
+    if (!didDrag || focusMode){
+      if (!didDrag) selectNode(dragNode);
     } else {
       persistNodePosition(dragNode);
       sim.alpha = Math.max(sim.alpha, 0.2);
@@ -1870,6 +1921,12 @@ function onMouseUp(ev){
     canvasEl.style.cursor = 'grab';
   }
   mouseDownPos = null; didDrag = false;
+}
+function onDblClick(ev){
+  var rect = canvasEl.getBoundingClientRect();
+  var w = screenToWorld(ev.clientX-rect.left, ev.clientY-rect.top);
+  var node = hitTestNode(w.x, w.y);
+  if (node && node.kind === 'mechanism') enterFocus(node.refId);
 }
 function onWheel(ev){
   ev.preventDefault();
@@ -1909,6 +1966,7 @@ function clearSelection(){
 }
 
 function switchView(view){
+  if (focusMode) exitFocus(true);
   currentView = view;
   var main = document.getElementById('main');
   var listView = document.getElementById('list-view');
@@ -2333,6 +2391,14 @@ function renderMechanismPanel(mech, panel){
   var isSidebar = (panel.id === 'panel-mechanism');
   if (isSidebar) showPanel('mechanism');
   panel.innerHTML = mechanismPanelTemplate(mech);
+  if (isSidebar){
+    var actions = document.createElement('div');
+    actions.className = 'card-actions';
+    actions.innerHTML = '<button type="button" class="btn btn-sm card-focus-btn" data-mech="' + mech.id + '" title="Разложить участников: источники слева, приёмники справа">Фокус</button>';
+    panel.querySelector('.panel-header').appendChild(actions);
+    actions.querySelector('.card-focus-btn').addEventListener('click', function(){ enterFocus(mech.id); });
+    updateFocusUI();
+  }
   bindInlineTitle(panel, function(){ return mech.title; }, function(v){
     mech.title=v; persist(); syncGraphModel(); renderSidebar();
   });
@@ -3159,6 +3225,290 @@ function centerOnEntity(kind, id){
   animateView({scale:view.scale, offsetX:viewportWidth/2 - p.x*view.scale, offsetY:viewportHeight/2 - p.y*view.scale});
 }
 
+/* ===================== Фокус-режим механизма =====================
+   Временная раскладка одного механизма как потока: источники — колонкой слева,
+   механизм — в центре, приёмники — справа, участники без направления — под механизмом.
+   Остальные узлы приглушены, физика на время режима остановлена. Ничего не пишется
+   в данные: позиции узлов до входа запоминаются и точно восстанавливаются при выходе. */
+var FOCUS_COL_DX = 300, FOCUS_ROW_DY = 100, FOCUS_NEUTRAL_DY = 160, FOCUS_NEUTRAL_DX = 200;
+/* Поля при вписывании фокуса: сверху — плашка «Фокус», по бокам — подписи узлов,
+   снизу — легенда (если развёрнута). */
+var FOCUS_FIT_PAD = { top:70, side:160, bottom:90 };
+var EDGE_LABEL_MAX = 32;
+var focusMode = null;   /* {mechId, prevMode, saved:Map, prevView, exiting} */
+var edgeLabelBoxes = [];
+
+function focusColumns(mid){
+  var m = state.mechanisms[mid], cols = {source:[], target:[], neutral:[]}, seen = {};
+  if (!m) return cols;
+  m.participants.forEach(function(p){
+    if (!p.objectId || !state.objects[p.objectId] || seen[p.objectId]) return;
+    seen[p.objectId] = true;
+    cols[roleInfo(p.role).direction].push('obj:'+p.objectId);
+  });
+  return cols;
+}
+
+function focusTargets(mid){
+  var center = nodeById.get('mech:'+mid);
+  var targets = new Map();
+  if (!center) return targets;
+  var cx = center.x, cy = center.y;
+  targets.set(center.id, {x:cx, y:cy});
+  var cols = focusColumns(mid);
+  function column(ids, x){ ids.forEach(function(id, i){ targets.set(id, {x:x, y:cy + (i - (ids.length-1)/2)*FOCUS_ROW_DY}); }); }
+  column(cols.source, cx - FOCUS_COL_DX);
+  column(cols.target, cx + FOCUS_COL_DX);
+  var sideRows = Math.max(cols.source.length, cols.target.length);
+  var ny = cy + Math.max(FOCUS_NEUTRAL_DY, (sideRows-1)/2*FOCUS_ROW_DY + FOCUS_ROW_DY);
+  cols.neutral.forEach(function(id, i){ targets.set(id, {x:cx + (i - (cols.neutral.length-1)/2)*FOCUS_NEUTRAL_DX, y:ny}); });
+  return targets;
+}
+
+function animateNodePositions(targets, done){
+  var from = new Map();
+  targets.forEach(function(t, id){ var n = nodeById.get(id); if (n) from.set(id, {x:n.x, y:n.y}); });
+  var t0 = performance.now();
+  function step(now){
+    var t = Math.min(1, (now - t0)/VIEW_ANIM_MS), k = 1 - Math.pow(1 - t, 3);
+    from.forEach(function(f, id){
+      var n = nodeById.get(id), to = targets.get(id);
+      if (!n) return;
+      n.x = f.x + (to.x - f.x)*k; n.y = f.y + (to.y - f.y)*k;
+    });
+    requestRender();
+    if (t < 1) requestAnimationFrame(step); else if (done) done();
+  }
+  requestAnimationFrame(step);
+}
+
+function viewToFit(points, pad){
+  var minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+  points.forEach(function(p){ minX=Math.min(minX,p.x); maxX=Math.max(maxX,p.x); minY=Math.min(minY,p.y); maxY=Math.max(maxY,p.y); });
+  var bw = Math.max(1, maxX-minX), bh = Math.max(1, maxY-minY);
+  var availW = viewportWidth - pad.left - pad.right, availH = viewportHeight - pad.top - pad.bottom;
+  var s = clampScale(Math.min(availW/bw, availH/bh, FIT_MAX_SCALE));
+  return {scale:s, offsetX:pad.left + availW/2 - (minX+bw/2)*s, offsetY:pad.top + availH/2 - (minY+bh/2)*s};
+}
+function focusFitPadding(){
+  var legend = document.getElementById('graph-legend');
+  var body = document.getElementById('legend-body');
+  var legendH = (!legend.hidden && !body.hidden) ? legend.offsetHeight + 50 : 0;
+  return { top:FOCUS_FIT_PAD.top, left:FOCUS_FIT_PAD.side, right:FOCUS_FIT_PAD.side, bottom:Math.max(FOCUS_FIT_PAD.bottom, legendH) };
+}
+
+function enterFocus(mid){
+  if (!state.mechanisms[mid] || currentView !== 'graph') return;
+  if (focusMode){
+    if (focusMode.mechId === mid){ exitFocus(); return; }
+    exitFocus(true);
+  }
+  var prevMode = currentMode;
+  var prevSimAlpha = sim.alpha;
+  var prevView = {scale:view.scale, offsetX:view.offsetX, offsetY:view.offsetY};
+  if (currentMode !== 'full'){
+    currentMode = 'full';
+    document.getElementById('toggle-mechanisms').checked = true;
+    syncGraphModel();
+    /* Узел механизма только что появился в случайном месте — ставим его в центр участников. */
+    var mn = nodeById.get('mech:'+mid), pts = focusColumns(mid);
+    var all = pts.source.concat(pts.target, pts.neutral).map(function(id){ return nodeById.get(id); }).filter(Boolean);
+    if (mn && all.length){
+      mn.x = all.reduce(function(s,n){return s+n.x;},0)/all.length;
+      mn.y = all.reduce(function(s,n){return s+n.y;},0)/all.length;
+    }
+  }
+  var saved = new Map();
+  nodeById.forEach(function(n, id){ saved.set(id, {x:n.x, y:n.y, vx:n.vx, vy:n.vy}); });
+  focusMode = {mechId:mid, prevMode:prevMode, prevSimAlpha:prevSimAlpha, saved:saved, prevView:prevView, exiting:false};
+  pinnedMechanismId = mid; pinnedNodeId = null; pinnedEdgeKey = null;
+  renderMechanismPanel(state.mechanisms[mid]);
+  syncSidebarActive();
+  var targets = focusTargets(mid);
+  animateNodePositions(targets);
+  var pts2 = []; targets.forEach(function(t){ pts2.push(t); });
+  animateView(viewToFit(pts2, focusFitPadding()));
+  updateFocusUI();
+}
+
+/* Правки механизма во время фокуса (добавили/убрали участника) — перераскладка без анимации. */
+function refreshFocusLayout(){
+  if (!state.mechanisms[focusMode.mechId]){ exitFocus(true); return; }
+  nodeById.forEach(function(n, id){ if (!focusMode.saved.has(id)) focusMode.saved.set(id, {x:n.x, y:n.y, vx:n.vx, vy:n.vy}); });
+  focusTargets(focusMode.mechId).forEach(function(t, id){ var n = nodeById.get(id); if (n){ n.x = t.x; n.y = t.y; } });
+  updateFocusUI();
+}
+
+function exitFocus(immediate){
+  if (!focusMode || focusMode.exiting) return;
+  var fm = focusMode;
+  fm.exiting = true;
+  function finish(){
+    fm.saved.forEach(function(s, id){ var n = nodeById.get(id); if (n){ n.x = s.x; n.y = s.y; n.vx = s.vx; n.vy = s.vy; } });
+    focusMode = null;
+    hideCanvasTooltip();
+    if (fm.prevMode !== currentMode){
+      currentMode = fm.prevMode;
+      document.getElementById('toggle-mechanisms').checked = currentMode === 'full';
+      syncGraphModel();
+    }
+    /* Перестройка графа «подогревает» физику — возвращаем её состояние до входа,
+       чтобы узлы остались ровно там, где были. */
+    sim.alpha = fm.prevSimAlpha;
+    updateFocusUI();
+    requestRender();
+  }
+  if (immediate){ cancelViewAnim(); view.scale = fm.prevView.scale; view.offsetX = fm.prevView.offsetX; view.offsetY = fm.prevView.offsetY; finish(); return; }
+  var back = new Map();
+  fm.saved.forEach(function(s, id){ back.set(id, {x:s.x, y:s.y}); });
+  animateNodePositions(back, finish);
+  animateView(fm.prevView);
+}
+
+function updateFocusUI(){
+  var banner = document.getElementById('focus-banner');
+  var m = focusMode && state.mechanisms[focusMode.mechId];
+  banner.hidden = !m;
+  if (m) document.getElementById('focus-banner-title').innerHTML = 'Фокус: <b>' + escapeHtml(m.title) + '</b>';
+  document.querySelectorAll('.card-focus-btn').forEach(function(b){
+    var on = !!focusMode && b.getAttribute('data-mech') === focusMode.mechId;
+    b.textContent = on ? 'Выйти из фокуса' : 'Фокус';
+  });
+}
+
+/* Подписи рёбер в фокусе: описание передачи участника (или название роли, если описания нет),
+   до EDGE_LABEL_MAX символов; полный текст — во всплывающей подсказке. Подписи не должны
+   пересекаться ни друг с другом, ни с подписями узлов: при пересечении сдвигаются вдоль ребра. */
+function drawFocusEdgeLabels(ctx, nodeLabels){
+  var m = state.mechanisms[focusMode.mechId], mn = nodeById.get('mech:'+focusMode.mechId);
+  if (!m || !mn) return [];
+  var byObj = new Map();
+  m.participants.forEach(function(p){
+    if (!p.objectId || !state.objects[p.objectId]) return;
+    var e = byObj.get(p.objectId) || byObj.set(p.objectId, {notes:[], role:p.role}).get(p.objectId);
+    if (p.note) e.notes.push(p.note);
+  });
+  ctx.font = THEME.labelFont;
+  var taken = nodeLabels.map(function(b){ return b; }), out = [];
+  /* Площадь пересечения с уже занятыми местами (0 — место свободно). */
+  function overlapArea(b){
+    return taken.reduce(function(sum, o){
+      var w = Math.min(b.x1, o.x1) - Math.max(b.x0, o.x0), hh = Math.min(b.y1, o.y1) - Math.max(b.y0, o.y0);
+      return sum + (w > 0 && hh > 0 ? w*hh : 0);
+    }, 0);
+  }
+  var EDGE_LABEL_T = [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8];
+  var EDGE_LABEL_SHIFT = [0, -(LABEL_H+2), LABEL_H+2, -2*(LABEL_H+2), 2*(LABEL_H+2)];
+  var msx = mn.x*view.scale + view.offsetX, msy = mn.y*view.scale + view.offsetY;
+  byObj.forEach(function(info, oid){
+    var n = nodeById.get('obj:'+oid);
+    if (!n) return;
+    var full = info.notes.length ? info.notes.join('; ') : roleInfo(info.role).title;
+    var text = full.length > EDGE_LABEL_MAX ? full.slice(0, EDGE_LABEL_MAX - 1) + '…' : full;
+    var w = ctx.measureText(text).width + 2*LABEL_PAD_X;
+    var psx = n.x*view.scale + view.offsetX, psy = n.y*view.scale + view.offsetY;
+    /* Сначала места вдоль ребра, затем — со сдвигом вверх/вниз; если свободных нет,
+       берём место с наименьшим наложением. */
+    var box = null, bestArea = Infinity;
+    outer: for (var si = 0; si < EDGE_LABEL_SHIFT.length; si++){
+      for (var i = 0; i < EDGE_LABEL_T.length; i++){
+        var cx = psx + (msx - psx)*EDGE_LABEL_T[i], cy = psy + (msy - psy)*EDGE_LABEL_T[i] + EDGE_LABEL_SHIFT[si];
+        var b = {x0:cx - w/2, x1:cx + w/2, y0:cy - LABEL_H/2, y1:cy + LABEL_H/2, cx:cx, cy:cy};
+        var area = overlapArea(b);
+        if (area < bestArea){ bestArea = area; box = b; }
+        if (area === 0) break outer;
+      }
+    }
+    box.text = text; box.full = full; box.isRole = !info.notes.length;
+    taken.push(box); out.push(box);
+  });
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  out.forEach(function(b){
+    ctx.globalAlpha = THEME.alpha.labelPlate; ctx.fillStyle = THEME.bg;
+    ctx.beginPath(); roundRectPath(ctx, b.x0, b.y0, b.x1-b.x0, b.y1-b.y0, 3); ctx.fill();
+    ctx.globalAlpha = 1; ctx.fillStyle = b.isRole ? THEME.textFaint : THEME.textMuted;
+    ctx.fillText(b.text, b.cx, b.cy + 0.5);
+  });
+  ctx.textBaseline = 'alphabetic';
+  return out;
+}
+
+function hideCanvasTooltip(){ var t = document.getElementById('canvas-tooltip'); if (t) t.hidden = true; }
+function updateCanvasTooltip(sx, sy){
+  var tip = document.getElementById('canvas-tooltip');
+  var b = edgeLabelBoxes.filter(function(b){ return b.full !== b.text && sx >= b.x0 && sx <= b.x1 && sy >= b.y0 && sy <= b.y1; })[0];
+  if (!b){ tip.hidden = true; return; }
+  tip.textContent = b.full;
+  tip.style.left = Math.min(sx + 12, viewportWidth - 330) + 'px';
+  tip.style.top = (sy + 14) + 'px';
+  tip.hidden = false;
+}
+
+/* ===================== Мини-карта =====================
+   Весь граф схематично + рамка видимой области; клик и перетаскивание переносят холст.
+   По умолчанию свёрнута, если узлов меньше MINIMAP_AUTO_MIN_NODES (пока пользователь сам
+   её не открыл или не свернул). */
+var MINIMAP_AUTO_MIN_NODES = 30;
+var MINIMAP_W = 180, MINIMAP_H = 120, MINIMAP_PAD = 8;
+var minimapUserSet = false, minimapOpen = false, minimapXf = null;
+
+function updateMinimapVisibility(){
+  if (!minimapUserSet) minimapOpen = currentNodes.length >= MINIMAP_AUTO_MIN_NODES;
+  var c = document.getElementById('minimap-canvas');
+  if (!c) return;
+  c.hidden = !minimapOpen;
+  document.getElementById('minimap-toggle').setAttribute('aria-expanded', minimapOpen ? 'true' : 'false');
+}
+
+function drawMinimap(){
+  var c = document.getElementById('minimap-canvas');
+  if (!c || !minimapOpen || currentView !== 'graph') return;
+  var dpr = window.devicePixelRatio || 1;
+  if (c.width !== MINIMAP_W*dpr){ c.width = MINIMAP_W*dpr; c.height = MINIMAP_H*dpr; }
+  var mc = c.getContext('2d');
+  mc.setTransform(dpr,0,0,dpr,0,0);
+  mc.clearRect(0,0,MINIMAP_W,MINIMAP_H);
+  if (!currentNodes.length){ minimapXf = null; return; }
+  var tl = screenToWorld(0,0), br = screenToWorld(viewportWidth, viewportHeight);
+  var minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+  currentNodes.forEach(function(n){ minX=Math.min(minX,n.x); maxX=Math.max(maxX,n.x); minY=Math.min(minY,n.y); maxY=Math.max(maxY,n.y); });
+  var bw = Math.max(1, maxX-minX), bh = Math.max(1, maxY-minY);
+  var s = Math.min((MINIMAP_W - 2*MINIMAP_PAD)/bw, (MINIMAP_H - 2*MINIMAP_PAD)/bh);
+  var ox = (MINIMAP_W - bw*s)/2 - minX*s, oy = (MINIMAP_H - bh*s)/2 - minY*s;
+  minimapXf = {s:s, ox:ox, oy:oy};
+  currentNodes.forEach(function(n){
+    mc.fillStyle = n.kind === 'mechanism' ? categoryAccent(n.category) : typeColor(n.type);
+    var r = n.kind === 'mechanism' ? 1.5 : 2;
+    mc.fillRect(n.x*s + ox - r, n.y*s + oy - r, 2*r, 2*r);
+  });
+  /* Рамка видимой области; если она больше графа — обрезается краем мини-карты. */
+  var rx0 = Math.max(1, tl.x*s + ox), ry0 = Math.max(1, tl.y*s + oy);
+  var rx1 = Math.min(MINIMAP_W - 1, br.x*s + ox), ry1 = Math.min(MINIMAP_H - 1, br.y*s + oy);
+  mc.strokeStyle = THEME.textMuted; mc.lineWidth = 1;
+  if (rx1 > rx0 && ry1 > ry0) mc.strokeRect(rx0 + 0.5, ry0 + 0.5, rx1 - rx0 - 1, ry1 - ry0 - 1);
+}
+
+function bindMinimap(){
+  var c = document.getElementById('minimap-canvas');
+  document.getElementById('minimap-toggle').addEventListener('click', function(){
+    minimapUserSet = true; minimapOpen = !minimapOpen;
+    updateMinimapVisibility(); requestRender();
+  });
+  var dragging = false;
+  function moveTo(ev){
+    if (!minimapXf) return;
+    var r = c.getBoundingClientRect();
+    var wx = (ev.clientX - r.left - minimapXf.ox)/minimapXf.s, wy = (ev.clientY - r.top - minimapXf.oy)/minimapXf.s;
+    cancelViewAnim();
+    view.offsetX = viewportWidth/2 - wx*view.scale;
+    view.offsetY = viewportHeight/2 - wy*view.scale;
+    requestRender();
+  }
+  c.addEventListener('mousedown', function(ev){ dragging = true; moveTo(ev); ev.preventDefault(); });
+  window.addEventListener('mousemove', function(ev){ if (dragging) moveTo(ev); });
+  window.addEventListener('mouseup', function(){ dragging = false; });
+}
+
 /* ===================== Легенда ===================== */
 function updateLegend(){
   var legend = document.getElementById('graph-legend');
@@ -3203,10 +3553,16 @@ function attachHandlers(){
   canvasEl.addEventListener('mousemove', onMouseMove);
   window.addEventListener('mouseup', onMouseUp);
   canvasEl.addEventListener('wheel', onWheel, {passive:false});
+  canvasEl.addEventListener('dblclick', onDblClick);
+  canvasEl.addEventListener('mouseleave', hideCanvasTooltip);
+  document.getElementById('btn-exit-focus').addEventListener('click', function(){ exitFocus(); });
+  bindMinimap();
   window.addEventListener('resize', resizeCanvas);
 
   /* «Показывать механизмы»: включено = полный режим (объекты и механизмы). */
   document.getElementById('toggle-mechanisms').addEventListener('change', function(ev){
+    /* Во время фокуса переключатель выводит из фокуса и возвращает прежний режим. */
+    if (focusMode){ exitFocus(true); return; }
     currentMode = ev.target.checked ? 'full' : 'collapsed';
     clearSelection();
     syncGraphModel();
@@ -3347,6 +3703,7 @@ function attachHandlers(){
     ev.currentTarget.setAttribute('aria-expanded', body.hidden ? 'false' : 'true');
   });
   document.getElementById('btn-relayout').addEventListener('click', function(){
+    if (focusMode) exitFocus(true);
     Object.keys(state.objects).forEach(function(id){ state.objects[id].fx=null; state.objects[id].fy=null; });
     Object.keys(state.mechanisms).forEach(function(id){ state.mechanisms[id].fx=null; state.mechanisms[id].fy=null; });
     var spread = initialSpread(nodeById.size, 200);
@@ -3477,6 +3834,7 @@ function attachHandlers(){
       if (!document.getElementById('more-menu').hidden){ document.getElementById('more-menu').hidden = true; document.getElementById('btn-more').setAttribute('aria-expanded','false'); document.getElementById('btn-more').focus(); }
       else if (!document.getElementById('list-filter-type-dropdown').hidden) setListTypeDropdownOpen(false);
       else if (document.getElementById('modal-root').innerHTML) closeModal();
+      else if (focusMode) exitFocus();
       else clearSelection();
     }
   });
