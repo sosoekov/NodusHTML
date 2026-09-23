@@ -41,6 +41,8 @@
   --on-danger:#2A0D0D;
   --success:#6FBF8B;
   --success-soft:rgba(111,191,139,0.15);
+  --warning:#E5C07B;
+  --badge-bg-mix:15%;  /* доля цвета категории в фоне бейджа */
 
   /* Цвета категорий механизмов */
   --cat-calc:hsl(25,55%,64%);
@@ -207,12 +209,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .filters-row[hidden]{ display:none; }
 .select-sm{ padding:6px 8px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); color:var(--text-muted); font-size:var(--fs-caption); }
 .side-tabs{ display:flex; border-bottom:1px solid var(--border-soft); flex:none; }
-.side-tab{ flex:1; background:transparent; border:none; border-bottom:2px solid transparent; padding:11px 0 9px; color:var(--text-muted); font-size:var(--fs-base); cursor:pointer; }
+.side-tab{ flex:1 1 0; min-width:0; background:transparent; border:none; border-bottom:2px solid transparent; padding:11px 4px 9px; color:var(--text-muted); font-size:var(--fs-base); cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.side-tab-header{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 14px 0; flex:none; }
+.side-tab-title{ margin:0; font-size:var(--fs-md); font-weight:600; color:var(--text); }
+.side-create{ white-space:nowrap; }
+.side-tab-header + .side-search{ border-top:none; }
 .side-tab:hover:not(.active){ color:var(--text); }
 .side-tab.active{ background:var(--bg-selected); color:var(--text); border-bottom-color:var(--text-muted); }
-.side-search-row{ display:flex; gap:6px; }
-.side-search-row .search-input{ flex:1; min-width:0; }
-.side-add{ width:34px; flex:none; padding:0; font-size:var(--fs-icon-lg); line-height:1; }
+.side-search .search-input{ width:100%; }
 .list-wrap{ flex:1; overflow-y:auto; padding:4px 0 14px; min-height:0; }
 
 .list-group-title{ font-size:var(--fs-caption); color:var(--text-faint); margin:10px 14px 4px; }
@@ -223,7 +227,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .list-row .dot-diamond{ border-radius:2px; transform:rotate(45deg); }
 .list-row-main{ display:flex; flex-direction:column; min-width:0; }
 .list-row-title{ font-size:var(--fs-base); color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.list-row-sub{ font-size:var(--fs-caption); color:var(--text-faint); }
+.list-row-sub{ font-size:var(--fs-caption); color:var(--text-faint); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.list-row-main{ flex:1; }
+.list-row-meta{ display:flex; align-items:center; gap:6px; flex:none; margin-left:auto; }
+.list-row-count{ font-size:var(--fs-caption); color:var(--text-muted); font-variant-numeric:tabular-nums; min-width:14px; text-align:right; }
+.list-row-warn{ font-size:var(--fs-caption); color:var(--warning); cursor:help; }
+.cat-badge{ font-size:var(--fs-caption); line-height:1.4; padding:0 6px; border-radius:3px; color:var(--cat); background:color-mix(in srgb, var(--cat) var(--badge-bg-mix), transparent); }
+.no-summary{ font-size:var(--fs-caption); color:var(--text-faint); font-style:italic; }
 .ref-empty{ font-size:var(--fs-caption); color:var(--text-faint); padding:8px 14px; margin:0; }
 
 #canvas-wrap{ flex:1; position:relative; background:var(--bg); min-width:0; }
@@ -390,9 +400,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <button class="side-tab active" data-side="objects" type="button" role="tab">Объекты <span id="side-count-objects">0</span></button>
         <button class="side-tab" data-side="mechanisms" type="button" role="tab">Механизмы <span id="side-count-mechanisms">0</span></button>
       </div>
-      <div class="sidebar-section side-search-row">
-        <input type="text" id="search-input" class="search-input" placeholder="Название или тег">
-        <button class="btn btn-accent side-add" id="btn-side-add" type="button" title="Добавить объект" aria-label="Добавить объект">+</button>
+      <div class="side-tab-header">
+        <h2 class="side-tab-title" id="side-tab-title">Объекты</h2>
+        <button class="btn btn-accent btn-sm side-create" id="btn-side-add" type="button">+ Объект</button>
+      </div>
+      <div class="sidebar-section side-search">
+        <input type="text" id="search-input" class="search-input" placeholder="Поиск объектов…" autocomplete="off">
       </div>
       <div class="sidebar-section filters">
         <div class="filters-row" id="side-filters-objects">
@@ -526,6 +539,7 @@ var nodeById = new Map();
 var labelOrder = [];
 
 var hoverId = null;
+var listHover = null; /* {kind:'object'|'mechanism', id} — строка списка слева под курсором */
 var pinnedNodeId = null;
 var pinnedEdgeKey = null;
 var pinnedMechanismId = null;
@@ -1146,6 +1160,16 @@ function getFocus(){
   }
   if (pinnedNodeId) return {kind:'node', id:pinnedNodeId, set:computeHighlightSet(pinnedNodeId)};
   if (hoverId) return {kind:'node', id:hoverId, set:computeHighlightSet(hoverId)};
+  if (listHover && listHover.kind === 'object' && state.objects[listHover.id]){
+    var nid = 'obj:'+listHover.id;
+    return {kind:'node', id:nid, set:computeHighlightSet(nid)};
+  }
+  if (listHover && listHover.kind === 'mechanism' && state.mechanisms[listHover.id]){
+    var hm = state.mechanisms[listHover.id];
+    var hset = new Set(hm.participants.filter(function(p){return p.objectId;}).map(function(p){return 'obj:'+p.objectId;}));
+    if (currentMode==='full') hset.add('mech:'+hm.id);
+    return {kind:'mechanism', id:hm.id, set:hset};
+  }
   return null;
 }
 
@@ -1876,7 +1900,7 @@ function renderMechanismPanel(mech, panel){
   });
   bindField(panel,'#f-category','change', function(v){ mech.category=v; persist(); syncGraphModel(); renderSidebar(); });
   bindField(panel,'#f-mstatus','change', function(v){ mech.status=v; persist(); syncGraphModel(); });
-  bindField(panel,'#f-summary','input', function(v){ mech.summary=v; persist(); });
+  bindField(panel,'#f-summary','input', function(v){ mech.summary=v; persist(); renderSidebar(); });
   bindField(panel,'#f-body','input', function(v){ mech.body=v; persist(); });
   panel.querySelector('#btn-delete-mechanism').addEventListener('click', function(){
     deleteMechanism(mech.id, isSidebar ? undefined : function(){ openCardModal('mech', mech.id); });
@@ -1917,10 +1941,10 @@ function renderParticipantsList(mech, panel){
     buildObjectCombobox(row.querySelector('.p-object-combo'), p.objectId, function(newId){
       p.objectId = newId; persist(); syncGraphModel(); renderSidebar(); updateStats();
     }, isSidebar ? null : function(){ openCardModal('mech', mech.id); });
-    row.querySelector('.p-role').addEventListener('change', function(e){ p.role=e.target.value; persist(); syncGraphModel(); });
+    row.querySelector('.p-role').addEventListener('change', function(e){ p.role=e.target.value; persist(); syncGraphModel(); renderSidebar(); });
     row.querySelector('.p-note').addEventListener('input', function(e){ p.note=e.target.value; persist(); });
     row.querySelector('.p-remove').addEventListener('click', function(){
-      mech.participants.splice(idx,1); persist(); syncGraphModel(); renderParticipantsList(mech, panel);
+      mech.participants.splice(idx,1); persist(); syncGraphModel(); renderSidebar(); renderParticipantsList(mech, panel);
     });
   });
 }
@@ -2174,6 +2198,26 @@ function computeGraphFilter(objs, mechs){
   }};
 }
 
+/* Участники с выбранным объектом; есть ли среди них источник и приёмник (по направлению роли). */
+function mechanismParticipantInfo(m){
+  var parts = m.participants.filter(function(p){ return p.objectId && state.objects[p.objectId]; });
+  return {
+    count: parts.length,
+    hasSource: parts.some(function(p){ return roleInfo(p.role).direction === 'source'; }),
+    hasTarget: parts.some(function(p){ return roleInfo(p.role).direction === 'target'; })
+  };
+}
+function objectMechanismCounts(){
+  var counts = {};
+  Object.keys(state.mechanisms).forEach(function(mid){
+    var seen = {};
+    state.mechanisms[mid].participants.forEach(function(p){
+      if (p.objectId && !seen[p.objectId]){ seen[p.objectId] = true; counts[p.objectId] = (counts[p.objectId]||0) + 1; }
+    });
+  });
+  return counts;
+}
+
 function renderSidebar(){
   refreshTagFilterOptions();
   var objs = filteredSideObjects(), mechs = filteredSideMechanisms();
@@ -2184,17 +2228,30 @@ function renderSidebar(){
 
   var container = document.getElementById('object-list');
   if (sideTab === 'objects'){
+    var mechCount = objectMechanismCounts();
     container.innerHTML = objs.list.length ? objs.list.map(function(o){
+      var mc = mechCount[o.id] || 0;
       return '<button class="list-row" data-kind="object" data-id="'+o.id+'" type="button">' +
         '<span class="dot" style="background:'+typeColor(o.type)+'"></span>' +
         '<span class="list-row-main"><span class="list-row-title">'+escapeHtml(o.name)+'</span><span class="list-row-sub">'+escapeHtml(typeTitle(o.type))+'</span></span>' +
+        '<span class="list-row-meta"><span class="list-row-count" title="Участвует в '+mc+' '+pluralRu(mc,'механизме','механизмах','механизмах')+'">'+mc+'</span></span>' +
       '</button>';
     }).join('') : '<p class="ref-empty">Ничего не найдено.</p>';
   } else {
     container.innerHTML = mechs.list.length ? mechs.list.map(function(m){
+      var info = mechanismParticipantInfo(m);
+      var warn = !info.hasSource && !info.hasTarget ? 'Нет источника и приёмника' : (!info.hasSource ? 'Нет источника' : (!info.hasTarget ? 'Нет приёмника' : ''));
+      var noSummary = !(m.summary||'').trim();
       return '<button class="list-row" data-kind="mechanism" data-id="'+m.id+'" type="button">' +
         '<span class="dot dot-diamond" style="background:'+categoryAccent(m.category)+'"></span>' +
-        '<span class="list-row-main"><span class="list-row-title">'+escapeHtml(m.title)+'</span><span class="list-row-sub">'+escapeHtml(categoryTitle(m.category))+'</span></span>' +
+        '<span class="list-row-main"><span class="list-row-title">'+escapeHtml(m.title)+'</span>' +
+          '<span class="list-row-sub"><span class="cat-badge" style="--cat:'+categoryAccent(m.category)+'">'+escapeHtml(categoryTitle(m.category))+'</span>' +
+          (noSummary ? '<span class="no-summary" title="Краткое описание пустое — подсказка на графе не покажется">без описания</span>' : '') +
+        '</span></span>' +
+        '<span class="list-row-meta">' +
+          (warn ? '<span class="list-row-warn" title="'+warn+'" aria-label="'+warn+'">⚠</span>' : '') +
+          '<span class="list-row-count" title="Участников: '+info.count+'">'+info.count+'</span>' +
+        '</span>' +
       '</button>';
     }).join('') : '<p class="ref-empty">Ничего не найдено.</p>';
   }
@@ -2578,8 +2635,51 @@ function attachHandlers(){
     pinnedMechanismId = m.id; pinnedNodeId=null; pinnedEdgeKey=null;
     renderMechanismPanel(m); syncSidebarActive(); requestRender();
   }
+  /* «+ Объект» / «+ Механизм»: один клик — сущность создана, карточка справа открыта,
+     курсор в поле названия. Поиск и фильтры вкладки сбрасываются, чтобы новая строка
+     была видна в списке. */
+  function resetSideFilters(){
+    sideSearch[sideTab] = '';
+    document.getElementById('search-input').value = '';
+    if (sideTab === 'objects'){
+      document.getElementById('filter-type').value = '';
+      document.getElementById('filter-tag').value = '';
+    } else {
+      document.getElementById('filter-mechcategory').value = '';
+    }
+  }
+  function focusNameField(selector){
+    var el = document.querySelector(selector);
+    if (el){ el.focus(); el.select(); }
+  }
   document.getElementById('btn-side-add').addEventListener('click', function(){
-    if (sideTab === 'objects') addObjectFromUI(); else addMechanismFromUI();
+    resetSideFilters();
+    if (sideTab === 'objects'){
+      var obj = createObject({name:'Новый объект'});
+      pinnedNodeId='obj:'+obj.id; pinnedMechanismId=null; pinnedEdgeKey=null;
+      renderObjectPanel(obj); syncSidebarActive(); requestRender();
+      focusNameField('#panel-object #f-name');
+    } else {
+      addMechanismFromUI();
+      focusNameField('#panel-mechanism #f-title');
+    }
+  });
+
+  /* Наведение на строку списка подсвечивает узел на графе, как наведение на сам узел.
+     Делегирование на контейнер — строки перерисовываются, а контейнер остаётся. */
+  var sideList = document.getElementById('object-list');
+  sideList.addEventListener('mouseover', function(e){
+    var row = e.target.closest('.list-row');
+    var next = row ? {kind:row.getAttribute('data-kind'), id:row.getAttribute('data-id')} : null;
+    var same = (next && listHover && next.kind === listHover.kind && next.id === listHover.id) || (!next && !listHover);
+    if (same) return;
+    listHover = next;
+    requestRender();
+  });
+  sideList.addEventListener('mouseleave', function(){
+    if (!listHover) return;
+    listHover = null;
+    requestRender();
   });
   document.getElementById('btn-add-object-empty').addEventListener('click', addObjectFromUI);
 
@@ -2594,10 +2694,9 @@ function attachHandlers(){
       document.getElementById('side-filters-mechanisms').hidden = isObj;
       var search = document.getElementById('search-input');
       search.value = sideSearch[sideTab];
-      search.placeholder = isObj ? 'Название или тег' : 'Название механизма';
-      var add = document.getElementById('btn-side-add');
-      add.title = isObj ? 'Добавить объект' : 'Добавить механизм';
-      add.setAttribute('aria-label', add.title);
+      search.placeholder = isObj ? 'Поиск объектов…' : 'Поиск механизмов…';
+      document.getElementById('btn-side-add').textContent = isObj ? '+ Объект' : '+ Механизм';
+      document.getElementById('side-tab-title').textContent = isObj ? 'Объекты' : 'Механизмы';
       renderSidebar();
     });
   });
