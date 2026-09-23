@@ -131,13 +131,55 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .app-title{ font-size:var(--fs-title); font-weight:700; margin:0; display:flex; align-items:center; gap:8px; }
 .app-logo{ width:22px; height:22px; flex:none; }
 .app-version{ font-size:var(--fs-caption); font-weight:500; color:var(--text-faint); }
-.mode-toggle, .view-toggle{ display:flex; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
-#graph-mode-toggle[hidden]{ display:none; }
+.view-toggle{ display:flex; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
 .mode-btn{ background:transparent; border:none; color:var(--text-muted); font-size:var(--fs-base); padding:7px 14px; cursor:pointer; }
 .mode-btn + .mode-btn{ border-left:1px solid var(--border); }
 .mode-btn.active{ background:var(--bg-selected); color:var(--text); }
 .mode-btn:hover:not(.active){ background:var(--bg-elevated); color:var(--text); }
 .topbar-right{ display:flex; gap:8px; align-items:center; }
+.topbar-group{ display:flex; gap:14px; align-items:center; }
+
+/* Переключатель-чекбокс «Показывать механизмы» */
+.switch{ display:flex; align-items:center; gap:8px; font-size:var(--fs-base); color:var(--text-muted); cursor:pointer; user-select:none; }
+.switch[hidden]{ display:none; }
+.switch input{ position:absolute; opacity:0; width:1px; height:1px; }
+.switch-track{ width:30px; height:17px; border-radius:9px; background:var(--bg-elevated); border:1px solid var(--border); position:relative; flex:none; }
+.switch-track::after{ content:''; position:absolute; top:2px; left:2px; width:11px; height:11px; border-radius:50%; background:var(--text-faint); }
+.switch input:checked + .switch-track{ background:var(--bg-selected); border-color:var(--text-muted); }
+.switch input:checked + .switch-track::after{ left:15px; background:var(--text); }
+.switch input:checked ~ .switch-label{ color:var(--text); }
+.switch input:focus-visible + .switch-track{ outline:2px solid var(--accent); outline-offset:1px; }
+
+/* Глобальный поиск */
+.global-search{ position:relative; flex:1; max-width:440px; min-width:200px; }
+.global-search-input{ width:100%; padding:7px 10px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); font-size:var(--fs-base); }
+.global-search-kbd{ position:absolute; right:8px; top:50%; transform:translateY(-50%); font-family:var(--mono); font-size:var(--fs-caption); color:var(--text-faint); pointer-events:none; }
+.global-search-input:focus + .global-search-kbd{ display:none; }
+.global-search-dropdown{ position:absolute; top:100%; left:0; right:0; z-index:40; margin-top:4px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); max-height:380px; overflow-y:auto; padding:4px 0; }
+.global-search-dropdown[hidden]{ display:none; }
+.gs-item{ display:flex; align-items:center; gap:9px; width:100%; padding:7px 10px; background:transparent; border:none; text-align:left; cursor:pointer; }
+.gs-item.active{ background:var(--bg-selected); }
+.gs-item .dot{ width:9px; height:9px; border-radius:50%; flex:none; }
+.gs-item .dot-diamond{ border-radius:2px; transform:rotate(45deg); }
+.gs-item-main{ display:flex; flex-direction:column; min-width:0; }
+.gs-item-title{ font-size:var(--fs-base); color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.gs-item-sub{ font-size:var(--fs-caption); color:var(--text-muted); }
+.gs-empty{ padding:8px 10px; font-size:var(--fs-caption); color:var(--text-faint); margin:0; }
+
+/* Меню «⋯» */
+.menu-wrap{ position:relative; }
+.menu-btn{ width:34px; padding:6px 0; text-align:center; font-size:var(--fs-icon); line-height:1; }
+.menu{ position:absolute; top:100%; right:0; z-index:40; margin-top:4px; min-width:200px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); padding:4px 0; }
+.menu[hidden]{ display:none; }
+.menu-item{ display:block; width:100%; padding:8px 12px; background:transparent; border:none; text-align:left; font-size:var(--fs-base); color:var(--text); cursor:pointer; }
+.menu-item:hover, .menu-item:focus-visible{ background:var(--bg-selected); outline:none; }
+.menu-item-danger{ color:var(--danger); }
+.menu-item-danger:hover, .menu-item-danger:focus-visible{ background:var(--danger-soft); }
+.menu-sep{ border-top:1px solid var(--border-soft); margin:4px 0; }
+
+.confirm-note{ margin-top:8px !important; font-size:var(--fs-caption) !important; color:var(--text-faint) !important; }
+.confirm-input{ margin-top:12px; }
+.btn:disabled{ opacity:0.45; cursor:not-allowed; filter:none; }
 
 .btn{
   font-size:var(--fs-base); padding:7px 12px; border-radius:var(--radius);
@@ -288,6 +330,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .lvr-status.status-deprecated{ background:var(--danger-soft); color:var(--danger); }
 .modal-backdrop{ position:fixed; inset:0; background:var(--overlay); display:flex; align-items:center; justify-content:center; z-index:50; }
 .modal-box{ width:360px; max-width:92vw; background:var(--bg-panel); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
+.modal-box-md{ width:470px; }
 .modal-box-lg{ width:600px; max-height:88vh; display:flex; flex-direction:column; }
 .modal-box-lg .modal-body{ overflow-y:auto; flex:1; }
 .modal-header{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--border-soft); }
@@ -295,7 +338,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .modal-close{ background:none; border:none; color:var(--text-muted); font-size:var(--fs-icon-lg); cursor:pointer; line-height:1; }
 .modal-body{ padding:16px; }
 .modal-body p{ margin:0; font-size:var(--fs-base); color:var(--text-muted); }
-.modal-footer{ display:flex; justify-content:flex-end; gap:8px; padding:12px 16px; border-top:1px solid var(--border-soft); }
+.modal-footer{ display:flex; justify-content:flex-end; flex-wrap:wrap; gap:8px; padding:12px 16px; border-top:1px solid var(--border-soft); }
 .settings-meta{ margin-top:6px; font-size:var(--fs-caption); color:var(--text-faint); }
 .logo-line{ fill:none; stroke:var(--accent); }
 .logo-n1{ fill:var(--logo-1); } .logo-n2{ fill:var(--logo-2); } .logo-n3{ fill:var(--logo-3); } .logo-n4{ fill:var(--logo-4); }
@@ -310,21 +353,35 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         Nodus <span class="app-version">v.0.3</span>
       </h1>
     </div>
-    <div class="view-toggle" role="tablist">
-      <button class="mode-btn active" data-view="graph" type="button">Граф</button>
-      <button class="mode-btn" data-view="list" type="button">Список</button>
+    <div class="topbar-group">
+      <div class="view-toggle" role="tablist">
+        <button class="mode-btn active" data-view="graph" type="button">Граф</button>
+        <button class="mode-btn" data-view="list" type="button">Список</button>
+      </div>
+      <label class="switch" id="graph-mode-toggle">
+        <input type="checkbox" id="toggle-mechanisms">
+        <span class="switch-track" aria-hidden="true"></span>
+        <span class="switch-label">Показывать механизмы</span>
+      </label>
     </div>
-    <div class="mode-toggle" id="graph-mode-toggle" role="tablist">
-      <button class="mode-btn active" data-mode="collapsed" type="button">Объекты</button>
-      <button class="mode-btn" data-mode="full" type="button">Объекты и механизмы</button>
+    <div class="global-search" id="global-search">
+      <input type="text" id="global-search-input" class="global-search-input" placeholder="Поиск объектов и механизмов" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="global-search-dropdown">
+      <span class="global-search-kbd" id="global-search-kbd">Ctrl+K</span>
+      <div class="global-search-dropdown" id="global-search-dropdown" role="listbox" hidden></div>
     </div>
     <div class="topbar-right">
       <button class="btn" id="btn-settings" type="button">Настройки</button>
-      <button class="btn" id="btn-relayout" type="button">Разложить заново</button>
-      <button class="btn" id="btn-export" type="button">Экспорт</button>
-      <button class="btn" id="btn-import" type="button">Импорт</button>
+      <div class="menu-wrap">
+        <button class="btn menu-btn" id="btn-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Ещё действия" title="Ещё действия">⋯</button>
+        <div class="menu" id="more-menu" role="menu" hidden>
+          <button class="menu-item" id="btn-relayout" type="button" role="menuitem">Разложить заново</button>
+          <button class="menu-item" id="btn-export" type="button" role="menuitem">Экспорт</button>
+          <button class="menu-item" id="btn-import" type="button" role="menuitem">Импорт</button>
+          <div class="menu-sep" role="separator"></div>
+          <button class="menu-item menu-item-danger" id="btn-reset" type="button" role="menuitem">Очистить всё</button>
+        </div>
+      </div>
       <input type="file" id="file-import" accept="application/json" hidden>
-      <button class="btn btn-danger-ghost" id="btn-reset" type="button">Очистить всё</button>
     </div>
   </header>
   <div id="main">
@@ -2159,6 +2216,104 @@ function renderSidebar(){
   if (currentView === 'list') renderListView();
 }
 
+/* ===================== Глобальный поиск =====================
+   Подстрока в названии объекта или механизма, без учёта регистра. Выбор результата
+   на графе = клик по узлу (для механизма в режиме без механизмов — как клик по нему
+   в списке слева); в режиме «Список» — карточка во всплывающем окне. */
+var GLOBAL_SEARCH_LIMIT = 30;
+
+function globalSearchMatches(query){
+  var q = query.toLowerCase().trim();
+  if (!q) return [];
+  var res = [];
+  Object.keys(state.objects).forEach(function(id){
+    var o = state.objects[id];
+    var i = o.name.toLowerCase().indexOf(q);
+    if (i >= 0) res.push({kind:'obj', id:id, title:o.name, sub:typeTitle(o.type), color:typeColor(o.type), pos:i});
+  });
+  Object.keys(state.mechanisms).forEach(function(id){
+    var m = state.mechanisms[id];
+    var i = m.title.toLowerCase().indexOf(q);
+    if (i >= 0) res.push({kind:'mech', id:id, title:m.title, sub:'Механизм · ' + categoryTitle(m.category), color:categoryAccent(m.category), pos:i});
+  });
+  /* Совпадение с начала названия — выше. */
+  res.sort(function(a,b){ return (a.pos===0?0:1) - (b.pos===0?0:1) || a.title.localeCompare(b.title,'ru'); });
+  return res.slice(0, GLOBAL_SEARCH_LIMIT);
+}
+
+function selectEntity(kind, id){
+  if (currentView === 'list'){ openCardModal(kind, id); return; }
+  if (kind === 'obj'){
+    if (!state.objects[id]) return;
+    pinnedNodeId = 'obj:'+id; pinnedMechanismId = null; pinnedEdgeKey = null;
+    renderObjectPanel(state.objects[id]);
+  } else {
+    if (!state.mechanisms[id]) return;
+    pinnedMechanismId = id; pinnedNodeId = null; pinnedEdgeKey = null;
+    renderMechanismPanel(state.mechanisms[id]);
+  }
+  syncSidebarActive(); requestRender();
+}
+
+function bindGlobalSearch(){
+  var input = document.getElementById('global-search-input');
+  var dropdown = document.getElementById('global-search-dropdown');
+  var kbd = document.getElementById('global-search-kbd');
+  var isMac = /Mac|iPhone|iPad/.test(navigator.platform || '');
+  kbd.textContent = isMac ? '⌘K' : 'Ctrl+K';
+  var results = [], active = 0;
+
+  function setOpen(open){
+    dropdown.hidden = !open;
+    input.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  function highlight(){
+    dropdown.querySelectorAll('.gs-item').forEach(function(el, i){
+      el.classList.toggle('active', i === active);
+      if (i === active) el.scrollIntoView({block:'nearest'});
+    });
+  }
+  function choose(i){
+    var r = results[i];
+    if (!r) return;
+    setOpen(false);
+    input.blur();
+    selectEntity(r.kind, r.id);
+  }
+  function update(){
+    results = globalSearchMatches(input.value);
+    active = 0;
+    if (!input.value.trim()){ setOpen(false); return; }
+    dropdown.innerHTML = results.length ? results.map(function(r, i){
+      return '<button type="button" class="gs-item" role="option" data-i="'+i+'">' +
+        '<span class="dot' + (r.kind==='mech' ? ' dot-diamond' : '') + '" style="background:'+r.color+'"></span>' +
+        '<span class="gs-item-main"><span class="gs-item-title">'+escapeHtml(r.title)+'</span><span class="gs-item-sub">'+escapeHtml(r.sub)+'</span></span>' +
+      '</button>';
+    }).join('') : '<p class="gs-empty">Ничего не найдено</p>';
+    dropdown.querySelectorAll('.gs-item').forEach(function(el){
+      /* mousedown, чтобы выбор сработал раньше, чем поле потеряет фокус */
+      el.addEventListener('mousedown', function(e){ e.preventDefault(); choose(Number(el.getAttribute('data-i'))); });
+      el.addEventListener('mousemove', function(){ var i = Number(el.getAttribute('data-i')); if (i !== active){ active = i; highlight(); } });
+    });
+    highlight();
+    setOpen(true);
+  }
+  input.addEventListener('input', update);
+  input.addEventListener('focus', function(){ if (input.value.trim()) update(); });
+  input.addEventListener('blur', function(){ setOpen(false); });
+  input.addEventListener('keydown', function(e){
+    if (e.key === 'Escape'){
+      e.stopPropagation();
+      if (!dropdown.hidden) setOpen(false); else input.blur();
+      return;
+    }
+    if (dropdown.hidden) return;
+    if (e.key === 'ArrowDown'){ e.preventDefault(); if (results.length){ active = (active+1) % results.length; highlight(); } }
+    else if (e.key === 'ArrowUp'){ e.preventDefault(); if (results.length){ active = (active-1+results.length) % results.length; highlight(); } }
+    else if (e.key === 'Enter'){ e.preventDefault(); choose(active); }
+  });
+}
+
 function syncSidebarActive(){
   document.querySelectorAll('.list-row').forEach(function(btn){
     var isActive = (btn.getAttribute('data-kind')==='object' && pinnedNodeId==='obj:'+btn.getAttribute('data-id')) ||
@@ -2177,7 +2332,7 @@ function updateStats(){
 function openModal(opts){
   var root = document.getElementById('modal-root');
   root.innerHTML =
-    '<div class="modal-backdrop"><div class="modal-box" role="dialog" aria-modal="true">' +
+    '<div class="modal-backdrop"><div class="modal-box' + (opts.wide ? ' modal-box-md' : '') + '" role="dialog" aria-modal="true">' +
       '<div class="modal-header"><h2>'+escapeHtml(opts.title)+'</h2><button class="modal-close" type="button" aria-label="Закрыть">×</button></div>' +
       '<div class="modal-body">'+opts.bodyHTML+'</div>' +
       '<div class="modal-footer"></div>' +
@@ -2364,14 +2519,11 @@ function attachHandlers(){
   canvasEl.addEventListener('wheel', onWheel, {passive:false});
   window.addEventListener('resize', resizeCanvas);
 
-  document.querySelectorAll('#graph-mode-toggle .mode-btn').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      document.querySelectorAll('#graph-mode-toggle .mode-btn').forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
-      currentMode = btn.getAttribute('data-mode');
-      clearSelection();
-      syncGraphModel();
-    });
+  /* «Показывать механизмы»: включено = полный режим (объекты и механизмы). */
+  document.getElementById('toggle-mechanisms').addEventListener('change', function(ev){
+    currentMode = ev.target.checked ? 'full' : 'collapsed';
+    clearSelection();
+    syncGraphModel();
   });
 
   document.querySelectorAll('.view-toggle .mode-btn').forEach(function(btn){
@@ -2474,7 +2626,7 @@ function attachHandlers(){
     requestRender();
   });
 
-  document.getElementById('btn-export').addEventListener('click', function(){
+  function exportData(){
     var data = JSON.stringify({objects:state.objects, mechanisms:state.mechanisms}, null, 2);
     var blob = new Blob([data], {type:'application/json'});
     var url = URL.createObjectURL(blob);
@@ -2482,7 +2634,8 @@ function attachHandlers(){
     a.href = url; a.download = 'object-graph-' + new Date().toISOString().slice(0,10) + '.json';
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
-  });
+  }
+  document.getElementById('btn-export').addEventListener('click', exportData);
   document.getElementById('btn-import').addEventListener('click', function(){
     document.getElementById('file-import').click();
   });
@@ -2515,23 +2668,81 @@ function attachHandlers(){
     reader.readAsText(file);
   });
 
+  /* Очистка: подтверждение вводом слова, логика удаления прежняя. */
+  var RESET_CONFIRM_WORD = 'удалить';
   document.getElementById('btn-reset').addEventListener('click', function(){
+    var oc = Object.keys(state.objects).length, mc = Object.keys(state.mechanisms).length, ac = 0;
+    Object.keys(state.objects).forEach(function(id){ ac += (state.objects[id].attachments||[]).length; });
+    Object.keys(state.mechanisms).forEach(function(id){ ac += (state.mechanisms[id].attachments||[]).length; });
+    function confirmed(root){
+      var input = root.querySelector('#reset-confirm-input');
+      return !!input && input.value.trim().toLowerCase() === RESET_CONFIRM_WORD;
+    }
     openModal({
       title:'Очистить все данные?',
-      bodyHTML:'<p>Будут удалены все объекты и механизмы в этом браузере. Действие необратимо — при необходимости сначала сделайте экспорт.</p>',
+      wide:true,
+      bodyHTML:
+        '<p>Будет удалено ' + oc + ' ' + pluralRu(oc,'объект','объекта','объектов') + ', ' +
+          mc + ' ' + pluralRu(mc,'механизм','механизма','механизмов') + ' и ' +
+          ac + ' ' + pluralRu(ac,'вложение','вложения','вложений') + '. Действие необратимо.</p>' +
+        '<p class="confirm-note">Сами файлы вложений в подключённой папке останутся на диске.</p>' +
+        '<label class="field-label confirm-input" for="reset-confirm-input">Чтобы подтвердить, введите слово «' + RESET_CONFIRM_WORD + '»</label>' +
+        '<input type="text" class="field-input" id="reset-confirm-input" autocomplete="off">',
       footerButtons:[
         {label:'Отмена', onClick:function(){ return true; }},
-        {label:'Очистить', variant:'danger', onClick:function(){
+        {label:'Сначала сделать экспорт', onClick:function(){ exportData(); return false; }},
+        {label:'Удалить всё', variant:'danger', onClick:function(root){
+          if (!confirmed(root)) return false;
           state.objects = {}; state.mechanisms = {}; nodeById.clear();
           persist(); syncGraphModel(); renderSidebar(); updateStats(); clearSelection();
         }}
       ]
     });
+    var root = document.getElementById('modal-root');
+    var buttons = root.querySelectorAll('.modal-footer .btn');
+    var deleteBtn = buttons[buttons.length-1];
+    var input = root.querySelector('#reset-confirm-input');
+    deleteBtn.disabled = true;
+    input.addEventListener('input', function(){ deleteBtn.disabled = !confirmed(root); });
+    input.addEventListener('keydown', function(e){ if (e.key === 'Enter' && confirmed(root)) deleteBtn.click(); });
+    input.focus();
   });
 
+  /* Меню «⋯» */
+  var moreBtn = document.getElementById('btn-more');
+  var moreMenu = document.getElementById('more-menu');
+  function setMoreMenuOpen(open){
+    moreMenu.hidden = !open;
+    moreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open){ var first = moreMenu.querySelector('.menu-item'); if (first) first.focus(); }
+  }
+  moreBtn.addEventListener('click', function(){ setMoreMenuOpen(moreMenu.hidden); });
+  moreMenu.querySelectorAll('.menu-item').forEach(function(item){
+    item.addEventListener('click', function(){ setMoreMenuOpen(false); });
+  });
+  moreMenu.addEventListener('keydown', function(e){
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault();
+    var items = Array.prototype.slice.call(moreMenu.querySelectorAll('.menu-item'));
+    var i = items.indexOf(document.activeElement);
+    items[(i + (e.key==='ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
+  });
+  document.addEventListener('mousedown', function(e){
+    if (!moreMenu.hidden && !moreMenu.parentNode.contains(e.target)) setMoreMenuOpen(false);
+  });
+
+  bindGlobalSearch();
+
   window.addEventListener('keydown', function(e){
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === 'k' || e.key === 'K' || e.code === 'KeyK')){
+      e.preventDefault();
+      var gs = document.getElementById('global-search-input');
+      gs.focus(); gs.select();
+      return;
+    }
     if (e.key === 'Escape'){
-      if (!document.getElementById('list-filter-type-dropdown').hidden) setListTypeDropdownOpen(false);
+      if (!document.getElementById('more-menu').hidden){ document.getElementById('more-menu').hidden = true; document.getElementById('btn-more').setAttribute('aria-expanded','false'); document.getElementById('btn-more').focus(); }
+      else if (!document.getElementById('list-filter-type-dropdown').hidden) setListTypeDropdownOpen(false);
       else if (document.getElementById('modal-root').innerHTML) closeModal();
       else clearSelection();
     }
