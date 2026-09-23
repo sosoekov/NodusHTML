@@ -178,10 +178,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .list-view[hidden]{ display:none; }
 .list-view-toolbar{ display:flex; align-items:center; gap:10px; padding:14px 20px; border-bottom:1px solid var(--border); background:var(--bg-panel); flex-wrap:wrap; flex:none; }
 .list-view-toolbar .search-input{ flex:1; min-width:220px; }
-.list-tabs{ display:flex; gap:4px; flex:none; }
-.list-tab{ background:transparent; border:1px solid var(--border); color:var(--text-muted); font-size:12.5px; padding:7px 12px; border-radius:var(--radius); cursor:pointer; white-space:nowrap; }
-.list-tab.active{ background:var(--accent-soft); color:var(--accent); border-color:var(--accent); }
-.list-tab:hover:not(.active){ border-color:var(--text-faint); }
+.multi-select{ position:relative; flex:none; }
+.multi-select-btn{ min-width:170px; max-width:260px; padding:7px 26px 7px 10px; text-align:left; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:relative; }
+.multi-select-btn::after{ content:''; position:absolute; right:10px; top:50%; width:6px; height:6px; margin-top:-5px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(45deg); }
+.multi-select-btn.has-value{ color:var(--accent); border-color:var(--accent); }
+.multi-select-dropdown{ position:absolute; top:100%; right:0; z-index:20; min-width:270px; margin-top:4px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); max-height:360px; overflow-y:auto; padding:4px 0; }
+.multi-select-item{ display:flex; align-items:center; gap:8px; padding:6px 10px; cursor:pointer; font-size:12.5px; color:var(--text); }
+.multi-select-item:hover{ background:var(--bg-panel); }
+.multi-select-item input{ margin:0; flex:none; accent-color:var(--accent); }
+.multi-select-item .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+.multi-select-item .dot-diamond{ border-radius:2px; transform:rotate(45deg); }
+.multi-select-item-text{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.multi-select-item-count{ font-size:11px; color:var(--text-faint); flex:none; }
+.multi-select-sep{ border-top:1px solid var(--border-soft); margin:4px 0; }
+.multi-select-reset{ display:block; width:100%; padding:6px 10px; background:transparent; border:none; text-align:left; font-size:12px; color:var(--accent); cursor:pointer; }
+.multi-select-reset:disabled{ color:var(--text-faint); cursor:default; }
 .list-view-body{ flex:1; overflow-y:auto; padding:6px 20px 30px; min-height:0; }
 .list-view-section-title{ font-size:12px; color:var(--text-faint); margin:18px 0 8px; }
 .list-view-group-title{ font-size:11px; color:var(--text-faint); margin:14px 0 4px; padding-left:2px; }
@@ -291,17 +302,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   <div id="list-view" class="list-view" hidden>
     <div class="list-view-toolbar">
       <input type="text" id="list-search" class="search-input" placeholder="Имя, часть составного имени или слово из описания…">
-      <div class="list-tabs" role="tablist">
-        <button class="list-tab active" data-scope="all" type="button">Всё <span id="list-count-all">0</span></button>
-        <button class="list-tab" data-scope="objects" type="button">Объекты <span id="list-count-objects">0</span></button>
-        <button class="list-tab" data-scope="mechanisms" type="button">Механизмы <span id="list-count-mechanisms">0</span></button>
+      <div class="multi-select" id="list-filter-type">
+        <button class="select-sm multi-select-btn" id="list-filter-type-btn" type="button" aria-haspopup="true" aria-expanded="false">Все типы</button>
+        <div class="multi-select-dropdown" id="list-filter-type-dropdown" hidden></div>
       </div>
-      <select id="list-filter-status" class="select-sm">
-        <option value="">Любой статус</option>
-        <option value="stub">Заглушка</option>
-        <option value="active">Активен</option>
-        <option value="deprecated">Устарел</option>
-      </select>
       <button class="btn btn-accent" id="btn-list-new" type="button">Новый</button>
     </div>
     <div class="list-view-body" id="list-view-body"></div>
@@ -1548,7 +1552,10 @@ function refreshTagFilterOptions(){
 
 /* ===================== Вид «Список» ===================== */
 
-var listViewScope = 'all';
+/* Отбор списка по типу: коды из OBJECT_TYPES плюс LIST_MECH_TYPE для механизмов.
+   Пустое множество — показываем всё. */
+var LIST_MECH_TYPE = '__mechanism';
+var listTypeFilter = {};
 
 function objectRowHTML(o){
   return '<button class="list-view-row" data-kind="object" data-id="'+o.id+'" type="button">' +
@@ -1593,33 +1600,95 @@ function renderGroupedMechanismRows(list){
   return html;
 }
 
-function renderListView(){
-  var q = (document.getElementById('list-search').value || '').toLowerCase().trim();
-  var statusFilter = document.getElementById('list-filter-status').value;
+function listFilterActive(){ return Object.keys(listTypeFilter).length > 0; }
 
-  var allObjects = Object.keys(state.objects).map(function(id){return state.objects[id];})
+function listSearchedItems(){
+  var q = (document.getElementById('list-search').value || '').toLowerCase().trim();
+  var objects = Object.keys(state.objects).map(function(id){return state.objects[id];})
     .filter(function(o){
       return !q || o.name.toLowerCase().indexOf(q)>=0 || (o.fullName||'').toLowerCase().indexOf(q)>=0 ||
         (o.tags||[]).join(' ').toLowerCase().indexOf(q)>=0 || (o.description||'').toLowerCase().indexOf(q)>=0;
-    })
-    .filter(function(o){ return !statusFilter || o.status===statusFilter; });
-
-  var allMechanisms = Object.keys(state.mechanisms).map(function(id){return state.mechanisms[id];})
+    });
+  var mechanisms = Object.keys(state.mechanisms).map(function(id){return state.mechanisms[id];})
     .filter(function(m){
       return !q || m.title.toLowerCase().indexOf(q)>=0 || (m.summary||'').toLowerCase().indexOf(q)>=0 || (m.body||'').toLowerCase().indexOf(q)>=0;
-    })
-    .filter(function(m){ return !statusFilter || m.status===statusFilter; });
+    });
+  return {objects:objects, mechanisms:mechanisms};
+}
 
-  document.getElementById('list-count-all').textContent = allObjects.length + allMechanisms.length;
-  document.getElementById('list-count-objects').textContent = allObjects.length;
-  document.getElementById('list-count-mechanisms').textContent = allMechanisms.length;
+function renderListTypeFilter(found){
+  var counts = {};
+  found.objects.forEach(function(o){ counts[o.type] = (counts[o.type]||0) + 1; });
+  counts[LIST_MECH_TYPE] = found.mechanisms.length;
+
+  function itemHTML(code, title, dotHTML){
+    return '<label class="multi-select-item">' +
+      '<input type="checkbox" value="'+code+'"'+(listTypeFilter[code]?' checked':'')+'>' +
+      dotHTML +
+      '<span class="multi-select-item-text">'+escapeHtml(title)+'</span>' +
+      '<span class="multi-select-item-count">'+(counts[code]||0)+'</span>' +
+    '</label>';
+  }
+  var html = OBJECT_TYPES.map(function(t){
+    return itemHTML(t.code, t.title, '<span class="dot" style="background:'+typeColor(t.code)+'"></span>');
+  }).join('');
+  html += '<div class="multi-select-sep"></div>';
+  html += itemHTML(LIST_MECH_TYPE, 'МЕХАНИЗМ', '<span class="dot dot-diamond" style="background:var(--text-muted)"></span>');
+  html += '<div class="multi-select-sep"></div>';
+  html += '<button type="button" class="multi-select-reset"'+(listFilterActive()?'':' disabled')+'>Сбросить отбор</button>';
+
+  var dropdown = document.getElementById('list-filter-type-dropdown');
+  var scrollTop = dropdown.scrollTop;
+  var focusedCode = document.activeElement && dropdown.contains(document.activeElement) ? document.activeElement.value : null;
+  dropdown.innerHTML = html;
+  dropdown.scrollTop = scrollTop;
+  if (focusedCode){
+    var toFocus = dropdown.querySelector('input[value="'+focusedCode+'"]');
+    if (toFocus) toFocus.focus();
+  }
+  dropdown.querySelectorAll('input[type=checkbox]').forEach(function(cb){
+    cb.addEventListener('change', function(){
+      if (cb.checked) listTypeFilter[cb.value] = true;
+      else delete listTypeFilter[cb.value];
+      renderListView();
+    });
+  });
+  dropdown.querySelector('.multi-select-reset').addEventListener('click', function(){
+    listTypeFilter = {};
+    renderListView();
+  });
+
+  var btn = document.getElementById('list-filter-type-btn');
+  var selected = Object.keys(listTypeFilter);
+  var label = 'Все типы';
+  if (selected.length === 1) label = selected[0] === LIST_MECH_TYPE ? 'МЕХАНИЗМ' : typeTitle(selected[0]);
+  else if (selected.length > 1) label = 'Типов: ' + selected.length;
+  btn.textContent = label;
+  btn.title = selected.map(function(c){ return c === LIST_MECH_TYPE ? 'МЕХАНИЗМ' : typeTitle(c); }).join(', ');
+  btn.classList.toggle('has-value', selected.length > 0);
+}
+
+function setListTypeDropdownOpen(open){
+  document.getElementById('list-filter-type-dropdown').hidden = !open;
+  document.getElementById('list-filter-type-btn').setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function renderListView(){
+  var found = listSearchedItems();
+  renderListTypeFilter(found);
+
+  var filterOn = listFilterActive();
+  var showObjects = !filterOn || Object.keys(listTypeFilter).some(function(c){ return c !== LIST_MECH_TYPE; });
+  var showMechanisms = !filterOn || !!listTypeFilter[LIST_MECH_TYPE];
+  var allObjects = found.objects.filter(function(o){ return !filterOn || listTypeFilter[o.type]; });
+  var allMechanisms = found.mechanisms;
 
   var html = '';
-  if (listViewScope === 'all' || listViewScope === 'objects'){
+  if (showObjects){
     html += '<p class="list-view-section-title">Объекты · найдено: '+allObjects.length+'</p>';
     html += allObjects.length ? renderGroupedObjectRows(allObjects) : '<p class="ref-empty">Ничего не найдено.</p>';
   }
-  if (listViewScope === 'all' || listViewScope === 'mechanisms'){
+  if (showMechanisms){
     html += '<p class="list-view-section-title">Механизмы · найдено: '+allMechanisms.length+'</p>';
     html += allMechanisms.length ? renderGroupedMechanismRows(allMechanisms) : '<p class="ref-empty">Ничего не найдено.</p>';
   }
@@ -1919,14 +1988,11 @@ function attachHandlers(){
   });
 
   document.getElementById('list-search').addEventListener('input', renderListView);
-  document.getElementById('list-filter-status').addEventListener('change', renderListView);
-  document.querySelectorAll('.list-tab').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      document.querySelectorAll('.list-tab').forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
-      listViewScope = btn.getAttribute('data-scope');
-      renderListView();
-    });
+  document.getElementById('list-filter-type-btn').addEventListener('click', function(){
+    setListTypeDropdownOpen(document.getElementById('list-filter-type-dropdown').hidden);
+  });
+  document.addEventListener('mousedown', function(e){
+    if (!document.getElementById('list-filter-type').contains(e.target)) setListTypeDropdownOpen(false);
   });
   document.getElementById('btn-list-new').addEventListener('click', function(){
     openModal({
@@ -2048,7 +2114,8 @@ function attachHandlers(){
 
   window.addEventListener('keydown', function(e){
     if (e.key === 'Escape'){
-      if (document.getElementById('modal-root').innerHTML) closeModal();
+      if (!document.getElementById('list-filter-type-dropdown').hidden) setListTypeDropdownOpen(false);
+      else if (document.getElementById('modal-root').innerHTML) closeModal();
       else clearSelection();
     }
   });
