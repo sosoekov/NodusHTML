@@ -151,7 +151,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
 /* Переключатель-чекбокс «Показывать механизмы» */
 .switch{ display:flex; align-items:center; gap:8px; font-size:var(--fs-base); color:var(--text-muted); cursor:pointer; user-select:none; }
-.switch[hidden]{ display:none; }
+/* Скрытый переключатель держит место — чтобы шапка не «ехала» при смене Граф/Список. */
+.switch.is-hidden{ visibility:hidden; }
 .switch input{ position:absolute; opacity:0; width:1px; height:1px; }
 .switch-track{ width:30px; height:17px; border-radius:9px; background:var(--bg-elevated); border:1px solid var(--border); position:relative; flex:none; }
 .switch-track::after{ content:''; position:absolute; top:2px; left:2px; width:11px; height:11px; border-radius:50%; background:var(--text-faint); }
@@ -215,6 +216,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .filters-row{ display:flex; gap:6px; }
 .filters-row .select-sm{ flex:1; min-width:0; }
 .filters-row[hidden]{ display:none; }
+.filters-row .side-type-filter{ flex:1; min-width:0; }
+.side-type-filter .multi-select-btn{ min-width:0; width:100%; }
+.side-type-filter .multi-select-dropdown{ left:0; right:auto; min-width:0; width:calc(200% + 6px); } /* ширина — вся строка фильтров */
+.multi-select-item .type-icon{ color:var(--c); }
 .select-sm{ padding:6px 8px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); color:var(--text-muted); font-size:var(--fs-caption); }
 .side-tabs{ display:flex; border-bottom:1px solid var(--border-soft); flex:none; }
 .side-tab{ flex:1 1 0; min-width:0; background:transparent; border:none; border-bottom:2px solid transparent; padding:11px 4px 9px; color:var(--text-muted); font-size:var(--fs-base); cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -251,6 +256,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .side-group-count{ font-size:var(--fs-caption); color:var(--text-muted); font-variant-numeric:tabular-nums; }
 .side-group-items[hidden]{ display:none; }
 .side-group-items .list-row{ padding-left:27px; }
+.deprecated-tag{ display:inline-block; margin-left:6px; padding:0 5px; border-radius:3px; font-size:var(--fs-caption); line-height:1.5; font-style:normal; font-weight:400; color:var(--danger); background:var(--danger-soft); vertical-align:1px; }
+.is-deprecated .pcard-name, .is-deprecated > .ref-item-main .ref-item-title{ text-decoration:line-through; text-decoration-color:var(--text-faint); }
 .cat-badge{ font-size:var(--fs-caption); line-height:1.4; padding:0 6px; border-radius:3px; color:var(--cat); background:color-mix(in srgb, var(--cat) var(--badge-bg-mix), transparent); }
 .no-summary{ font-size:var(--fs-caption); color:var(--text-faint); font-style:italic; }
 .ref-empty{ font-size:var(--fs-caption); color:var(--text-faint); padding:8px 14px; margin:0; }
@@ -262,10 +269,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .empty-state{ position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; gap:12px; text-align:center; padding:20px; }
 .empty-title{ font-size:var(--fs-lg); margin:0; }
 .empty-hint{ font-size:var(--fs-base); color:var(--text-muted); margin:0; max-width:320px; }
-.canvas-hint{ position:absolute; bottom:12px; left:16px; font-size:var(--fs-caption); color:var(--text-muted); pointer-events:none; }
 
 /* Легенда (левый нижний угол холста) */
-.graph-legend{ position:absolute; left:16px; bottom:36px; max-width:260px; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); font-size:var(--fs-caption); }
+.graph-legend{ position:absolute; left:16px; bottom:14px; max-width:260px; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); font-size:var(--fs-caption); }
 .graph-legend[hidden]{ display:none; }
 .legend-toggle{ display:flex; align-items:center; gap:6px; width:100%; padding:6px 10px; background:transparent; border:none; color:var(--text-muted); font-size:var(--fs-caption); cursor:pointer; text-align:left; }
 .legend-toggle::after{ content:''; width:6px; height:6px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(45deg); margin-left:auto; margin-top:-3px; }
@@ -473,6 +479,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <span class="switch-track" aria-hidden="true"></span>
         <span class="switch-label">Показывать механизмы</span>
       </label>
+      <label class="switch" id="deprecated-toggle">
+        <input type="checkbox" id="toggle-deprecated">
+        <span class="switch-track" aria-hidden="true"></span>
+        <span class="switch-label">Показывать устаревшие</span>
+      </label>
     </div>
     <div class="global-search" id="global-search">
       <input type="text" id="global-search-input" class="global-search-input" placeholder="Поиск объектов и механизмов" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="global-search-dropdown">
@@ -508,7 +519,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       </div>
       <div class="sidebar-section filters">
         <div class="filters-row" id="side-filters-objects">
-          <select id="filter-type" class="select-sm"><option value="">Все типы</option></select>
+          <div class="multi-select side-type-filter" id="side-filter-type">
+            <button class="select-sm multi-select-btn" id="side-filter-type-btn" type="button" aria-haspopup="true" aria-expanded="false">Все типы</button>
+            <div class="multi-select-dropdown" id="side-filter-type-dropdown" hidden></div>
+          </div>
           <select id="filter-tag" class="select-sm"><option value="">Все теги</option></select>
         </div>
         <div class="filters-row" id="side-filters-mechanisms" hidden>
@@ -527,7 +541,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <p class="empty-hint">Данные хранятся только в этом браузере. Добавьте первый объект, чтобы увидеть граф связей.</p>
         <button class="btn btn-accent" id="btn-add-object-empty" type="button">Добавить объект</button>
       </div>
-      <div class="canvas-hint">Наведите — подсветит связи. Клик — закрепит подсветку и откроет детали. Клик по пустому месту — снимет.</div>
       <div class="graph-legend" id="graph-legend" hidden>
         <button class="legend-toggle" id="legend-toggle" type="button" aria-expanded="true" aria-controls="legend-body">Легенда</button>
         <div class="legend-body" id="legend-body"></div>
@@ -747,8 +760,16 @@ function typeShort(code){ var t = typeInfo(code); return t ? t.short : ''; }
 function categoryInfo(code){ return MECH_CATEGORIES.filter(function(x){return x.code===code;})[0] || null; }
 function categoryTitle(code){ var c = categoryInfo(code); return c ? c.title : UNKNOWN_CATEGORY_TITLE; }
 function roleInfo(code){ return PARTICIPANT_ROLES.filter(function(x){return x.code===code;})[0] || {code:code, title:code, direction:'neutral'}; }
-function objectStatusTitle(s){ return s==='stub' ? 'Заглушка' : (s==='deprecated' ? 'Устарел' : 'Активен'); }
-function mechanismStatusTitle(s){ return s==='draft' ? 'Черновик' : (s==='deprecated' ? 'Устарел' : 'Активен'); }
+/* Коды статусов в данных прежние (stub/draft, active, deprecated) — меняются только названия. */
+var STATUS_TITLES = { dev:'В разработке', prod:'В проме', deprecated:'Устарел' };
+/* «Показывать устаревшие» — одна опция для списков, «Списка» и графа; хранится в браузере. */
+var SHOW_DEPRECATED_KEY = 'nodusShowDeprecated';
+var showDeprecated = (function(){ try{ return localStorage.getItem(SHOW_DEPRECATED_KEY) !== '0'; }catch(e){ return true; } })();
+function isShown(entity){ return showDeprecated || !entity || entity.status !== 'deprecated'; }
+function deprecatedTagHTML(entity){ return entity && entity.status === 'deprecated' ? '<span class="deprecated-tag" title="Устарел">устарел</span>' : ''; }
+
+function objectStatusTitle(s){ return s==='stub' ? STATUS_TITLES.dev : (s==='deprecated' ? STATUS_TITLES.deprecated : STATUS_TITLES.prod); }
+function mechanismStatusTitle(s){ return s==='draft' ? STATUS_TITLES.dev : (s==='deprecated' ? STATUS_TITLES.deprecated : STATUS_TITLES.prod); }
 
 function typeColor(code){ return THEME.types[code] || THEME.typeUnknown; }
 function categoryAccent(code){ return THEME.cats[code] || THEME.catUnknown; }
@@ -1134,17 +1155,18 @@ function buildGraph(mode){
 
   Object.keys(state.objects).forEach(function(id){
     var o = state.objects[id];
+    if (!isShown(o)) return;
     nodes.push({id:'obj:'+id, refId:id, kind:'object', type:o.type, label:o.name, status:o.status, fx:o.fx, fy:o.fy});
   });
 
-  var mechIds = Object.keys(state.mechanisms);
+  var mechIds = Object.keys(state.mechanisms).filter(function(mid){ return isShown(state.mechanisms[mid]); });
 
   if (mode === 'full'){
     mechIds.forEach(function(mid){
       var m = state.mechanisms[mid];
       nodes.push({id:'mech:'+m.id, refId:m.id, kind:'mechanism', category:m.category, label:m.title, status:m.status, fx:m.fx, fy:m.fy});
       m.participants.forEach(function(p){
-        if (!p.objectId || !state.objects[p.objectId]) return;
+        if (!p.objectId || !state.objects[p.objectId] || !isShown(state.objects[p.objectId])) return;
         var role = roleInfo(p.role);
         var from, to, directed;
         if (role.direction === 'source'){ from='obj:'+p.objectId; to='mech:'+m.id; directed=true; }
@@ -1156,7 +1178,7 @@ function buildGraph(mode){
   } else {
     mechIds.forEach(function(mid){
       var m = state.mechanisms[mid];
-      var validParts = m.participants.filter(function(p){ return p.objectId && state.objects[p.objectId]; });
+      var validParts = m.participants.filter(function(p){ return p.objectId && state.objects[p.objectId] && isShown(state.objects[p.objectId]); });
       var byDir = {source:[], target:[], neutral:[]};
       validParts.forEach(function(p){ byDir[roleInfo(p.role).direction].push(p); });
       if (byDir.source.length && byDir.target.length){
@@ -2020,12 +2042,12 @@ function switchView(view){
   if (view === 'list'){
     main.hidden = true;
     listView.hidden = false;
-    graphModeToggle.hidden = true;
+    graphModeToggle.classList.add('is-hidden');
     renderListView();
   } else {
     listView.hidden = true;
     main.hidden = false;
-    graphModeToggle.hidden = false;
+    graphModeToggle.classList.remove('is-hidden');
     resizeCanvas();
   }
 }
@@ -2206,9 +2228,9 @@ function objectPanelTemplate(obj){
         OBJECT_TYPES.map(function(t){ return '<option value="'+t.code+'"'+(t.code===obj.type?' selected':'')+'>'+escapeHtml(t.title)+'</option>'; }).join('') +
       '</select></div>' +
       '<div class="field-group"><label class="field-label">Статус</label><select class="field-input" id="f-status">' +
-        '<option value="stub"'+(obj.status==='stub'?' selected':'')+'>Заглушка</option>' +
-        '<option value="active"'+(obj.status==='active'?' selected':'')+'>Активен</option>' +
-        '<option value="deprecated"'+(obj.status==='deprecated'?' selected':'')+'>Устарел</option>' +
+        '<option value="stub"'+(obj.status==='stub'?' selected':'')+'>'+STATUS_TITLES.dev+'</option>' +
+        '<option value="active"'+(obj.status==='active'?' selected':'')+'>'+STATUS_TITLES.prod+'</option>' +
+        '<option value="deprecated"'+(obj.status==='deprecated'?' selected':'')+'>'+STATUS_TITLES.deprecated+'</option>' +
       '</select></div>' +
     '</div>' +
     '<div class="field-group"><label class="field-label">Полное имя (как в конфигураторе)</label>' +
@@ -2288,17 +2310,17 @@ function renderObjectMechList(obj, panel){
     var sub = others.length
       ? others.map(function(id){
           var o = state.objects[id];
-          return '<button class="ref-item ref-item-obj" data-obj="'+id+'" type="button">' +
+          return '<button class="ref-item ref-item-obj' + (o.status === 'deprecated' ? ' is-deprecated' : '') + '" data-obj="'+id+'" type="button">' +
             '<span class="dot" style="background:'+typeColor(o.type)+'"></span>' +
-            '<span class="ref-item-main"><span class="ref-item-title">'+escapeHtml(o.name)+'</span>' +
+            '<span class="ref-item-main"><span class="ref-item-title">'+escapeHtml(o.name)+deprecatedTagHTML(o)+'</span>' +
             '<span class="ref-item-role">'+escapeHtml(typeTitle(o.type))+' · '+escapeHtml(parts.roles[id].join(', '))+'</span></span>' +
           '</button>';
         }).join('')
       : '<p class="ref-sub-empty">Других участников нет</p>';
     return '<div class="ref-group">' +
-      '<button class="ref-item" data-mech="'+m.id+'" type="button">' +
+      '<button class="ref-item' + (m.status === 'deprecated' ? ' is-deprecated' : '') + '" data-mech="'+m.id+'" type="button">' +
         '<span class="dot" style="background:'+categoryAccent(m.category)+'"></span>' +
-        '<span class="ref-item-main"><span class="ref-item-title">'+escapeHtml(m.title)+'</span><span class="ref-item-role">'+escapeHtml((parts.roles[obj.id]||[]).join(', '))+'</span></span>' +
+        '<span class="ref-item-main"><span class="ref-item-title">'+escapeHtml(m.title)+deprecatedTagHTML(m)+'</span><span class="ref-item-role">'+escapeHtml((parts.roles[obj.id]||[]).join(', '))+'</span></span>' +
       '</button>' +
       '<div class="ref-sublist">'+sub+'</div>' +
     '</div>';
@@ -2407,9 +2429,9 @@ function mechanismPanelTemplate(mech){
         MECH_CATEGORIES.map(function(c){ return '<option value="'+c.code+'"'+(c.code===mech.category?' selected':'')+'>'+escapeHtml(c.title)+'</option>'; }).join('') +
       '</select></div>' +
       '<div class="field-group"><label class="field-label">Статус</label><select class="field-input" id="f-mstatus">' +
-        '<option value="draft"'+(mech.status==='draft'?' selected':'')+'>Черновик</option>' +
-        '<option value="active"'+(mech.status==='active'?' selected':'')+'>Активен</option>' +
-        '<option value="deprecated"'+(mech.status==='deprecated'?' selected':'')+'>Устарел</option>' +
+        '<option value="draft"'+(mech.status==='draft'?' selected':'')+'>'+STATUS_TITLES.dev+'</option>' +
+        '<option value="active"'+(mech.status==='active'?' selected':'')+'>'+STATUS_TITLES.prod+'</option>' +
+        '<option value="deprecated"'+(mech.status==='deprecated'?' selected':'')+'>'+STATUS_TITLES.deprecated+'</option>' +
       '</select></div>' +
     '</div>' +
     '<div class="field-group"><label class="field-label">Краткое описание (подсказка на графе)</label>' +
@@ -2483,10 +2505,10 @@ function participantCardHTML(p, idx){
   var menu = PARTICIPANT_ROLES.filter(function(r){ return r.code !== p.role; }).map(function(r){
     return '<button type="button" class="menu-item" data-role="' + r.code + '">' + escapeHtml(BASE_ROLE_ACTIONS[r.code] || ('Роль: ' + r.title)) + '</button>';
   }).join('') + '<div class="menu-sep" role="separator"></div><button type="button" class="menu-item menu-item-danger" data-remove="1">Удалить из механизма</button>';
-  return '<div class="pcard" data-idx="' + idx + '">' +
+  return '<div class="pcard' + (o && o.status === 'deprecated' ? ' is-deprecated' : '') + '" data-idx="' + idx + '">' +
     '<span class="type-chip" style="--c:' + (o ? typeColor(o.type) : THEME.typeUnknown) + '" title="' + escapeHtml(o ? typeTitle(o.type) : 'Объект не выбран') + '">' + escapeHtml(tag) + '</span>' +
     '<div class="pcard-main">' +
-      (o ? '<button type="button" class="pcard-name" title="Перейти к объекту">' + escapeHtml(o.name) + '</button>'
+      (o ? '<button type="button" class="pcard-name" title="Перейти к объекту">' + escapeHtml(o.name) + deprecatedTagHTML(o) + '</button>'
          : '<div class="pcard-combo"></div>') +
       '<div class="pcard-sub' + (p.note ? '' : ' is-empty') + '" tabindex="0" title="Нажмите, чтобы изменить описание">' + roleLabel +
         (p.note ? escapeHtml(p.note) : (isBase ? 'Описать передачу…' : '')) + '</div>' +
@@ -2692,11 +2714,13 @@ function listFilterActive(){ return Object.keys(listTypeFilter).length > 0; }
 function listSearchedItems(){
   var q = (document.getElementById('list-search').value || '').toLowerCase().trim();
   var objects = Object.keys(state.objects).map(function(id){return state.objects[id];})
+    .filter(isShown)
     .filter(function(o){
       return !q || o.name.toLowerCase().indexOf(q)>=0 || (o.fullName||'').toLowerCase().indexOf(q)>=0 ||
         (o.tags||[]).join(' ').toLowerCase().indexOf(q)>=0 || (o.description||'').toLowerCase().indexOf(q)>=0;
     });
   var mechanisms = Object.keys(state.mechanisms).map(function(id){return state.mechanisms[id];})
+    .filter(isShown)
     .filter(function(m){
       return !q || m.title.toLowerCase().indexOf(q)>=0 || (m.summary||'').toLowerCase().indexOf(q)>=0 || (m.body||'').toLowerCase().indexOf(q)>=0;
     });
@@ -2796,25 +2820,69 @@ var sideTab = 'objects';
 var sideSearch = { objects:'', mechanisms:'' };
 var graphFilter = null; /* null — отбор не задан; иначе {nodes:Set, edge:function(e)} */
 
+/* Отбор по типам в левой панели: несколько типов сразу; '' — «Тип не указан». Пусто — все типы. */
+var sideTypeFilter = {};
+
+function setSideTypeDropdownOpen(open){
+  document.getElementById('side-filter-type-dropdown').hidden = !open;
+  document.getElementById('side-filter-type-btn').setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function renderSideTypeFilter(){
+  var counts = {};
+  Object.keys(state.objects).forEach(function(id){
+    var o = state.objects[id]; if (!isShown(o)) return;
+    var k = typeInfo(o.type) ? o.type : ''; counts[k] = (counts[k]||0) + 1;
+  });
+  var items = OBJECT_TYPES.map(function(t){ return {code:t.code, title:t.plural, color:typeColor(t.code)}; });
+  if (counts['']) items.push({code:'', title:UNKNOWN_TYPE_TITLE, color:THEME.typeUnknown});
+  var dropdown = document.getElementById('side-filter-type-dropdown');
+  var scrollTop = dropdown.scrollTop;
+  dropdown.innerHTML = items.map(function(t){
+    return '<label class="multi-select-item" style="--c:' + t.color + '">' +
+      '<input type="checkbox" value="' + t.code + '"' + (sideTypeFilter[t.code] ? ' checked' : '') + '>' +
+      typeIconSVG(t.code) +
+      '<span class="multi-select-item-text">' + escapeHtml(t.title) + '</span>' +
+      '<span class="multi-select-item-count">' + (counts[t.code]||0) + '</span>' +
+    '</label>';
+  }).join('') + '<div class="multi-select-sep"></div>' +
+    '<button type="button" class="multi-select-reset"' + (Object.keys(sideTypeFilter).length ? '' : ' disabled') + '>Сбросить отбор</button>';
+  dropdown.scrollTop = scrollTop;
+  dropdown.querySelectorAll('input[type=checkbox]').forEach(function(cb){
+    cb.addEventListener('change', function(){
+      if (cb.checked) sideTypeFilter[cb.value] = true; else delete sideTypeFilter[cb.value];
+      renderSidebar();
+    });
+  });
+  dropdown.querySelector('.multi-select-reset').addEventListener('click', function(){ sideTypeFilter = {}; renderSidebar(); });
+  var sel = Object.keys(sideTypeFilter);
+  var btn = document.getElementById('side-filter-type-btn');
+  btn.textContent = !sel.length ? 'Все типы' : (sel.length === 1 ? (sel[0] ? typeInfo(sel[0]).plural : UNKNOWN_TYPE_TITLE) : 'Типов: ' + sel.length);
+  btn.title = sel.map(function(c){ return c ? typeInfo(c).plural : UNKNOWN_TYPE_TITLE; }).join(', ');
+  btn.classList.toggle('has-value', sel.length > 0);
+}
+
 function filteredSideObjects(){
   var q = sideSearch.objects.toLowerCase().trim();
-  var typeFilter = document.getElementById('filter-type').value;
   var tagFilter = document.getElementById('filter-tag').value;
+  var types = Object.keys(sideTypeFilter);
   var list = Object.keys(state.objects).map(function(id){return state.objects[id];})
+    .filter(isShown)
     .filter(function(o){
       return !q || o.name.toLowerCase().indexOf(q)>=0 || (o.fullName||'').toLowerCase().indexOf(q)>=0 ||
         (o.tags||[]).join(' ').toLowerCase().indexOf(q)>=0;
     })
-    .filter(function(o){ return !typeFilter || o.type===typeFilter; })
+    .filter(function(o){ return !types.length || sideTypeFilter[typeInfo(o.type) ? o.type : '']; })
     .filter(function(o){ return !tagFilter || (o.tags||[]).indexOf(tagFilter)>=0; })
     .sort(function(a,b){ return a.name.localeCompare(b.name,'ru'); });
-  return {list:list, active:!!(q || typeFilter || tagFilter)};
+  return {list:list, active:!!(q || types.length || tagFilter)};
 }
 
 function filteredSideMechanisms(){
   var q = sideSearch.mechanisms.toLowerCase().trim();
   var catFilter = document.getElementById('filter-mechcategory').value;
   var list = Object.keys(state.mechanisms).map(function(id){return state.mechanisms[id];})
+    .filter(isShown)
     .filter(function(m){ return !q || m.title.toLowerCase().indexOf(q)>=0; })
     .filter(function(m){ return !catFilter || m.category===catFilter; })
     .sort(function(a,b){ return a.title.localeCompare(b.title,'ru'); });
@@ -2874,6 +2942,7 @@ function saveSideGroupState(){
 
 function renderSidebar(){
   refreshTagFilterOptions();
+  renderSideTypeFilter();
   var objs = filteredSideObjects(), mechs = filteredSideMechanisms();
   document.getElementById('side-count-objects').textContent = objs.list.length;
   document.getElementById('side-count-mechanisms').textContent = mechs.list.length;
@@ -2969,11 +3038,13 @@ function globalSearchMatches(query){
   var res = [];
   Object.keys(state.objects).forEach(function(id){
     var o = state.objects[id];
+    if (!isShown(o)) return;
     var i = o.name.toLowerCase().indexOf(q);
     if (i >= 0) res.push({kind:'obj', id:id, title:o.name, sub:typeTitle(o.type), color:typeColor(o.type), pos:i});
   });
   Object.keys(state.mechanisms).forEach(function(id){
     var m = state.mechanisms[id];
+    if (!isShown(m)) return;
     var i = m.title.toLowerCase().indexOf(q);
     if (i >= 0) res.push({kind:'mech', id:id, title:m.title, sub:'Механизм · ' + categoryTitle(m.category), color:categoryAccent(m.category), pos:i});
   });
@@ -3602,8 +3673,8 @@ function updateLegend(){
   var legend = document.getElementById('graph-legend');
   if (!legend) return;
   var typeSeen = {}, catSeen = {};
-  Object.keys(state.objects).forEach(function(id){ var t = state.objects[id].type; typeSeen[typeInfo(t) ? t : ''] = true; });
-  if (currentMode === 'full') Object.keys(state.mechanisms).forEach(function(id){ catSeen[state.mechanisms[id].category] = true; });
+  Object.keys(state.objects).forEach(function(id){ var o = state.objects[id]; if (!isShown(o)) return; typeSeen[typeInfo(o.type) ? o.type : ''] = true; });
+  if (currentMode === 'full') Object.keys(state.mechanisms).forEach(function(id){ if (isShown(state.mechanisms[id])) catSeen[state.mechanisms[id].category] = true; });
   var types = OBJECT_TYPES.filter(function(t){ return typeSeen[t.code]; });
   var cats = MECH_CATEGORIES.filter(function(c){ return catSeen[c.code]; });
   var html = '';
@@ -3715,7 +3786,7 @@ function attachHandlers(){
     sideSearch[sideTab] = '';
     document.getElementById('search-input').value = '';
     if (sideTab === 'objects'){
-      document.getElementById('filter-type').value = '';
+      sideTypeFilter = {};
       document.getElementById('filter-tag').value = '';
     } else {
       document.getElementById('filter-mechcategory').value = '';
@@ -3774,7 +3845,20 @@ function attachHandlers(){
     sideSearch[sideTab] = ev.target.value;
     renderSidebar();
   });
-  document.getElementById('filter-type').addEventListener('change', renderSidebar);
+  document.getElementById('side-filter-type-btn').addEventListener('click', function(){
+    setSideTypeDropdownOpen(document.getElementById('side-filter-type-dropdown').hidden);
+  });
+  document.addEventListener('mousedown', function(e){
+    if (!document.getElementById('side-filter-type').contains(e.target)) setSideTypeDropdownOpen(false);
+  });
+  document.getElementById('toggle-deprecated').checked = showDeprecated;
+  document.getElementById('toggle-deprecated').addEventListener('change', function(ev){
+    showDeprecated = ev.target.checked;
+    try{ localStorage.setItem(SHOW_DEPRECATED_KEY, showDeprecated ? '1' : '0'); }catch(e){}
+    if (focusMode) exitFocus(true);
+    syncGraphModel(); renderSidebar();
+    if (currentView === 'list') renderListView();
+  });
   document.getElementById('filter-tag').addEventListener('change', renderSidebar);
   document.getElementById('filter-mechcategory').addEventListener('change', renderSidebar);
 
@@ -3921,6 +4005,7 @@ function attachHandlers(){
     if (e.key === 'Escape'){
       if (!document.getElementById('more-menu').hidden){ document.getElementById('more-menu').hidden = true; document.getElementById('btn-more').setAttribute('aria-expanded','false'); document.getElementById('btn-more').focus(); }
       else if (!document.getElementById('list-filter-type-dropdown').hidden) setListTypeDropdownOpen(false);
+      else if (!document.getElementById('side-filter-type-dropdown').hidden) setSideTypeDropdownOpen(false);
       else if (document.getElementById('modal-root').innerHTML) closeModal();
       else if (focusMode) exitFocus();
       else clearSelection();
@@ -3933,12 +4018,6 @@ function init(){
   canvasEl = document.getElementById('graph-canvas');
   ctx2d = canvasEl.getContext('2d');
 
-  var filterTypeSelect = document.getElementById('filter-type');
-  OBJECT_TYPES.forEach(function(t){
-    var opt = document.createElement('option');
-    opt.value = t.code; opt.textContent = t.title;
-    filterTypeSelect.appendChild(opt);
-  });
   var filterMechCategorySelect = document.getElementById('filter-mechcategory');
   MECH_CATEGORIES.forEach(function(c){
     var opt = document.createElement('option');
