@@ -370,6 +370,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .vfield-row .vfield{ flex:1; }
 .vfield-input{ font-size:var(--fs-base); }
 .vfield-textarea{ resize:none; overflow:hidden; min-height:60px; line-height:1.5; }
+/* Подсистемы и теги: строка чипов в просмотре, редактор чипов с подсказками */
+.chips-view{ display:flex; flex-wrap:wrap; gap:4px; }
+.sub-chip{ display:inline-flex; align-items:center; gap:4px; padding:0 6px; border-radius:3px; font-size:var(--fs-caption); line-height:1.6; color:var(--text); border:1px solid var(--border); }
+.sub-chip .type-icon{ width:12px; height:12px; color:var(--text-muted); }
+.chip-edit-group + .chip-edit-group{ margin-top:8px; }
+.chip-edit-label{ font-size:var(--fs-caption); color:var(--text-faint); margin-bottom:3px; }
+.chip-editor{ position:relative; display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding:4px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); cursor:text; }
+.chip-editor:focus-within{ border-color:var(--accent); }
+.chip-editor .tag-chip, .chip-editor .sub-chip{ margin:0; }
+.chip-x{ margin-left:2px; padding:0 2px; background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:var(--fs-caption); line-height:1; }
+.chip-x:hover{ color:var(--danger); }
+.chip-input{ flex:1; min-width:90px; padding:2px 4px; background:transparent; border:none; font-size:var(--fs-base); color:var(--text); }
+.chip-input:focus{ outline:none; }
+.chip-editor .combo-dropdown{ top:calc(100% + 2px); }
+.combo-item.is-active{ background:var(--bg-panel); }
 .tag-chip{ display:inline-block; margin:0 4px 2px 0; padding:0 6px; border-radius:3px; font-size:var(--fs-caption); line-height:1.6; color:var(--text); background:var(--bg-selected); }
 .panel-section.is-tight{ margin-top:12px; padding-top:10px; }
 .panel-section.is-tight .panel-section-title{ margin-bottom:4px; }
@@ -2529,13 +2544,65 @@ function objectPanelTemplate(obj){
       '<div id="obj-mech-list" class="ref-list"></div>' +
     '</div>' +
     viewFieldHTML('description', 'Описание') +
-    '<div class="vfield-row">' + viewFieldHTML('subsystem', 'Подсистема') + viewFieldHTML('tags', 'Теги') + '</div>' +
+    '<div class="vfield" data-key="subtags"><div class="vfield-label">Подсистема · Теги</div><div class="vfield-value" tabindex="0"></div></div>' +
     '<div class="panel-section is-tight">' +
       '<div class="panel-section-header"><p class="panel-section-title">Вложения</p>' +
         '<button class="btn btn-sm" id="btn-attach-object" type="button">Прикрепить файл</button></div>' +
       '<div id="obj-attachments-list"></div>' +
     '</div>'
   );
+}
+
+/* Подсистема и теги: в просмотре — одна строка чипов; по клику — два редактора чипов.
+   Каждое добавление/удаление сохраняется сразу; из редактирования выходим, когда фокус
+   уходит из блока, или по Esc. */
+function bindSubsystemsTags(panel, obj){
+  var wrap = panel.querySelector('.vfield[data-key="subtags"]');
+  var view = wrap.querySelector('.vfield-value');
+  function renderView(){
+    var subs = objectSubsystems(obj), tags = obj.tags || [];
+    var empty = !subs.length && !tags.length;
+    view.classList.toggle('is-empty', empty);
+    view.title = empty ? '' : 'Нажмите, чтобы изменить';
+    view.innerHTML = empty ? '+ Добавить подсистему или теги' :
+      '<div class="chips-view">' +
+        subs.map(function(s){ return '<span class="sub-chip" title="Подсистема">' + typeIconSVG('subsystem') + escapeHtml(s) + '</span>'; }).join('') +
+        tags.map(function(t){ return '<span class="tag-chip" title="Тег">' + escapeHtml(t) + '</span>'; }).join('') +
+      '</div>' + PENCIL_SVG;
+  }
+  function edit(focusTags){
+    view.hidden = true;
+    var box = document.createElement('div');
+    box.className = 'subtags-edit';
+    box.innerHTML = '<div class="chip-edit-group"><div class="chip-edit-label">Подсистемы</div><div class="ce-subs"></div></div>' +
+                    '<div class="chip-edit-group"><div class="chip-edit-label">Теги</div><div class="ce-tags"></div></div>';
+    wrap.appendChild(box);
+    var subsEd = buildChipEditor(box.querySelector('.ce-subs'), {
+      label:'Подсистемы', placeholder:'Начните вводить подсистему…', chipClass:'sub-chip', createLabel:'Создать',
+      values:function(){ return objectSubsystems(obj); }, suggestions:allSubsystems,
+      onChange:function(list){ setObjectSubsystems(obj, list); persist(); renderSidebar(); if (currentView === 'list') renderListView(); }
+    });
+    var tagsEd = buildChipEditor(box.querySelector('.ce-tags'), {
+      label:'Теги', placeholder:'Тег, Enter или запятая', freeCreate:true, createLabel:'Добавить тег',
+      values:function(){ return obj.tags || []; }, suggestions:allTags,
+      onChange:function(list){ obj.tags = list; persist(); renderSidebar(); if (currentView === 'list') renderListView(); }
+    });
+    (focusTags ? tagsEd : subsEd).focus();
+    function close(){ box.remove(); view.hidden = false; renderView(); }
+    box.addEventListener('focusout', function(){
+      setTimeout(function(){ if (box.isConnected && !box.contains(document.activeElement)) close(); }, 0);
+    });
+    box.addEventListener('keydown', function(e){
+      if (e.key === 'Escape'){
+        var dd = box.querySelector('.combo-dropdown:not([hidden])');
+        if (dd) return;
+        e.preventDefault(); e.stopPropagation(); close(); view.focus();
+      }
+    });
+  }
+  view.addEventListener('click', function(e){ edit(!!(e.target.closest && e.target.closest('.tag-chip'))); });
+  view.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); edit(false); } });
+  renderView();
 }
 
 function changeObjectType(obj, code){
@@ -2585,15 +2652,7 @@ function renderObjectPanel(obj, panel){
   });
   bindViewField(panel, 'description', {label:'Описание', addText:'Добавить описание', multiline:true,
     get:function(){ return obj.description || ''; }, set:function(v){ obj.description = v; persist(); }});
-  bindViewField(panel, 'subsystem', {label:'Подсистема', addText:'Добавить',
-    get:function(){ return obj.subsystem || ''; }, set:function(v){ obj.subsystem = v.trim(); persist(); if (currentView === 'list') renderListView(); }});
-  bindViewField(panel, 'tags', {label:'Теги', addText:'Добавить', placeholder:'Через запятую',
-    get:function(){ return obj.tags || []; },
-    isEmpty:function(v){ return !v.length; },
-    format:function(v){ return v.map(function(t){ return '<span class="tag-chip">' + escapeHtml(t) + '</span>'; }).join(''); },
-    toText:function(v){ return v.join(', '); },
-    fromText:function(s){ return s.split(',').map(function(x){ return x.trim(); }).filter(Boolean); },
-    set:function(v){ obj.tags = v; persist(); renderSidebar(); }});
+  bindSubsystemsTags(panel, obj);
   panel.querySelector('#btn-attach-object').addEventListener('click', function(){
     attachFilesToEntity('obj', obj.id, function(){ renderAttachmentsList(panel, '#obj-attachments-list', 'obj', obj.id); });
   });
@@ -3249,6 +3308,121 @@ var sideGroupCollapsed = (function(){
 })();
 function saveSideGroupState(){
   try{ localStorage.setItem(SIDE_GROUPS_KEY, JSON.stringify(sideGroupCollapsed)); }catch(e){}
+}
+
+/* ===================== Подсистемы и теги =====================
+   Подсистем у объекта может быть несколько: опциональное поле subsystems[]; старое поле
+   subsystem (строка) сохраняется и равно первой подсистеме — старые данные читаются как [subsystem]. */
+function normalizeLabel(s){ return String(s || '').replace(/\s+/g, ' ').trim(); }
+function objectSubsystems(o){
+  if (Array.isArray(o.subsystems)) return o.subsystems.slice();
+  return o.subsystem ? [normalizeLabel(o.subsystem)].filter(Boolean) : [];
+}
+function setObjectSubsystems(o, list){
+  o.subsystems = list.slice();
+  o.subsystem = list[0] || '';
+}
+function allSubsystems(){
+  var seen = {}, out = [];
+  Object.keys(state.objects).forEach(function(id){
+    objectSubsystems(state.objects[id]).forEach(function(s){ var k = s.toLowerCase(); if (!seen[k]){ seen[k] = true; out.push(s); } });
+  });
+  return out.sort(function(a,b){ return a.localeCompare(b,'ru'); });
+}
+function allTags(){
+  var seen = {}, out = [];
+  Object.keys(state.objects).forEach(function(id){
+    (state.objects[id].tags || []).forEach(function(t){ var k = t.toLowerCase(); if (!seen[k]){ seen[k] = true; out.push(t); } });
+  });
+  return out.sort(function(a,b){ return a.localeCompare(b,'ru'); });
+}
+/* Если значение уже есть (без учёта регистра) — берём существующее написание. */
+function canonicalLabel(value, existing){
+  var v = normalizeLabel(value), k = v.toLowerCase();
+  for (var i = 0; i < existing.length; i++) if (existing[i].toLowerCase() === k) return existing[i];
+  return v;
+}
+
+/* Редактор чипов с автодополнением.
+   opt: {values(), suggestions(), onChange(list), freeCreate, placeholder, chipClass, createLabel}
+   freeCreate — Enter или «,» превращают текст в чип (теги); иначе новое значение добавляется
+   только явным пунктом «+ Создать „…“» (подсистемы). Backspace в пустом поле удаляет последний чип. */
+function buildChipEditor(container, opt){
+  var list = opt.values().slice();
+  container.innerHTML = '<div class="chip-editor"><input type="text" class="chip-input" autocomplete="off"><div class="combo-dropdown" hidden></div></div>';
+  var editor = container.querySelector('.chip-editor');
+  var input = editor.querySelector('.chip-input');
+  var dropdown = editor.querySelector('.combo-dropdown');
+  input.placeholder = opt.placeholder || '';
+  input.setAttribute('aria-label', opt.label || '');
+  var items = [], active = -1;
+
+  function has(v){ var k = v.toLowerCase(); return list.some(function(x){ return x.toLowerCase() === k; }); }
+  function commit(){ opt.onChange(list.slice()); }
+  function add(value){
+    var v = canonicalLabel(value, opt.suggestions());
+    if (!v || has(v)) return false;
+    list.push(v); commit(); renderChips(); return true;
+  }
+  function renderChips(){
+    editor.querySelectorAll('.chip-wrap').forEach(function(c){ c.remove(); });
+    list.forEach(function(v, i){
+      var chip = document.createElement('span');
+      chip.className = 'chip-wrap ' + (opt.chipClass || 'tag-chip');
+      chip.innerHTML = escapeHtml(v) + '<button type="button" class="chip-x" aria-label="Убрать «' + escapeHtml(v) + '»" tabindex="-1">×</button>';
+      chip.querySelector('.chip-x').addEventListener('mousedown', function(e){ e.preventDefault(); });
+      chip.querySelector('.chip-x').addEventListener('click', function(){ list.splice(i, 1); commit(); renderChips(); input.focus(); renderDropdown(); });
+      editor.insertBefore(chip, input);
+    });
+  }
+  function renderDropdown(){
+    var q = normalizeLabel(input.value).toLowerCase();
+    var sugg = opt.suggestions().filter(function(s){ return !has(s) && (!q || s.toLowerCase().indexOf(q) >= 0); }).slice(0, 8);
+    items = sugg.map(function(s){ return {value:s}; });
+    var exact = q && opt.suggestions().some(function(s){ return s.toLowerCase() === q; });
+    if (q && !exact && !has(input.value)) items.push({value:normalizeLabel(input.value), create:true});
+    active = items.length ? 0 : -1;
+    if (!items.length){ dropdown.hidden = true; return; }
+    dropdown.innerHTML = items.map(function(it, i){
+      return '<div class="combo-item' + (it.create ? ' combo-item-create' : '') + (i === active ? ' is-active' : '') + '" data-i="' + i + '">' +
+        (it.create ? '+ ' + (opt.createLabel || 'Создать') + ' „' + escapeHtml(it.value) + '“' : '<span class="combo-item-text">' + escapeHtml(it.value) + '</span>') + '</div>';
+    }).join('');
+    dropdown.hidden = false;
+    dropdown.querySelectorAll('.combo-item').forEach(function(el){
+      el.addEventListener('mousedown', function(e){ e.preventDefault(); pick(Number(el.getAttribute('data-i'))); });
+    });
+  }
+  function highlight(){ dropdown.querySelectorAll('.combo-item').forEach(function(el, i){ el.classList.toggle('is-active', i === active); }); }
+  function pick(i){ var it = items[i]; if (!it) return; add(it.value); input.value = ''; renderDropdown(); input.focus(); }
+
+  input.addEventListener('input', function(){
+    if (opt.freeCreate && input.value.indexOf(',') >= 0){
+      var parts = input.value.split(','), rest = parts.pop();
+      parts.forEach(function(p){ add(p); });
+      input.value = rest;
+    }
+    renderDropdown();
+  });
+  input.addEventListener('focus', renderDropdown);
+  input.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowDown' && items.length){ e.preventDefault(); active = (active + 1) % items.length; highlight(); }
+    else if (e.key === 'ArrowUp' && items.length){ e.preventDefault(); active = (active - 1 + items.length) % items.length; highlight(); }
+    else if (e.key === 'Enter'){
+      e.preventDefault();
+      /* Выделенная подсказка — всегда в приоритете (так «подбор персонала» выберет существующее). */
+      if (active >= 0 && items[active]) pick(active);
+      else if (opt.freeCreate && normalizeLabel(input.value)){ add(input.value); input.value = ''; renderDropdown(); }
+    }
+    else if (e.key === 'Backspace' && !input.value && list.length){ list.pop(); commit(); renderChips(); renderDropdown(); }
+    else if (e.key === 'Escape' && !dropdown.hidden){ e.preventDefault(); e.stopPropagation(); dropdown.hidden = true; }
+  });
+  input.addEventListener('blur', function(){
+    dropdown.hidden = true;
+    if (opt.freeCreate && normalizeLabel(input.value)){ add(input.value); input.value = ''; }
+  });
+  editor.addEventListener('mousedown', function(e){ if (e.target === editor){ e.preventDefault(); input.focus(); } });
+  renderChips();
+  return {focus:function(){ input.focus(); }};
 }
 
 function renderSidebar(){
