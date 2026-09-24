@@ -1608,6 +1608,8 @@ function getFocus(){
     }
   }
   else if (pinnedNodeId && nodeById.has(pinnedNodeId)) f = nodeFocus(pinnedNodeId);
+  /* Выбор кликом (не наведение): у приглушённых узлов скрываются и подписи. */
+  if (f) f.pinned = true;
   else if (hoverId) f = nodeFocus(hoverId);
   else if (listHover && listHover.kind === 'object' && state.objects[listHover.id]) f = objectFocus(listHover.id);
   else if (listHover && listHover.kind === 'mechanism' && state.mechanisms[listHover.id]) f = mechanismFocus(listHover.id);
@@ -1774,6 +1776,7 @@ function layoutLabels(ctx, focus){
     if (focus.center && nodeById.has(focus.center)) place(nodeById.get(focus.center), true, 1);
     labelOrder.forEach(function(n){ if (focus.set.has(n.id)) place(n, true, 1); });
     if (focus.hover && nodeById.has(focus.hover)) place(nodeById.get(focus.hover), true, 1);
+    if (focus.pinned) return placed;
     labelOrder.forEach(function(n){
       if (!focus.second.has(n.id)) return;
       var a = fadeAlpha(n); if (a) place(n, false, Math.max(THEME.alpha.labelBackground, a*THEME.alpha.labelSecond));
