@@ -4,7 +4,6 @@
    Коллекция state.roles: {id, name, description}. Не путать с ролями участников механизма
    (PARTICIPANT_ROLES / roleInfo) и с типом объекта 1С «Роль». Название уникально без учёта регистра. */
 
-var pinnedRoleId = null;
 
 function roleNameError(name, exceptId){
   var k = normalizeLabel(name).toLowerCase();
@@ -30,12 +29,15 @@ function roleProcessCount(roleId){ return 0; }
 function deleteRole(id){
   var r = state.roles[id];
   if (!r) return;
+  var ctrls = controlsByResponsible(id);
   openModal({
     title:'Удалить роль?',
-    bodyHTML:'<p>Роль «' + escapeHtml(r.name) + '» будет удалена без возможности восстановления.</p>',
+    bodyHTML:'<p>Роль «' + escapeHtml(r.name) + '» будет удалена без возможности восстановления.</p>' +
+      controlRefsWarningHTML(ctrls, 'Роль — ответственный'),
     footerButtons:[
       {label:'Отмена', onClick:function(){ return true; }},
       {label:'Удалить', variant:'danger', onClick:function(){
+        if (ctrls.length) rememberDeleted('role', id, r.name);
         delete state.roles[id];
         persist(); clearSelection();
         if (currentView === 'list') renderListView();
@@ -79,4 +81,13 @@ function renderRolePanel(r){
   bindViewField(panel, 'description', {label:'Описание', addText:'Добавить описание', multiline:true,
     get:function(){ return r.description || ''; },
     set:function(v){ r.description = v; persist(); if (currentView === 'list') renderListView(); }});
+}
+
+/* Пункты комбобокса ролей (buildCombobox). */
+function roleComboSource(q){
+  var k = q.toLowerCase();
+  return Object.keys(state.roles).map(function(id){ return state.roles[id]; })
+    .filter(function(r){ return !k || r.name.toLowerCase().indexOf(k) >= 0; })
+    .sort(function(a,b){ return a.name.localeCompare(b.name,'ru'); })
+    .map(function(r){ return {value:r.id, label:r.name, iconHTML:typeIconSVG('role')}; });
 }

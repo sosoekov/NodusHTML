@@ -504,3 +504,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .attr-add-grid{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
 .attr-add-grid .field-input{ padding:5px 7px; font-size:var(--fs-caption); }
 .attr-add-hint{ margin:0; font-size:var(--fs-caption); color:var(--text-faint); }
+
+/* ===== Ручные контроли (процессы, фаза 2) ===== */
+.card-icon-control, .ctrl-link .shield-icon{ color:var(--control); }
+.shield-icon.is-solid{ fill:currentColor; }
+.ctrl-link .shield-icon{ width:13px; height:13px; }
+.ref-link{ display:inline-flex; align-items:center; gap:6px; max-width:100%; padding:0; background:transparent; border:none; color:var(--text); font:inherit; cursor:pointer; text-align:left; }
+.ref-link span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-decoration:underline; text-decoration-color:var(--text-faint); text-underline-offset:2px; }
+.ref-link:hover span{ text-decoration-color:var(--text); }
+.ref-link .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+.ref-link .type-icon{ width:14px; height:14px; color:var(--text-muted); }
+.ref-broken, .lv-cell.is-broken{ color:var(--warning); }
+.moment-seg{ margin-top:2px; }

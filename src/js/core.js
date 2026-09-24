@@ -108,14 +108,17 @@ function readTheme(){
 
 /* ===================== Состояние ===================== */
 
-var state = { objects:{}, mechanisms:{}, roles:{}, attributes:{} };
+var state = { objects:{}, mechanisms:{}, roles:{}, attributes:{}, controls:{}, tombstones:{} };
 var STORAGE_KEY = 'objectGraphPrototypeV1';
 
-/* Формат данных (localStorage, папка, экспорт). Разделы roles и attributes появились в
-   formatVersion 2 и необязательны: файл без них читается как «ролей и реквизитов нет». */
+/* Формат данных (localStorage, папка, экспорт). Разделы roles, attributes, controls и
+   tombstones появились в formatVersion 2 и необязательны: файл без них читается как пустые.
+   tombstones — последние известные названия удалённых сущностей, на которые остались ссылки
+   (id → {kind, name}): ссылка не исчезает, а показывается как «⚠ Удалено: <название>». */
 var FORMAT_VERSION = 2;
 function serializeState(){
-  return {formatVersion:FORMAT_VERSION, objects:state.objects, mechanisms:state.mechanisms, roles:state.roles, attributes:state.attributes};
+  return {formatVersion:FORMAT_VERSION, objects:state.objects, mechanisms:state.mechanisms, roles:state.roles,
+    attributes:state.attributes, controls:state.controls, tombstones:state.tombstones};
 }
 function applyState(data){
   data = data || {};
@@ -123,18 +126,25 @@ function applyState(data){
   state.mechanisms = data.mechanisms || {};
   state.roles = data.roles || {};
   state.attributes = data.attributes || {};
+  state.controls = data.controls || {};
+  state.tombstones = data.tombstones || {};
 }
 function emptyState(){ applyState({}); }
 /* «16 объектов, 6 механизмов, 3 роли, 12 реквизитов» — для подтверждений импорта и очистки.
    Роли и реквизиты упоминаются, только если они есть. */
 function dataSummary(data){
   function n(sec){ return Object.keys((data && data[sec]) || {}).length; }
-  var oc = n('objects'), mc = n('mechanisms'), rc = n('roles'), ac = n('attributes');
+  var oc = n('objects'), mc = n('mechanisms'), rc = n('roles'), ac = n('attributes'), cc = n('controls');
   var parts = [oc + ' ' + pluralRu(oc,'объект','объекта','объектов'), mc + ' ' + pluralRu(mc,'механизм','механизма','механизмов')];
   if (rc) parts.push(rc + ' ' + pluralRu(rc,'роль','роли','ролей'));
   if (ac) parts.push(ac + ' ' + pluralRu(ac,'реквизит','реквизита','реквизитов'));
+  if (cc) parts.push(cc + ' ' + pluralRu(cc,'контроль','контроля','контролей'));
   return parts.join(', ');
 }
+/* Запомнить название удаляемой сущности, на которую остаются ссылки. */
+function rememberDeleted(kind, id, name){ state.tombstones[id] = {kind:kind, name:name}; }
+function deletedName(id){ var t = state.tombstones[id]; return t ? t.name : '?'; }
+function brokenRefHTML(id){ return '<span class="ref-broken" title="Удалено">⚠ Удалено: ' + escapeHtml(deletedName(id)) + '</span>'; }
 
 var folderHandle = null;
 var folderSupported = ('showDirectoryPicker' in window);
@@ -553,20 +563,23 @@ function deleteObject(id, onCancel){
   var refs = Object.keys(state.mechanisms).map(function(k){return state.mechanisms[k];})
     .filter(function(m){ return m.participants.some(function(p){return p.objectId===id;}); });
   var attrs = objectAttributes(id);
+  var ctrls = controlsByTool(id);
   var proceed = function(){
+    if (ctrls.length) rememberDeleted('obj', id, state.objects[id].name);
     refs.forEach(function(m){ m.participants = m.participants.filter(function(p){return p.objectId!==id;}); });
     attrs.forEach(function(a){ delete state.attributes[a.id]; });
     delete state.objects[id];
     persist(); syncGraphModel(); renderSidebar(); updateStats(); clearSelection();
     closeModal();
   };
-  if (refs.length === 0 && attrs.length === 0){ proceed(); return; }
+  if (refs.length === 0 && attrs.length === 0 && ctrls.length === 0){ proceed(); return; }
   openModal({
     title:'Удалить объект?',
     bodyHTML:(refs.length ? '<p>Объект участвует в ' + refs.length + ' ' + pluralRu(refs.length,'механизме','механизмах','механизмах') + ': ' +
       escapeHtml(refs.map(function(m){return m.title;}).join(', ')) + '. Он будет убран из ' + pluralRu(refs.length,'него','них','них') + '.</p>' : '') +
       (attrs.length ? '<p>У объекта ' + attrs.length + ' ' + pluralRu(attrs.length,'реквизит','реквизита','реквизитов') + ' — ' +
-        pluralRu(attrs.length,'он будет удалён','они будут удалены','они будут удалены') + ' вместе с объектом.</p>' : ''),
+        pluralRu(attrs.length,'он будет удалён','они будут удалены','они будут удалены') + ' вместе с объектом.</p>' : '') +
+      controlRefsWarningHTML(ctrls, 'Объект — инструмент'),
     footerButtons:[
       {label:'Отмена', onClick:function(){ if (onCancel) setTimeout(onCancel, 0); return true; }},
       {label:'Удалить', variant:'danger', onClick:function(){ proceed(); }}
@@ -575,12 +588,15 @@ function deleteObject(id, onCancel){
 }
 
 function deleteMechanism(id, onCancel){
+  var ctrls = controlsReplacedBy(id);
   openModal({
     title:'Удалить механизм?',
-    bodyHTML:'<p>Механизм «' + escapeHtml(state.mechanisms[id] ? state.mechanisms[id].title : '') + '» и описание его связей будут удалены без возможности восстановления.</p>',
+    bodyHTML:'<p>Механизм «' + escapeHtml(state.mechanisms[id] ? state.mechanisms[id].title : '') + '» и описание его связей будут удалены без возможности восстановления.</p>' +
+      controlRefsWarningHTML(ctrls, 'Механизм указан как замена'),
     footerButtons:[
       {label:'Отмена', onClick:function(){ if (onCancel) setTimeout(onCancel, 0); return true; }},
       {label:'Удалить', variant:'danger', onClick:function(){
+        if (ctrls.length) rememberDeleted('mech', id, state.mechanisms[id].title);
         delete state.mechanisms[id];
         persist(); syncGraphModel(); renderSidebar(); updateStats(); clearSelection();
         closeModal();
