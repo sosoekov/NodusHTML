@@ -205,7 +205,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .btn-danger-ghost{ background:transparent; border-color:var(--danger); color:var(--danger); }
 .btn-danger-ghost:hover{ background:var(--danger-soft); }
 
-#main{ flex:1; display:flex; min-height:0; }
+#workspace{ flex:1; display:flex; min-height:0; }
+#main{ flex:1; display:flex; min-height:0; min-width:0; }
 #main[hidden]{ display:none; }
 
 #sidebar-left{ width:280px; flex:none; border-right:1px solid var(--border); background:var(--bg-panel); display:flex; flex-direction:column; min-height:0; }
@@ -291,6 +292,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .focus-banner-title{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .focus-banner-title b{ font-weight:600; }
 .card-actions{ margin-top:8px; display:flex; gap:6px; }
+.view-list .card-actions{ display:none; } /* фокус-режим есть только на графе */
 .canvas-tooltip{ position:absolute; z-index:5; max-width:320px; padding:6px 8px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); font-size:var(--fs-caption); color:var(--text); pointer-events:none; white-space:normal; }
 .canvas-tooltip[hidden]{ display:none; }
 
@@ -309,6 +311,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .canvas-ctl + .canvas-ctl{ border-top:1px solid var(--border-soft); }
 .canvas-ctl:hover{ background:var(--bg-selected); color:var(--text); }
 
+#detail-panel[hidden], .resize-handle[hidden]{ display:none; }
 #detail-panel{ width:340px; flex:none; border-left:1px solid var(--border); background:var(--bg-panel); overflow-y:auto; padding:18px; }
 .panel-content[hidden]{ display:none; }
 .panel-empty{ color:var(--text-muted); font-size:var(--fs-base); padding-top:36px; }
@@ -365,7 +368,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .field-label{ display:block; font-size:var(--fs-caption); color:var(--text-muted); margin-bottom:4px; }
 .field-input{ width:100%; padding:7px 9px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); }
 .field-input.mono{ font-family:var(--mono); font-size:var(--fs-caption); }
-.field-textarea{ min-height:70px; resize:vertical; }
+.field-textarea{ min-height:70px; resize:none; overflow:hidden; }
 .field-textarea-lg{ min-height:120px; }
 .panel-section{ margin-top:18px; padding-top:14px; border-top:1px solid var(--border-soft); }
 .panel-section-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; gap:8px; }
@@ -412,7 +415,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .combo-empty{ padding:8px; font-size:var(--fs-caption); color:var(--text-faint); }
 
 #modal-root:empty{ display:none; }
-.list-view{ flex:1; display:flex; flex-direction:column; min-height:0; background:var(--bg); }
+.list-view{ flex:1; display:flex; flex-direction:column; min-height:0; min-width:0; background:var(--bg); }
 .list-view[hidden]{ display:none; }
 .list-view-toolbar{ display:flex; align-items:center; gap:10px; padding:14px 20px; border-bottom:1px solid var(--border); background:var(--bg-panel); flex-wrap:wrap; flex:none; }
 .list-view-toolbar .search-input{ flex:1; min-width:220px; }
@@ -436,6 +439,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .list-view-group-title{ font-size:var(--fs-caption); color:var(--text-faint); margin:14px 0 4px; padding-left:2px; }
 .list-view-row{ width:100%; display:flex; align-items:center; gap:14px; padding:9px 10px; background:transparent; border:none; border-bottom:1px solid var(--border-soft); text-align:left; cursor:pointer; border-radius:var(--radius); }
 .list-view-row:hover{ background:var(--bg-elevated); }
+.list-view-row.active{ background:var(--accent-soft); }
 .lvr-type{ display:flex; align-items:center; gap:6px; font-size:var(--fs-base); width:160px; flex:none; }
 .lvr-type .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
 .lvr-type .dot-diamond{ border-radius:2px; transform:rotate(45deg); }
@@ -447,8 +451,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .modal-backdrop{ position:fixed; inset:0; background:var(--overlay); display:flex; align-items:center; justify-content:center; z-index:50; }
 .modal-box{ width:360px; max-width:92vw; background:var(--bg-panel); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
 .modal-box-md{ width:470px; }
-.modal-box-lg{ width:600px; max-height:88vh; display:flex; flex-direction:column; }
-.modal-box-lg .modal-body{ overflow-y:auto; flex:1; }
 .modal-header{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--border-soft); }
 .modal-header h2{ font-size:var(--fs-lg); margin:0; }
 .modal-close{ background:none; border:none; color:var(--text-muted); font-size:var(--fs-icon-lg); cursor:pointer; line-height:1; }
@@ -504,6 +506,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       <input type="file" id="file-import" accept="application/json" hidden>
     </div>
   </header>
+  <div id="workspace">
   <div id="main">
     <aside id="sidebar-left">
       <div class="side-tabs" role="tablist">
@@ -561,16 +564,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <button class="canvas-ctl" id="btn-relayout" type="button" title="Разложить заново" aria-label="Разложить заново">↻</button>
       </div>
     </main>
-    <div class="resize-handle" id="resize-right" aria-hidden="true"></div>
-    <aside id="detail-panel">
-      <div id="panel-empty" class="panel-empty">
-        <p>Ничего не выбрано.</p>
-        <p>Выберите объект или механизм на графе или в списке слева, чтобы увидеть и отредактировать детали.</p>
-      </div>
-      <div id="panel-object" class="panel-content" hidden></div>
-      <div id="panel-mechanism" class="panel-content" hidden></div>
-      <div id="panel-edge" class="panel-content" hidden></div>
-    </aside>
   </div>
   <div id="list-view" class="list-view" hidden>
     <div class="list-view-toolbar">
@@ -583,6 +576,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     </div>
     <div class="list-view-body" id="list-view-body"></div>
   </div>
+    <div class="resize-handle" id="resize-right" aria-hidden="true"></div>
+    <aside id="detail-panel">
+      <div id="panel-empty" class="panel-empty">
+        <p>Ничего не выбрано.</p>
+        <p>Выберите объект или механизм на графе или в списке слева, чтобы увидеть и отредактировать детали.</p>
+      </div>
+      <div id="panel-object" class="panel-content" hidden></div>
+      <div id="panel-mechanism" class="panel-content" hidden></div>
+      <div id="panel-edge" class="panel-content" hidden></div>
+    </aside>
+  </div>
 </div>
 <div id="modal-root"></div>
 
@@ -591,25 +595,29 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
 /* ===================== Справочники ===================== */
 
-/* Порядок — как в дереве конфигуратора 1С («Общие» сначала).
-   short — метка типа внутри круга на графе; plural — заголовок группы в списке слева. */
+/* Словарь типов — единственное место, где задаются их подписи.
+   Порядок — как в дереве конфигуратора 1С («Общие» сначала).
+   title  — подпись в единственном числе (бейджи, крошки, легенда, поле «Тип»);
+   plural — подпись во множественном числе (группы дерева и списка, фильтр типов);
+   name1c — имя вида метаданных в конфигураторе (префикс «Имени в конфигураторе»);
+   short  — метка типа внутри круга на графе. */
 var OBJECT_TYPES = [
-  {code:'subsystem', title:'Подсистема', short:'Под', plural:'Подсистемы'},
-  {code:'commonmod', title:'ОбщийМодуль', short:'ОМ', plural:'Общие модули'},
-  {code:'role', title:'Роль', short:'Роль', plural:'Роли'},
-  {code:'const', title:'Константа', short:'Кон', plural:'Константы'},
-  {code:'catalog', title:'Справочник', short:'Спр', plural:'Справочники'},
-  {code:'document', title:'Документ', short:'Док', plural:'Документы'},
-  {code:'doclog', title:'ЖурналДокументов', short:'ЖД', plural:'Журналы документов'},
-  {code:'enumt', title:'Перечисление', short:'Пер', plural:'Перечисления'},
-  {code:'report', title:'Отчёт', short:'Отч', plural:'Отчеты'},
-  {code:'process', title:'Обработка', short:'Обр', plural:'Обработки'},
-  {code:'charchart', title:'ПланВидовХарактеристик', short:'ПВХ', plural:'Планы видов характеристик'},
-  {code:'infreg', title:'РегистрСведений', short:'РС', plural:'Регистры сведений'},
-  {code:'accumreg', title:'РегистрНакопления', short:'РН', plural:'Регистры накопления'},
-  {code:'bproc', title:'БизнесПроцесс', short:'БП', plural:'Бизнес-процессы'},
-  {code:'task', title:'Задача', short:'Зад', plural:'Задачи'},
-  {code:'extsrc', title:'ВнешнийИсточникДанных', short:'ВИД', plural:'Внешние источники данных'}
+  {code:'subsystem', title:'Подсистема',              plural:'Подсистемы',               name1c:'Подсистема',             short:'Под'},
+  {code:'commonmod', title:'Общий модуль',            plural:'Общие модули',             name1c:'ОбщийМодуль',            short:'ОМ'},
+  {code:'role',      title:'Роль',                    plural:'Роли',                     name1c:'Роль',                   short:'Роль'},
+  {code:'const',     title:'Константа',               plural:'Константы',                name1c:'Константа',              short:'Кон'},
+  {code:'catalog',   title:'Справочник',              plural:'Справочники',              name1c:'Справочник',             short:'Спр'},
+  {code:'document',  title:'Документ',                plural:'Документы',                name1c:'Документ',               short:'Док'},
+  {code:'doclog',    title:'Журнал документов',       plural:'Журналы документов',       name1c:'ЖурналДокументов',       short:'ЖД'},
+  {code:'enumt',     title:'Перечисление',            plural:'Перечисления',             name1c:'Перечисление',           short:'Пер'},
+  {code:'report',    title:'Отчёт',                   plural:'Отчёты',                   name1c:'Отчет',                  short:'Отч'},
+  {code:'process',   title:'Обработка',               plural:'Обработки',                name1c:'Обработка',              short:'Обр'},
+  {code:'charchart', title:'План видов характеристик',plural:'Планы видов характеристик',name1c:'ПланВидовХарактеристик', short:'ПВХ'},
+  {code:'infreg',    title:'Регистр сведений',        plural:'Регистры сведений',        name1c:'РегистрСведений',        short:'РС'},
+  {code:'accumreg',  title:'Регистр накопления',      plural:'Регистры накопления',      name1c:'РегистрНакопления',      short:'РН'},
+  {code:'bproc',     title:'Бизнес-процесс',          plural:'Бизнес-процессы',          name1c:'БизнесПроцесс',          short:'БП'},
+  {code:'task',      title:'Задача',                  plural:'Задачи',                   name1c:'Задача',                 short:'Зад'},
+  {code:'extsrc',    title:'Внешний источник данных', plural:'Внешние источники данных', name1c:'ВнешнийИсточникДанных',  short:'ВИД'}
 ];
 var DEFAULT_OBJECT_TYPE = 'const';
 
@@ -2036,6 +2044,7 @@ function clearSelection(){
 function switchView(view){
   if (focusMode) exitFocus(true);
   currentView = view;
+  document.body.classList.toggle('view-list', view === 'list');
   var main = document.getElementById('main');
   var listView = document.getElementById('list-view');
   var graphModeToggle = document.getElementById('graph-mode-toggle');
@@ -2043,11 +2052,16 @@ function switchView(view){
     main.hidden = true;
     listView.hidden = false;
     graphModeToggle.classList.add('is-hidden');
+    /* Ребро в «Списке» не показывается — его карточку закрываем, выбор объекта/механизма сохраняется. */
+    if (pinnedEdgeKey) clearSelection();
     renderListView();
+    updateDetailPanelVisibility();
+    scrollActiveListRowIntoView();
   } else {
     listView.hidden = true;
     main.hidden = false;
     graphModeToggle.classList.remove('is-hidden');
+    updateDetailPanelVisibility();
     resizeCanvas();
   }
 }
@@ -2059,6 +2073,16 @@ function showPanel(kind){
   ['object','mechanism','edge'].forEach(function(k){
     document.getElementById('panel-'+k).hidden = (k!==kind);
   });
+  updateDetailPanelVisibility();
+}
+
+/* Правая панель одна на оба режима. В «Графе» видна всегда; в «Списке» — только
+   с открытой карточкой объекта или механизма (список при этом сужается). */
+function updateDetailPanelVisibility(){
+  var hasCard = !document.getElementById('panel-object').hidden || !document.getElementById('panel-mechanism').hidden;
+  var show = currentView === 'graph' || hasCard;
+  document.getElementById('detail-panel').hidden = !show;
+  document.getElementById('resize-right').hidden = !show;
 }
 function bindField(panel, sel, evt, handler){
   var el = panel.querySelector(sel);
@@ -2173,8 +2197,7 @@ function setGraphHint(hint){
 function openObjectFromCard(panel, objId, isSidebar){
   if (!state.objects[objId]) return;
   setGraphHint(null);
-  if (isSidebar) selectEntity('obj', objId);
-  else openCardModal('obj', objId);
+  selectEntity('obj', objId);
 }
 
 function bindBodyEditor(panel, isSidebar, getValue, setValue, placeholder){
@@ -2274,8 +2297,13 @@ function renderObjectPanel(obj, panel){
   bindField(panel,'#f-subsystem','input', function(v){ obj.subsystem=v; persist(); });
   bindField(panel,'#f-tags','input', function(v){ obj.tags=v.split(',').map(function(s){return s.trim();}).filter(Boolean); persist(); });
   bindField(panel,'#f-description','input', function(v){ obj.description=v; persist(); });
+  /* Описание растёт по высоте текста — панель прокручивается целиком, без вложенных скроллов. */
+  var descEl = panel.querySelector('#f-description');
+  function fitDesc(){ descEl.style.height = 'auto'; descEl.style.height = (descEl.scrollHeight + 2) + 'px'; }
+  descEl.addEventListener('input', fitDesc);
+  requestAnimationFrame(fitDesc);
   panel.querySelector('#btn-delete-object').addEventListener('click', function(){
-    deleteObject(obj.id, isSidebar ? undefined : function(){ openCardModal('obj', obj.id); });
+    deleteObject(obj.id);
   });
   panel.querySelector('#btn-attach-object').addEventListener('click', function(){
     attachFilesToEntity('obj', obj.id, function(){ renderAttachmentsList(panel, '#obj-attachments-list', 'obj', obj.id); });
@@ -2327,26 +2355,12 @@ function renderObjectMechList(obj, panel){
   }).join('');
   container.querySelectorAll('.ref-item[data-mech]').forEach(function(btn){
     btn.addEventListener('click', function(){
-      var mechId = btn.getAttribute('data-mech');
-      if (isSidebar){
-        pinnedMechanismId = mechId; pinnedNodeId=null; pinnedEdgeKey=null;
-        renderMechanismPanel(state.mechanisms[mechId]);
-        syncSidebarActive(); requestRender();
-      } else {
-        openCardModal('mech', mechId);
-      }
+      selectEntity('mech', btn.getAttribute('data-mech'));
     });
   });
   container.querySelectorAll('.ref-item[data-obj]').forEach(function(btn){
     btn.addEventListener('click', function(){
-      var objId = btn.getAttribute('data-obj');
-      if (isSidebar){
-        pinnedNodeId = 'obj:'+objId; pinnedMechanismId=null; pinnedEdgeKey=null;
-        renderObjectPanel(state.objects[objId]);
-        syncSidebarActive(); requestRender();
-      } else {
-        openCardModal('obj', objId);
-      }
+      selectEntity('obj', btn.getAttribute('data-obj'));
     });
   });
 }
@@ -2479,7 +2493,7 @@ function renderMechanismPanel(mech, panel){
   bindField(panel,'#f-summary','input', function(v){ mech.summary=v; persist(); renderSidebar(); });
   bindBodyEditor(panel, isSidebar, function(){ return mech.body; }, function(v){ mech.body=v; persist(); }, 'Нет описания. Нажмите, чтобы добавить.');
   panel.querySelector('#btn-delete-mechanism').addEventListener('click', function(){
-    deleteMechanism(mech.id, isSidebar ? undefined : function(){ openCardModal('mech', mech.id); });
+    deleteMechanism(mech.id);
   });
   panel.querySelector('#btn-attach-mechanism').addEventListener('click', function(){
     attachFilesToEntity('mech', mech.id, function(){ renderAttachmentsList(panel, '#mech-attachments-list', 'mech', mech.id); });
@@ -2553,7 +2567,7 @@ function renderParticipantsList(mech, panel){
       buildObjectCombobox(slot, '', function(newId){
         mech.participants.push({objectId:newId, role:role, note:''});
         changed(); rerender();
-      }, isSidebar ? null : function(){ openCardModal('mech', mech.id); });
+      }, null);
       var input = slot.querySelector('.combo-input');
       input.addEventListener('blur', function(){ setTimeout(function(){ if (slot.isConnected && !input.matches(':focus')) rerender(); }, 200); });
       input.focus();
@@ -2568,7 +2582,7 @@ function renderParticipantsList(mech, panel){
     if (nameBtn) nameBtn.addEventListener('click', function(){ openObjectFromCard(panel, p.objectId, isSidebar); });
     var comboSlot = card.querySelector('.pcard-combo');
     if (comboSlot) buildObjectCombobox(comboSlot, '', function(newId){ p.objectId = newId; changed(); rerender(); },
-      isSidebar ? null : function(){ openCardModal('mech', mech.id); });
+      null);
 
     /* Описание передачи — правка по клику. */
     var sub = card.querySelector('.pcard-sub');
@@ -2688,7 +2702,7 @@ function renderGroupedObjectRows(list){
     var items = byType[t.code];
     if (!items || !items.length) return;
     items.sort(function(a,b){ return a.name.localeCompare(b.name,'ru'); });
-    html += '<div class="list-view-group"><p class="list-view-group-title">'+escapeHtml(t.title)+' · '+items.length+'</p>';
+    html += '<div class="list-view-group"><p class="list-view-group-title">'+escapeHtml(t.plural)+' · '+items.length+'</p>';
     html += items.map(objectRowHTML).join('');
     html += '</div>';
   });
@@ -2741,7 +2755,7 @@ function renderListTypeFilter(found){
     '</label>';
   }
   var html = OBJECT_TYPES.map(function(t){
-    return itemHTML(t.code, t.title, '<span class="dot" style="background:'+typeColor(t.code)+'"></span>');
+    return itemHTML(t.code, t.plural, '<span class="dot" style="background:'+typeColor(t.code)+'"></span>');
   }).join('');
   html += '<div class="multi-select-sep"></div>';
   html += itemHTML(LIST_MECH_TYPE, 'МЕХАНИЗМ', '<span class="dot dot-diamond" style="background:var(--text-muted)"></span>');
@@ -2772,10 +2786,10 @@ function renderListTypeFilter(found){
   var btn = document.getElementById('list-filter-type-btn');
   var selected = Object.keys(listTypeFilter);
   var label = 'Все типы';
-  if (selected.length === 1) label = selected[0] === LIST_MECH_TYPE ? 'МЕХАНИЗМ' : typeTitle(selected[0]);
+  if (selected.length === 1) label = selected[0] === LIST_MECH_TYPE ? 'МЕХАНИЗМ' : typeInfo(selected[0]).plural;
   else if (selected.length > 1) label = 'Типов: ' + selected.length;
   btn.textContent = label;
-  btn.title = selected.map(function(c){ return c === LIST_MECH_TYPE ? 'МЕХАНИЗМ' : typeTitle(c); }).join(', ');
+  btn.title = selected.map(function(c){ return c === LIST_MECH_TYPE ? 'МЕХАНИЗМ' : typeInfo(c).plural; }).join(', ');
   btn.classList.toggle('has-value', selected.length > 0);
 }
 
@@ -2806,9 +2820,10 @@ function renderListView(){
 
   var body = document.getElementById('list-view-body');
   body.innerHTML = html;
+  syncSidebarActive();
   body.querySelectorAll('.list-view-row').forEach(function(row){
     row.addEventListener('click', function(){
-      openCardModal(row.getAttribute('data-kind')==='object' ? 'obj' : 'mech', row.getAttribute('data-id'));
+      selectEntity(row.getAttribute('data-kind')==='object' ? 'obj' : 'mech', row.getAttribute('data-id'));
     });
   });
 }
@@ -3054,7 +3069,6 @@ function globalSearchMatches(query){
 }
 
 function selectEntity(kind, id){
-  if (currentView === 'list'){ openCardModal(kind, id); return; }
   if (kind === 'obj'){
     if (!state.objects[id]) return;
     pinnedNodeId = 'obj:'+id; pinnedMechanismId = null; pinnedEdgeKey = null;
@@ -3065,7 +3079,8 @@ function selectEntity(kind, id){
     renderMechanismPanel(state.mechanisms[id]);
   }
   syncSidebarActive(); requestRender();
-  centerOnEntity(kind, id);
+  if (currentView === 'list') scrollActiveListRowIntoView();
+  else centerOnEntity(kind, id);
 }
 
 function bindGlobalSearch(){
@@ -3127,6 +3142,23 @@ function bindGlobalSearch(){
   });
 }
 
+function scrollActiveListRowIntoView(){
+  var row = document.querySelector('#list-view-body .list-view-row.active');
+  if (row) row.scrollIntoView({block:'nearest'});
+}
+
+/* «Список» с открытой карточкой: ↑/↓ — предыдущая/следующая строка (если фокус не в поле ввода). */
+function isTypingTarget(el){
+  return !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+}
+function moveListSelection(step){
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#list-view-body .list-view-row'));
+  if (!rows.length) return;
+  var i = rows.findIndex(function(r){ return r.classList.contains('active'); });
+  var next = rows[i < 0 ? 0 : Math.max(0, Math.min(rows.length - 1, i + step))];
+  selectEntity(next.getAttribute('data-kind')==='object' ? 'obj' : 'mech', next.getAttribute('data-id'));
+}
+
 function syncSidebarActive(){
   document.querySelectorAll('.list-row').forEach(function(btn){
     var isActive = (btn.getAttribute('data-kind')==='object' && pinnedNodeId==='obj:'+btn.getAttribute('data-id')) ||
@@ -3135,6 +3167,12 @@ function syncSidebarActive(){
     /* Выбранный объект в свёрнутой группе: раскрываем группу (без записи в сохранённое состояние). */
     var items = isActive && btn.closest('.side-group-items');
     if (items && items.hidden){ items.hidden = false; items.previousElementSibling.setAttribute('aria-expanded','true'); }
+  });
+  document.querySelectorAll('#list-view-body .list-view-row').forEach(function(row){
+    var id = row.getAttribute('data-id');
+    var on = (row.getAttribute('data-kind')==='object' && pinnedNodeId==='obj:'+id) ||
+             (row.getAttribute('data-kind')==='mechanism' && pinnedMechanismId===id);
+    row.classList.toggle('active', on);
   });
 }
 
@@ -3172,23 +3210,6 @@ function openModal(opts){
 }
 function closeModal(){ document.getElementById('modal-root').innerHTML=''; }
 
-function openCardModal(kind, id){
-  var entity = kind === 'obj' ? state.objects[id] : state.mechanisms[id];
-  if (!entity) return;
-  var root = document.getElementById('modal-root');
-  root.innerHTML =
-    '<div class="modal-backdrop"><div class="modal-box modal-box-lg" role="dialog" aria-modal="true">' +
-      '<div class="modal-header"><h2>Карточка</h2><button class="modal-close" type="button" aria-label="Закрыть">×</button></div>' +
-      '<div class="modal-body" id="card-modal-body"></div>' +
-    '</div></div>';
-  root.querySelector('.modal-close').addEventListener('click', closeModal);
-  root.querySelector('.modal-backdrop').addEventListener('click', function(e){
-    if (e.target.classList.contains('modal-backdrop')) closeModal();
-  });
-  var body = document.getElementById('card-modal-body');
-  if (kind === 'obj') renderObjectPanel(entity, body);
-  else renderMechanismPanel(entity, body);
-}
 
 function openQuickCreateObject(onCreated, prefillName){
   var typeOptions = OBJECT_TYPES.map(function(t){ return '<option value="'+t.code+'">'+escapeHtml(t.title)+'</option>'; }).join('');
@@ -3751,13 +3772,13 @@ function attachHandlers(){
         {label:'Механизм', onClick:function(){
           var m = createMechanism({title:'Новый механизм'});
           renderListView();
-          setTimeout(function(){ openCardModal('mech', m.id); }, 0);
+          setTimeout(function(){ selectEntity('mech', m.id); startInlineTitleEdit(document.getElementById('panel-mechanism')); }, 0);
         }},
         {label:'Объект', variant:'primary', onClick:function(){
           setTimeout(function(){
             openQuickCreateObject(function(obj){
               renderListView();
-              setTimeout(function(){ openCardModal('obj', obj.id); }, 0);
+              setTimeout(function(){ selectEntity('obj', obj.id); }, 0);
             });
           }, 0);
         }}
@@ -3996,6 +4017,12 @@ function attachHandlers(){
   bindGlobalSearch();
 
   window.addEventListener('keydown', function(e){
+    if (currentView === 'list' && (e.key === 'ArrowDown' || e.key === 'ArrowUp') && !e.altKey && !e.ctrlKey && !e.metaKey &&
+        !document.getElementById('detail-panel').hidden && !document.getElementById('modal-root').innerHTML && !isTypingTarget(document.activeElement)){
+      e.preventDefault();
+      moveListSelection(e.key === 'ArrowDown' ? 1 : -1);
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === 'k' || e.key === 'K' || e.code === 'KeyK')){
       e.preventDefault();
       var gs = document.getElementById('global-search-input');
