@@ -2811,10 +2811,13 @@ function objectRoleGroupKey(roleCode){
   if (r.direction === 'source') return {key:'out', title:'Передаёт данные в', order:1};
   return {key:'role:' + r.code, title:r.title, order:2};
 }
-var OM_AUTO_COLLAPSE_OVER = 3;
-var omCollapsed = {}; /* ключ «объект|группа|механизм» → true/false (выбор пользователя в этой сессии) */
+/* Механизмы в карточке по умолчанию свёрнуты. Развёрнутое пользователем помнится, пока открыт
+   тот же объект (перерисовки карточки), и сбрасывается при открытии другого объекта. */
+var omCollapsed = {}; /* ключ «объект|группа|механизм» → true/false */
+var omCollapsedFor = null;
 
 function renderObjectMechList(obj, panel){
+  if (omCollapsedFor !== obj.id){ omCollapsed = {}; omCollapsedFor = obj.id; }
   var container = panel.querySelector('#obj-mech-list');
   if (!container) return;
   var groups = {}, mechIds = {};
@@ -2837,12 +2840,12 @@ function renderObjectMechList(obj, panel){
   var ordered = Object.keys(groups).map(function(k){ return {key:k, g:groups[k]}; })
     .sort(function(a,b){ return a.g.order - b.g.order || a.g.title.localeCompare(b.g.title,'ru'); });
   container.innerHTML = ordered.map(function(x){
-    var g = x.g, auto = g.list.length > OM_AUTO_COLLAPSE_OVER;
+    var g = x.g;
     return '<div class="om-group"><p class="om-group-title">' + escapeHtml(g.title) + '</p>' +
       g.list.map(function(mid){
         var it = g.items[mid], m = it.mech;
         var ck = obj.id + '|' + x.key + '|' + mid;
-        var collapsed = (ck in omCollapsed) ? omCollapsed[ck] : auto;
+        var collapsed = (ck in omCollapsed) ? omCollapsed[ck] : true;
         var parts = participantRolesByObject(m);
         var notesByObj = {};
         m.participants.forEach(function(p){ if (p.objectId && p.note) (notesByObj[p.objectId] = notesByObj[p.objectId] || []).push(p.note); });
