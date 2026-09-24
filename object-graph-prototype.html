@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nodus v.0.4 — локальный прототип</title>
+<title>Nodus v.0.5.0 — локальный прототип</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -57,10 +57,10 @@
   --type-const:hsl(0,58%,62%);
   --type-catalog:hsl(30,58%,62%);
   --type-document:hsl(60,58%,62%);
-  --type-infreg:hsl(90,58%,62%);
+  --type-infreg:hsl(180,58%,62%);   /* РС — бирюзовый: оттенок РН (120°) отличается на 60° */
   --type-accumreg:hsl(120,58%,62%);
   --type-enumt:hsl(150,58%,62%);
-  --type-process:hsl(180,58%,62%);
+  --type-process:hsl(90,58%,62%);
   --type-report:hsl(210,58%,62%);
   --type-charchart:hsl(240,58%,62%);
   --type-role:hsl(270,58%,62%);
@@ -152,7 +152,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 /* Переключатель-чекбокс «Показывать механизмы» */
 .switch{ display:flex; align-items:center; gap:8px; font-size:var(--fs-base); color:var(--text-muted); cursor:pointer; user-select:none; }
 /* Скрытый переключатель держит место — чтобы шапка не «ехала» при смене Граф/Список. */
-.switch.is-hidden{ visibility:hidden; }
 .switch input{ position:absolute; opacity:0; width:1px; height:1px; }
 .switch-track{ width:30px; height:17px; border-radius:9px; background:var(--bg-elevated); border:1px solid var(--border); position:relative; flex:none; }
 .switch-track::after{ content:''; position:absolute; top:2px; left:2px; width:11px; height:11px; border-radius:50%; background:var(--text-faint); }
@@ -217,17 +216,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .filters-row{ display:flex; gap:6px; }
 .filters-row .select-sm{ flex:1; min-width:0; }
 .filters-row[hidden]{ display:none; }
-.filters-row .side-type-filter{ flex:1; min-width:0; }
-.side-type-filter .multi-select-btn{ min-width:0; width:100%; }
-.side-type-filter .multi-select-dropdown{ left:0; right:auto; min-width:0; width:calc(200% + 6px); } /* ширина — вся строка фильтров */
+.filters-row .side-sub-filter{ flex:1; min-width:0; }
+.side-sub-filter .multi-select-btn{ min-width:0; width:100%; }
+.side-sub-filter .multi-select-dropdown{ left:0; right:auto; min-width:0; width:calc(200% + 6px); } /* ширина — вся строка фильтров */
+.deprecated-switch{ font-size:var(--fs-caption); }
+.filters .deprecated-switch{ margin-top:2px; }
 .multi-select-item .type-icon{ color:var(--c); }
 .select-sm{ padding:6px 8px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); color:var(--text-muted); font-size:var(--fs-caption); }
 .side-tabs{ display:flex; border-bottom:1px solid var(--border-soft); flex:none; }
 .side-tab{ flex:1 1 0; min-width:0; background:transparent; border:none; border-bottom:2px solid transparent; padding:11px 4px 9px; color:var(--text-muted); font-size:var(--fs-base); cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.side-tab-header{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 14px 0; flex:none; }
-.side-tab-title{ margin:0; font-size:var(--fs-md); font-weight:600; color:var(--text); }
-.side-create{ white-space:nowrap; }
-.side-tab-header + .side-search{ border-top:none; }
+.side-search{ display:flex; gap:6px; }
+.side-create{ flex:none; width:34px; padding:0; font-size:var(--fs-md); line-height:1; }
 .side-tab:hover:not(.active){ color:var(--text); }
 .side-tab.active{ background:var(--bg-selected); color:var(--text); border-bottom-color:var(--text-muted); }
 .side-search .search-input{ width:100%; }
@@ -244,7 +243,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .list-row-sub{ font-size:var(--fs-caption); color:var(--text-faint); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 .list-row-main{ flex:1; }
 .list-row-meta{ display:flex; align-items:center; gap:6px; flex:none; margin-left:auto; }
-.list-row-count{ font-size:var(--fs-caption); color:var(--text-muted); font-variant-numeric:tabular-nums; min-width:14px; text-align:right; }
+.list-row-count{ display:flex; align-items:center; justify-content:flex-end; gap:5px; font-size:var(--fs-caption); color:var(--text-muted); font-variant-numeric:tabular-nums; min-width:14px; }
+.list-row-count .lv-diamond{ width:6px; height:6px; }
+.list-row-count.is-zero{ color:var(--text-faint); }
 .list-row-warn{ font-size:var(--fs-caption); color:var(--warning); cursor:help; }
 .type-icon{ width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:1.3; stroke-linecap:round; stroke-linejoin:round; }
 .side-group-header{ width:100%; display:flex; align-items:center; gap:7px; padding:7px 14px 7px 8px; background:transparent; border:none; text-align:left; cursor:pointer; color:var(--text); font-size:var(--fs-base); }
@@ -272,7 +273,16 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .empty-hint{ font-size:var(--fs-base); color:var(--text-muted); margin:0; max-width:320px; }
 
 /* Легенда (левый нижний угол холста) */
-.graph-legend{ position:absolute; left:16px; bottom:14px; max-width:260px; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); font-size:var(--fs-caption); }
+.canvas-bottom-left{ position:absolute; left:16px; bottom:14px; display:flex; align-items:flex-end; gap:8px; pointer-events:none; }
+.canvas-bottom-left > *{ pointer-events:auto; }
+.mech-mode{ display:flex; align-items:center; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; font-size:var(--fs-caption); }
+.mech-mode-label{ padding:6px 4px 6px 10px; color:var(--text-muted); }
+.mech-mode-btn{ background:transparent; border:none; border-left:1px solid var(--border); color:var(--text-muted); font-size:var(--fs-caption); padding:6px 10px; cursor:pointer; }
+.mech-mode-label + .mech-mode-btn{ border-left:none; }
+.mech-mode-btn[aria-checked="true"]{ background:var(--bg-selected); color:var(--text); }
+.mech-mode-btn:hover:not([aria-checked="true"]){ background:var(--bg-elevated); color:var(--text); }
+.mech-mode-btn:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px; }
+.graph-legend{ max-width:260px; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); font-size:var(--fs-caption); }
 .graph-legend[hidden]{ display:none; }
 .legend-toggle{ display:flex; align-items:center; gap:6px; width:100%; padding:6px 10px; background:transparent; border:none; color:var(--text-muted); font-size:var(--fs-caption); cursor:pointer; text-align:left; }
 .legend-toggle::after{ content:''; width:6px; height:6px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(45deg); margin-left:auto; margin-top:-3px; }
@@ -295,6 +305,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .view-list .card-actions{ display:none; } /* фокус-режим есть только на графе */
 .canvas-tooltip{ position:absolute; z-index:5; max-width:320px; padding:6px 8px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); font-size:var(--fs-caption); color:var(--text); pointer-events:none; white-space:normal; }
 .canvas-tooltip[hidden]{ display:none; }
+.ctip-mech + .ctip-mech{ margin-top:6px; padding-top:6px; border-top:1px solid var(--border-soft); }
+.ctip-title{ display:flex; align-items:center; gap:7px; font-weight:600; }
+.ctip-title .om-diamond{ width:7px; height:7px; }
+.ctip-dir{ color:var(--text-muted); margin-top:2px; padding-left:14px; }
+.ctip-note{ color:var(--text-muted); padding-left:14px; }
+.ctip-note b{ font-weight:500; color:var(--text); }
+.legend-line{ width:22px; height:10px; flex:none; color:var(--text-muted); }
 
 /* Мини-карта (слева от контролов холста, вровень по нижнему краю) */
 .minimap{ position:absolute; right:62px; bottom:14px; width:182px; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
@@ -534,19 +551,39 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .multi-select-reset{ display:block; width:100%; padding:6px 10px; background:transparent; border:none; text-align:left; font-size:var(--fs-caption); color:var(--accent); cursor:pointer; }
 .multi-select-reset:disabled{ color:var(--text-faint); cursor:default; }
 .list-view-body{ flex:1; overflow-y:auto; padding:6px 20px 30px; min-height:0; }
-.list-view-section-title{ font-size:var(--fs-caption); color:var(--text-faint); margin:18px 0 8px; }
-.list-view-group-title{ font-size:var(--fs-caption); color:var(--text-faint); margin:14px 0 4px; padding-left:2px; }
 .list-view-row{ width:100%; display:flex; align-items:center; gap:14px; padding:9px 10px; background:transparent; border:none; border-bottom:1px solid var(--border-soft); text-align:left; cursor:pointer; border-radius:var(--radius); }
+/* Таблица режима «Список»: шапка и строки — одна сетка (--lv-cols задаётся из JS по видимым колонкам). */
+.list-tabs{ background:var(--bg-panel); }
+.list-tabs .side-tab{ flex:0 0 auto; padding-left:20px; padding-right:20px; }
+.list-filters{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.list-filters .multi-select-btn{ min-width:150px; }
+.list-filters .multi-select-dropdown{ right:auto; left:0; }
+.list-view-body{ padding-top:0; }
+.lv-head, .lv-row{ display:grid; grid-template-columns:var(--lv-cols); column-gap:16px; align-items:center; }
+.lv-head{ position:sticky; top:0; z-index:2; background:var(--bg); border-bottom:1px solid var(--border); padding:10px 10px 6px; }
+.lv-sort{ display:flex; align-items:center; gap:4px; min-width:0; padding:2px 0; background:transparent; border:none; color:var(--text-faint); font-size:var(--fs-caption); text-align:left; cursor:pointer; white-space:nowrap; }
+.lv-sort:hover{ color:var(--text); }
+.lv-sort.is-sorted{ color:var(--text); }
+.lv-sort-arrow{ font-size:var(--fs-caption); }
+.lv-group-title{ display:flex; align-items:center; gap:7px; font-size:var(--fs-caption); color:var(--text-faint); margin:16px 0 2px; padding-left:10px; }
+.lv-group-title .type-icon{ color:var(--c); }
+.lv-group-title .dot{ width:8px; height:8px; flex:none; }
+.lv-group-title .dot-diamond{ border-radius:2px; transform:rotate(45deg); }
+.list-view-row.lv-row{ display:grid; column-gap:16px; padding:8px 10px; }
+.lv-cell{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--fs-base); color:var(--text-muted); }
+.lv-cell.is-name{ font-size:var(--fs-md); color:var(--text); display:flex; align-items:center; gap:8px; }
+.lv-cell.is-name .lv-text{ overflow:hidden; text-overflow:ellipsis; }
+.lv-cell.is-name .dot{ width:8px; height:8px; flex:none; border-radius:2px; transform:rotate(45deg); }
+.lv-cell.is-code{ font-family:var(--mono); font-size:var(--fs-caption); }
+.lv-cell.is-count{ display:flex; align-items:center; gap:6px; }
+.lv-cell.is-count.is-zero{ color:var(--text-faint); }
+.lv-diamond{ width:7px; height:7px; flex:none; border:1.5px solid currentColor; border-radius:1px; transform:rotate(45deg); }
+.lv-cell.is-list{ display:flex; gap:6px; }
+.lv-cell.is-list .lv-text{ min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.lv-more{ color:var(--text-faint); flex:none; }
+.lv-row.is-deprecated .lv-cell.is-name .lv-text{ text-decoration:line-through; text-decoration-color:var(--text-faint); color:var(--text-muted); }
 .list-view-row:hover{ background:var(--bg-elevated); }
 .list-view-row.active{ background:var(--accent-soft); }
-.lvr-type{ display:flex; align-items:center; gap:6px; font-size:var(--fs-base); width:160px; flex:none; }
-.lvr-type .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
-.lvr-type .dot-diamond{ border-radius:2px; transform:rotate(45deg); }
-.lvr-name{ flex:1; min-width:0; font-size:var(--fs-md); color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.lvr-status{ font-size:var(--fs-caption); padding:3px 9px; border-radius:20px; flex:none; }
-.lvr-status.status-active{ background:var(--success-soft); color:var(--success); }
-.lvr-status.status-stub, .lvr-status.status-draft{ background:var(--accent-soft); color:var(--accent); }
-.lvr-status.status-deprecated{ background:var(--danger-soft); color:var(--danger); }
 .modal-backdrop{ position:fixed; inset:0; background:var(--overlay); display:flex; align-items:center; justify-content:center; z-index:50; }
 .modal-box{ width:360px; max-width:92vw; background:var(--bg-panel); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
 .modal-box-md{ width:470px; }
@@ -567,7 +604,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     <div class="topbar-left">
       <h1 class="app-title">
         <svg class="app-logo" viewBox="0 0 24 24" aria-hidden="true"><polyline class="logo-line" points="5,19 5,5 19,19 19,5" stroke-width="2" stroke-linejoin="round"/><circle class="logo-n2" cx="5" cy="19" r="2.6"/><circle class="logo-n1" cx="5" cy="5" r="2.6"/><circle class="logo-n3" cx="19" cy="19" r="2.6"/><circle class="logo-n4" cx="19" cy="5" r="2.6"/></svg>
-        Nodus <span class="app-version">v.0.4</span>
+        Nodus <span class="app-version">v.0.5.0</span>
       </h1>
     </div>
     <div class="topbar-group">
@@ -575,16 +612,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <button class="mode-btn active" data-view="graph" type="button">Граф</button>
         <button class="mode-btn" data-view="list" type="button">Список</button>
       </div>
-      <label class="switch" id="deprecated-toggle">
-        <input type="checkbox" id="toggle-deprecated">
-        <span class="switch-track" aria-hidden="true"></span>
-        <span class="switch-label">Показывать устаревшие</span>
-      </label>
-      <label class="switch" id="graph-mode-toggle">
-        <input type="checkbox" id="toggle-mechanisms">
-        <span class="switch-track" aria-hidden="true"></span>
-        <span class="switch-label">Показывать механизмы</span>
-      </label>
     </div>
     <div class="global-search" id="global-search">
       <input type="text" id="global-search-input" class="global-search-input" placeholder="Поиск объектов и механизмов" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="global-search-dropdown">
@@ -612,24 +639,26 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <button class="side-tab active" data-side="objects" type="button" role="tab">Объекты <span id="side-count-objects">0</span></button>
         <button class="side-tab" data-side="mechanisms" type="button" role="tab">Механизмы <span id="side-count-mechanisms">0</span></button>
       </div>
-      <div class="side-tab-header">
-        <h2 class="side-tab-title" id="side-tab-title">Объекты</h2>
-        <button class="btn btn-accent btn-sm side-create" id="btn-side-add" type="button">+ Объект</button>
-      </div>
       <div class="sidebar-section side-search">
         <input type="text" id="search-input" class="search-input" placeholder="Поиск объектов…" autocomplete="off">
+        <button class="btn btn-accent side-create" id="btn-side-add" type="button" title="Создать объект" aria-label="Создать объект">+</button>
       </div>
       <div class="sidebar-section filters">
         <div class="filters-row" id="side-filters-objects">
-          <div class="multi-select side-type-filter" id="side-filter-type">
-            <button class="select-sm multi-select-btn" id="side-filter-type-btn" type="button" aria-haspopup="true" aria-expanded="false">Все типы</button>
-            <div class="multi-select-dropdown" id="side-filter-type-dropdown" hidden></div>
+          <div class="multi-select side-sub-filter" data-ms="side-sub">
+            <button class="select-sm multi-select-btn" type="button" aria-haspopup="true" aria-expanded="false">Все подсистемы</button>
+            <div class="multi-select-dropdown" hidden></div>
           </div>
           <select id="filter-tag" class="select-sm"><option value="">Все теги</option></select>
         </div>
         <div class="filters-row" id="side-filters-mechanisms" hidden>
           <select id="filter-mechcategory" class="select-sm"><option value="">Все категории</option></select>
         </div>
+        <label class="switch deprecated-switch">
+          <input type="checkbox" class="toggle-deprecated">
+          <span class="switch-track" aria-hidden="true"></span>
+          <span class="switch-label">Показывать устаревшие</span>
+        </label>
       </div>
       <div class="sidebar-section list-wrap">
         <div id="object-list"></div>
@@ -643,9 +672,16 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <p class="empty-hint">Данные хранятся только в этом браузере. Добавьте первый объект, чтобы увидеть граф связей.</p>
         <button class="btn btn-accent" id="btn-add-object-empty" type="button">Добавить объект</button>
       </div>
-      <div class="graph-legend" id="graph-legend" hidden>
-        <button class="legend-toggle" id="legend-toggle" type="button" aria-expanded="true" aria-controls="legend-body">Легенда</button>
-        <div class="legend-body" id="legend-body"></div>
+      <div class="canvas-bottom-left">
+        <div class="graph-legend" id="graph-legend" hidden>
+          <button class="legend-toggle" id="legend-toggle" type="button" aria-expanded="true" aria-controls="legend-body">Легенда</button>
+          <div class="legend-body" id="legend-body"></div>
+        </div>
+        <div class="mech-mode" id="mech-mode" role="radiogroup" aria-label="Механизмы">
+          <span class="mech-mode-label">Механизмы:</span>
+          <button type="button" class="mech-mode-btn" data-mode="full" role="radio" aria-checked="false">узлами</button>
+          <button type="button" class="mech-mode-btn" data-mode="collapsed" role="radio" aria-checked="true">связями</button>
+        </div>
       </div>
       <div class="focus-banner" id="focus-banner" hidden>
         <span class="focus-banner-title" id="focus-banner-title"></span>
@@ -665,13 +701,19 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     </main>
   </div>
   <div id="list-view" class="list-view" hidden>
+    <div class="side-tabs list-tabs" role="tablist">
+      <button class="side-tab list-tab active" data-list-tab="objects" type="button" role="tab">Объекты <span id="list-count-objects">0</span></button>
+      <button class="side-tab list-tab" data-list-tab="mechanisms" type="button" role="tab">Механизмы <span id="list-count-mechanisms">0</span></button>
+    </div>
     <div class="list-view-toolbar">
-      <input type="text" id="list-search" class="search-input" placeholder="Имя, часть составного имени или слово из описания…">
-      <div class="multi-select" id="list-filter-type">
-        <button class="select-sm multi-select-btn" id="list-filter-type-btn" type="button" aria-haspopup="true" aria-expanded="false">Все типы</button>
-        <div class="multi-select-dropdown" id="list-filter-type-dropdown" hidden></div>
-      </div>
-      <button class="btn btn-accent" id="btn-list-new" type="button">Новый</button>
+      <input type="text" id="list-search" class="search-input" placeholder="Имя, синоним или описание" autocomplete="off">
+      <div id="list-filters" class="list-filters"></div>
+      <label class="switch deprecated-switch">
+        <input type="checkbox" class="toggle-deprecated">
+        <span class="switch-track" aria-hidden="true"></span>
+        <span class="switch-label">Показывать устаревшие</span>
+      </label>
+      <button class="btn btn-accent" id="btn-list-add" type="button">+ Объект</button>
     </div>
     <div class="list-view-body" id="list-view-body"></div>
   </div>
@@ -808,7 +850,7 @@ var folderSupported = ('showDirectoryPicker' in window);
 var autoSaveStatus = 'disconnected'; /* disconnected | connected | needs-permission | error */
 var lastFolderSaveAt = null;
 
-var currentMode = 'collapsed';
+var currentMode = (function(){ try{ return localStorage.getItem('nodusMechMode') === 'full' ? 'full' : 'collapsed'; }catch(e){ return 'collapsed'; } })();
 var currentView = 'graph';
 var currentNodes = [];
 var currentEdges = [];
@@ -878,6 +920,17 @@ function statusKind(code){ return code === 'deprecated' ? 'deprecated' : (code =
 var SHOW_DEPRECATED_KEY = 'nodusShowDeprecated';
 var showDeprecated = (function(){ try{ return localStorage.getItem(SHOW_DEPRECATED_KEY) !== '0'; }catch(e){ return true; } })();
 function isShown(entity){ return showDeprecated || !entity || entity.status !== 'deprecated'; }
+/* Переключатель есть в левой панели «Графа» и в фильтрах «Списка» — состояние одно на оба. */
+function syncDeprecatedSwitches(){
+  document.querySelectorAll('.toggle-deprecated').forEach(function(cb){ cb.checked = showDeprecated; });
+}
+/* «Механизмы: узлами | связями» — запоминается между перезагрузками. */
+var MECH_MODE_KEY = 'nodusMechMode';
+function syncMechModeUI(){
+  document.querySelectorAll('.mech-mode-btn').forEach(function(b){
+    b.setAttribute('aria-checked', b.getAttribute('data-mode') === currentMode ? 'true' : 'false');
+  });
+}
 function deprecatedTagHTML(entity){ return entity && entity.status === 'deprecated' ? '<span class="deprecated-tag" title="Устарел">устарел</span>' : ''; }
 
 function objectStatusTitle(s){ return s==='stub' ? STATUS_TITLES.dev : (s==='deprecated' ? STATUS_TITLES.deprecated : STATUS_TITLES.prod); }
@@ -1616,18 +1669,48 @@ var LABEL_MIN_PX = 7;
 var LABEL_FADE_PX = 3;
 var LABEL_CELL = 64;
 var LABEL_PAD_X = 5;
-var LABEL_H = 18;
+var LABEL_H = 18;          /* высота плашки в одну строку */
+var LABEL_LINE_H = 14;     /* каждая следующая строка */
 var LABEL_GAP = 4;
+var LABEL_MAX_CHARS = 24;  /* ширина строки подписи, символов */
+var LABEL_MAX_LINES = 2;
 
-function labelWidth(ctx, n){
-  if (n._labelFor !== n.label){ n._labelW = ctx.measureText(n.label).width; n._labelFor = n.label; }
-  return n._labelW;
+/* Перенос по словам: до LABEL_MAX_LINES строк по LABEL_MAX_CHARS символов;
+   не поместилось — многоточие (полный текст — во всплывающей подсказке). */
+function wrapLabel(text){
+  var words = String(text || '').replace(/\s+/g, ' ').trim().split(' ');
+  var lines = [], cur = '', i = 0;
+  while (i < words.length && lines.length < LABEL_MAX_LINES){
+    var w = words[i];
+    if (!cur && w.length > LABEL_MAX_CHARS){ lines.push(w.slice(0, LABEL_MAX_CHARS)); words[i] = w.slice(LABEL_MAX_CHARS); continue; }
+    var next = cur ? cur + ' ' + w : w;
+    if (next.length <= LABEL_MAX_CHARS){ cur = next; i++; }
+    else { lines.push(cur); cur = ''; }
+  }
+  if (cur && lines.length < LABEL_MAX_LINES) lines.push(cur);
+  var truncated = i < words.length;
+  if (truncated){
+    var last = lines[lines.length - 1];
+    lines[lines.length - 1] = (last.length >= LABEL_MAX_CHARS ? last.slice(0, LABEL_MAX_CHARS - 1) : last).replace(/\s+$/, '') + '…';
+  }
+  return {lines:lines, truncated:truncated};
 }
+function labelInfo(ctx, n){
+  if (n._labelFor !== n.label){
+    var wr = wrapLabel(n.label);
+    n._labelLines = wr.lines; n._labelTruncated = wr.truncated;
+    n._labelW = Math.max.apply(null, wr.lines.map(function(l){ return ctx.measureText(l).width; }).concat([0]));
+    n._labelFor = n.label;
+  }
+  return n;
+}
+function labelWidth(ctx, n){ return labelInfo(ctx, n)._labelW; }
+function labelHeight(n){ return LABEL_H + ((n._labelLines ? n._labelLines.length : 1) - 1)*LABEL_LINE_H; }
 
 function labelCandidates(n, forced, w){
   var r = nodeRadius(n)*view.scale;
   var sx = n.x*view.scale + view.offsetX, sy = n.y*view.scale + view.offsetY;
-  var h = LABEL_H;
+  var h = labelHeight(n);
   var below = {cx:sx, cy:sy + r + LABEL_GAP + h/2};
   var above = {cx:sx, cy:sy - r - LABEL_GAP - h/2};
   var list = n.kind==='mechanism' ? [above, below] : [below, above];
@@ -1657,7 +1740,8 @@ function layoutLabels(ctx, focus){
     placed.push(b);
   }
   function box(n, c, w, alpha){
-    return {x0:c.cx - w/2, x1:c.cx + w/2, y0:c.cy - LABEL_H/2, y1:c.cy + LABEL_H/2, cx:c.cx, cy:c.cy, n:n, alpha:alpha};
+    var h = labelHeight(n);
+    return {x0:c.cx - w/2, x1:c.cx + w/2, y0:c.cy - h/2, y1:c.cy + h/2, cx:c.cx, cy:c.cy, n:n, alpha:alpha};
   }
   function onScreen(b){ return !(b.x1 < 0 || b.x0 > viewportWidth || b.y1 < 0 || b.y0 > viewportHeight); }
   function place(n, forced, alpha){
@@ -1727,7 +1811,9 @@ function drawLabels(ctx, labels){
     ctx.beginPath(); roundRectPath(ctx, b.x0, b.y0, b.x1-b.x0, b.y1-b.y0, 3); ctx.fill();
     ctx.globalAlpha = b.alpha;
     ctx.fillStyle = THEME.text;
-    ctx.fillText(b.n.label, b.cx, b.cy + 0.5);
+    var lines = b.n._labelLines || [b.n.label];
+    var y = b.cy - (lines.length - 1)*LABEL_LINE_H/2 + 0.5;
+    lines.forEach(function(l, i){ ctx.fillText(l, b.cx, y + i*LABEL_LINE_H); });
   });
   ctx.textBaseline = 'alphabetic';
   ctx.globalAlpha = 1;
@@ -1900,7 +1986,8 @@ function drawNodeBatch(ctx, nodes, baseAlpha){
     stubs.forEach(function(n){ var r = nodeRadius(n); ctx.moveTo(n.x+r, n.y); ctx.arc(n.x,n.y,r,0,Math.PI*2); });
     ctx.stroke(); ctx.setLineDash([]);
   }
-  drawTypeTags(ctx, fills, baseAlpha);
+  /* Метки типа только у неприглушённых узлов: в бледном круге они читаются как шум. */
+  if (baseAlpha >= 1) drawTypeTags(ctx, fills, baseAlpha);
   mechs.forEach(function(list, color){
     ctx.globalAlpha = baseAlpha;
     ctx.beginPath();
@@ -1965,6 +2052,7 @@ function drawNodes(ctx, nodes, focus){
   });
 }
 
+var lastLabels = [];
 function render(){
   var focus = getFocus();
   ctx2d.save();
@@ -1986,6 +2074,7 @@ function render(){
   }), focus);
   ctx2d.restore();
   var labels = layoutLabels(ctx2d, focus);
+  lastLabels = labels;
   drawLabels(ctx2d, labels);
   edgeLabelBoxes = focusMode ? drawFocusEdgeLabels(ctx2d, labels) : [];
   drawMinimap();
@@ -1998,6 +2087,7 @@ function requestRender(){
     renderRequested = false;
     /* В фокус-режиме физика стоит: раскладка фокуса временная и не должна плыть. */
     if (!focusMode && sim.alpha > sim.alphaMin){ tickSimulation(); requestRender(); }
+    else maybeInitialFit();
     render();
   });
 }
@@ -2079,8 +2169,9 @@ function onMouseMove(ev){
     return;
   }
   var wp = screenToWorld(sx,sy);
-  if (focusMode) updateCanvasTooltip(sx, sy);
   var node = hitTestNode(wp.x,wp.y);
+  if (focusMode) updateCanvasTooltip(sx, sy);
+  else updateGraphTooltip(sx, sy, node, wp);
   var newHoverId = node ? node.id : null;
   if (newHoverId !== hoverId){
     hoverId = newHoverId;
@@ -2160,11 +2251,9 @@ function switchView(view){
   document.body.classList.toggle('view-list', view === 'list');
   var main = document.getElementById('main');
   var listView = document.getElementById('list-view');
-  var graphModeToggle = document.getElementById('graph-mode-toggle');
   if (view === 'list'){
     main.hidden = true;
     listView.hidden = false;
-    graphModeToggle.classList.add('is-hidden');
     /* Ребро в «Списке» не показывается — его карточку закрываем, выбор объекта/механизма сохраняется. */
     if (pinnedEdgeKey) clearSelection();
     renderListView();
@@ -2173,7 +2262,6 @@ function switchView(view){
   } else {
     listView.hidden = true;
     main.hidden = false;
-    graphModeToggle.classList.remove('is-hidden');
     updateDetailPanelVisibility();
     resizeCanvas();
   }
@@ -3187,157 +3275,339 @@ function refreshTagFilterOptions(){
 
 /* ===================== Вид «Список» ===================== */
 
-/* Отбор списка по типу: коды из OBJECT_TYPES плюс LIST_MECH_TYPE для механизмов.
-   Пустое множество — показываем всё. */
-var LIST_MECH_TYPE = '__mechanism';
-var listTypeFilter = {};
+/* Две вкладки, как в левой панели «Графа». У каждой — свой поиск, отборы и сортировка
+   (в памяти, на время сессии). Сортировка — внутри группы (тип объекта / категория механизма). */
+var listTab = 'objects';
+var listSearch = { objects:'', mechanisms:'' };
+var listFilters = {
+  objects:    { type:{}, sub:{}, tag:{} },
+  mechanisms: { cat:{},  sub:{}, tag:{} }
+};
+var listSort = { objects:{key:'name', dir:1}, mechanisms:{key:'name', dir:1} };
+/* Колонки. hideBelow — ширина таблицы (px), ниже которой колонка скрывается
+   (открытая карточка сужает таблицу: сначала уходят «Теги», затем «Подсистема»). */
+var LIST_COLUMNS = {
+  objects: [
+    {key:'name',   title:'Синоним',               width:'minmax(0,2.2fr)'},
+    {key:'code',   title:'Имя в конфигураторе',   width:'minmax(0,2fr)'},
+    {key:'sub',    title:'Подсистема',            width:'minmax(0,1.4fr)', hideBelow:860},
+    {key:'mechs',  title:'Механизмы',             width:'96px'},
+    {key:'tags',   title:'Теги',                  width:'minmax(0,1.4fr)', hideBelow:1060},
+    {key:'status', title:'Статус',                width:'112px'}
+  ],
+  mechanisms: [
+    {key:'name',    title:'Название',   width:'minmax(0,2.2fr)'},
+    {key:'cat',     title:'Категория',  width:'minmax(0,1.1fr)'},
+    {key:'sources', title:'Источники',  width:'minmax(0,2fr)'},
+    {key:'targets', title:'Приёмники',  width:'minmax(0,2fr)'},
+    {key:'status',  title:'Статус',     width:'112px'}
+  ]
+};
+var listTableWidth = 0;
 
-function objectRowHTML(o){
-  return '<button class="list-view-row" data-kind="object" data-id="'+o.id+'" type="button">' +
-    '<span class="lvr-type"><span class="dot" style="background:'+typeColor(o.type)+'"></span>'+escapeHtml(typeTitle(o.type))+'</span>' +
-    '<span class="lvr-name">'+escapeHtml(o.name)+'</span>' +
-    '<span class="lvr-status status-'+o.status+'">'+escapeHtml(objectStatusTitle(o.status))+'</span>' +
-  '</button>';
-}
-function mechanismRowHTML(m){
-  return '<button class="list-view-row" data-kind="mechanism" data-id="'+m.id+'" type="button">' +
-    '<span class="lvr-type"><span class="dot dot-diamond" style="background:'+categoryAccent(m.category)+'"></span>'+escapeHtml(categoryTitle(m.category))+'</span>' +
-    '<span class="lvr-name">'+escapeHtml(m.title)+'</span>' +
-    '<span class="lvr-status status-'+m.status+'">'+escapeHtml(mechanismStatusTitle(m.status))+'</span>' +
-  '</button>';
-}
-function renderGroupedObjectRows(list){
-  var byType = {};
-  list.forEach(function(o){ (byType[o.type]=byType[o.type]||[]).push(o); });
-  var html = '';
-  OBJECT_TYPES.forEach(function(t){
-    var items = byType[t.code];
-    if (!items || !items.length) return;
-    items.sort(function(a,b){ return a.name.localeCompare(b.name,'ru'); });
-    html += '<div class="list-view-group"><p class="list-view-group-title">'+escapeHtml(t.plural)+' · '+items.length+'</p>';
-    html += items.map(objectRowHTML).join('');
-    html += '</div>';
+function objectIdentifier(o){ var fn = o.fullName || ''; var i = fn.indexOf('.'); return i >= 0 ? fn.slice(i + 1) : fn; }
+function objectTypeKey(o){ return typeInfo(o.type) ? o.type : ''; }
+
+/* Роли объекта в каждом механизме — для подсказки у счётчика «Механизмы». */
+function objectMechanismRoles(oid){
+  var out = [];
+  Object.keys(state.mechanisms).forEach(function(mid){
+    var m = state.mechanisms[mid], roles = [];
+    m.participants.forEach(function(p){
+      if (p.objectId !== oid) return;
+      var t = roleInfo(p.role).title; if (roles.indexOf(t) < 0) roles.push(t);
+    });
+    if (roles.length) out.push({mech:m, roles:roles});
   });
-  return html;
+  return out.sort(function(a,b){ return a.mech.title.localeCompare(b.mech.title,'ru'); });
 }
-function renderGroupedMechanismRows(list){
-  var byCat = {};
-  list.forEach(function(m){ (byCat[m.category]=byCat[m.category]||[]).push(m); });
-  var html = '';
-  MECH_CATEGORIES.forEach(function(c){
-    var items = byCat[c.code];
-    if (!items || !items.length) return;
-    items.sort(function(a,b){ return a.title.localeCompare(b.title,'ru'); });
-    html += '<div class="list-view-group"><p class="list-view-group-title">'+escapeHtml(c.title)+' · '+items.length+'</p>';
-    html += items.map(mechanismRowHTML).join('');
-    html += '</div>';
+/* Источники и приёмники механизма — по направлению роли; синонимы без повторов. */
+function mechanismSides(m){
+  var src = [], dst = [];
+  m.participants.forEach(function(p){
+    var o = p.objectId && state.objects[p.objectId]; if (!o) return;
+    var dir = roleInfo(p.role).direction;
+    var arr = dir === 'source' ? src : (dir === 'target' ? dst : null);
+    if (arr && arr.indexOf(o.name) < 0) arr.push(o.name);
   });
-  return html;
+  return {sources:src, targets:dst};
+}
+function mechanismParticipantObjects(m){
+  var out = [];
+  m.participants.forEach(function(p){ var o = p.objectId && state.objects[p.objectId]; if (o && out.indexOf(o) < 0) out.push(o); });
+  return out;
 }
 
-function listFilterActive(){ return Object.keys(listTypeFilter).length > 0; }
+/* Значения ячеек: text — показ и сортировка; пустая строка — пустая ячейка (в сортировке всегда в конце). */
+function listObjectValues(o, mechRoles){
+  var subs = objectSubsystems(o), tags = o.tags || [];
+  var st = o.status || DEFAULT_OBJECT_STATUS;
+  return {
+    name: o.name,
+    code: objectIdentifier(o),
+    sub: subs.join(', '),
+    mechs: mechRoles.length,
+    tags: tags.join(', '),
+    status: st === DEFAULT_OBJECT_STATUS ? '' : objectStatusTitle(st),
+    statusKind: statusKind(st)
+  };
+}
+function listMechanismValues(m){
+  var sides = mechanismSides(m), st = m.status || DEFAULT_MECH_STATUS;
+  return {
+    name: m.title,
+    cat: categoryTitle(m.category),
+    sources: sides.sources, targets: sides.targets,
+    sourcesText: sides.sources.join(', '), targetsText: sides.targets.join(', '),
+    status: st === DEFAULT_MECH_STATUS ? '' : mechanismStatusTitle(st),
+    statusKind: statusKind(st)
+  };
+}
 
-function listSearchedItems(){
-  var q = (document.getElementById('list-search').value || '').toLowerCase().trim();
-  var objects = Object.keys(state.objects).map(function(id){return state.objects[id];})
+function listSortValue(v, key){
+  if (key === 'sources') return v.sourcesText;
+  if (key === 'targets') return v.targetsText;
+  return v[key];
+}
+function listCompare(a, b, key, dir){
+  var x = listSortValue(a.v, key), y = listSortValue(b.v, key);
+  var r;
+  if (typeof x === 'number') r = (x - y) * dir;
+  else {
+    if (!x && y) return 1;          /* пустые значения — в конце в обе стороны */
+    if (x && !y) return -1;
+    r = String(x).localeCompare(String(y), 'ru', {numeric:true}) * dir;
+  }
+  return r || a.v.name.localeCompare(b.v.name, 'ru');
+}
+
+function anyKey(sel){ return Object.keys(sel).length > 0; }
+function matchesAny(sel, values){ return !anyKey(sel) || values.some(function(v){ return sel[v]; }); }
+
+function listFilteredObjects(){
+  var q = listSearch.objects.toLowerCase().trim(), f = listFilters.objects;
+  return Object.keys(state.objects).map(function(id){ return state.objects[id]; })
     .filter(isShown)
     .filter(function(o){
       return !q || o.name.toLowerCase().indexOf(q)>=0 || (o.fullName||'').toLowerCase().indexOf(q)>=0 ||
         (o.tags||[]).join(' ').toLowerCase().indexOf(q)>=0 || (o.description||'').toLowerCase().indexOf(q)>=0;
-    });
-  var mechanisms = Object.keys(state.mechanisms).map(function(id){return state.mechanisms[id];})
+    })
+    .filter(function(o){ return !anyKey(f.type) || f.type[objectTypeKey(o)]; })
+    .filter(function(o){ return matchesAny(f.sub, objectSubsystems(o)); })
+    .filter(function(o){ return matchesAny(f.tag, o.tags || []); });
+}
+/* У механизма нет своих подсистем и тегов — отбор по ним идёт по объектам-участникам. */
+function listFilteredMechanisms(){
+  var q = listSearch.mechanisms.toLowerCase().trim(), f = listFilters.mechanisms;
+  return Object.keys(state.mechanisms).map(function(id){ return state.mechanisms[id]; })
     .filter(isShown)
     .filter(function(m){
       return !q || m.title.toLowerCase().indexOf(q)>=0 || (m.summary||'').toLowerCase().indexOf(q)>=0 || (m.body||'').toLowerCase().indexOf(q)>=0;
+    })
+    .filter(function(m){ return !anyKey(f.cat) || f.cat[m.category]; })
+    .filter(function(m){
+      if (!anyKey(f.sub) && !anyKey(f.tag)) return true;
+      var objs = mechanismParticipantObjects(m);
+      var subs = [], tags = [];
+      objs.forEach(function(o){ subs = subs.concat(objectSubsystems(o)); tags = tags.concat(o.tags || []); });
+      return matchesAny(f.sub, subs) && matchesAny(f.tag, tags);
     });
-  return {objects:objects, mechanisms:mechanisms};
 }
 
-function renderListTypeFilter(found){
-  var counts = {};
-  found.objects.forEach(function(o){ counts[o.type] = (counts[o.type]||0) + 1; });
-  counts[LIST_MECH_TYPE] = found.mechanisms.length;
-
-  function itemHTML(code, title, dotHTML){
-    return '<label class="multi-select-item">' +
-      '<input type="checkbox" value="'+code+'"'+(listTypeFilter[code]?' checked':'')+'>' +
-      dotHTML +
-      '<span class="multi-select-item-text">'+escapeHtml(title)+'</span>' +
-      '<span class="multi-select-item-count">'+(counts[code]||0)+'</span>' +
-    '</label>';
-  }
-  var html = OBJECT_TYPES.map(function(t){
-    return itemHTML(t.code, t.plural, '<span class="dot" style="background:'+typeColor(t.code)+'"></span>');
-  }).join('');
-  html += '<div class="multi-select-sep"></div>';
-  html += itemHTML(LIST_MECH_TYPE, 'МЕХАНИЗМ', '<span class="dot dot-diamond" style="background:var(--text-muted)"></span>');
-  html += '<div class="multi-select-sep"></div>';
-  html += '<button type="button" class="multi-select-reset"'+(listFilterActive()?'':' disabled')+'>Сбросить отбор</button>';
-
-  var dropdown = document.getElementById('list-filter-type-dropdown');
+/* Выпадающий множественный отбор (тот же вид, что у отбора типов в левой панели). */
+function multiSelectHTML(id, label){
+  return '<div class="multi-select" data-ms="' + id + '">' +
+    '<button class="select-sm multi-select-btn" type="button" aria-haspopup="true" aria-expanded="false">' + escapeHtml(label) + '</button>' +
+    '<div class="multi-select-dropdown" hidden></div></div>';
+}
+function fillMultiSelect(root, opts){
+  var sel = opts.selected, dropdown = root.querySelector('.multi-select-dropdown'), btn = root.querySelector('.multi-select-btn');
   var scrollTop = dropdown.scrollTop;
-  var focusedCode = document.activeElement && dropdown.contains(document.activeElement) ? document.activeElement.value : null;
-  dropdown.innerHTML = html;
+  dropdown.innerHTML = (opts.items.length ? opts.items.map(function(it){
+    return '<label class="multi-select-item"' + (it.color ? ' style="--c:' + it.color + '"' : '') + '>' +
+      '<input type="checkbox" value="' + escapeHtml(it.code) + '"' + (sel[it.code] ? ' checked' : '') + '>' +
+      (it.iconHTML || '') +
+      '<span class="multi-select-item-text">' + escapeHtml(it.title) + '</span>' +
+      (it.count != null ? '<span class="multi-select-item-count">' + it.count + '</span>' : '') +
+    '</label>';
+  }).join('') : '<div class="multi-select-item"><span class="multi-select-item-text">' + escapeHtml(opts.emptyText) + '</span></div>') +
+    '<div class="multi-select-sep"></div>' +
+    '<button type="button" class="multi-select-reset"' + (anyKey(sel) ? '' : ' disabled') + '>Сбросить отбор</button>';
   dropdown.scrollTop = scrollTop;
-  if (focusedCode){
-    var toFocus = dropdown.querySelector('input[value="'+focusedCode+'"]');
-    if (toFocus) toFocus.focus();
-  }
   dropdown.querySelectorAll('input[type=checkbox]').forEach(function(cb){
     cb.addEventListener('change', function(){
-      if (cb.checked) listTypeFilter[cb.value] = true;
-      else delete listTypeFilter[cb.value];
-      renderListView();
+      if (cb.checked) sel[cb.value] = true; else delete sel[cb.value];
+      opts.onChange();
     });
   });
   dropdown.querySelector('.multi-select-reset').addEventListener('click', function(){
-    listTypeFilter = {};
-    renderListView();
+    Object.keys(sel).forEach(function(k){ delete sel[k]; }); opts.onChange();
   });
-
-  var btn = document.getElementById('list-filter-type-btn');
-  var selected = Object.keys(listTypeFilter);
-  var label = 'Все типы';
-  if (selected.length === 1) label = selected[0] === LIST_MECH_TYPE ? 'МЕХАНИЗМ' : typeInfo(selected[0]).plural;
-  else if (selected.length > 1) label = 'Типов: ' + selected.length;
-  btn.textContent = label;
-  btn.title = selected.map(function(c){ return c === LIST_MECH_TYPE ? 'МЕХАНИЗМ' : typeInfo(c).plural; }).join(', ');
-  btn.classList.toggle('has-value', selected.length > 0);
+  var titles = opts.items.filter(function(it){ return sel[it.code]; }).map(function(it){ return it.title; });
+  btn.textContent = !titles.length ? opts.allLabel : (titles.length === 1 ? titles[0] : opts.manyLabel + ': ' + titles.length);
+  btn.title = titles.join(', ');
+  btn.classList.toggle('has-value', titles.length > 0);
+}
+function bindMultiSelectToggle(ms){
+  ms.querySelector('.multi-select-btn').addEventListener('click', function(){
+    var dd = ms.querySelector('.multi-select-dropdown');
+    var open = dd.hidden;
+    closeListDropdowns(ms);
+    dd.hidden = !open; this.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+}
+function closeListDropdowns(except){
+  var any = false;
+  document.querySelectorAll('.multi-select[data-ms]').forEach(function(ms){
+    if (ms === except) return;
+    var dd = ms.querySelector('.multi-select-dropdown');
+    if (!dd.hidden) any = true;
+    dd.hidden = true; ms.querySelector('.multi-select-btn').setAttribute('aria-expanded','false');
+  });
+  return any;
 }
 
-function setListTypeDropdownOpen(open){
-  document.getElementById('list-filter-type-dropdown').hidden = !open;
-  document.getElementById('list-filter-type-btn').setAttribute('aria-expanded', open ? 'true' : 'false');
+var listFiltersTab = null;
+function renderListFilters(){
+  var box = document.getElementById('list-filters');
+  var isObj = listTab === 'objects', f = listFilters[listTab];
+  if (listFiltersTab !== listTab){
+    box.innerHTML = (isObj ? multiSelectHTML('type', 'Все типы') : multiSelectHTML('cat', 'Все категории')) +
+      multiSelectHTML('sub', 'Все подсистемы') + multiSelectHTML('tag', 'Все теги');
+    box.querySelectorAll('.multi-select').forEach(bindMultiSelectToggle);
+    listFiltersTab = listTab;
+  }
+  var shownObjects = Object.keys(state.objects).map(function(id){ return state.objects[id]; }).filter(isShown);
+  var cnt = {type:{}, sub:{}, tag:{}};
+  shownObjects.forEach(function(o){
+    var k = objectTypeKey(o); cnt.type[k] = (cnt.type[k]||0) + 1;
+    objectSubsystems(o).forEach(function(s){ cnt.sub[s] = (cnt.sub[s]||0) + 1; });
+    (o.tags||[]).forEach(function(t){ cnt.tag[t] = (cnt.tag[t]||0) + 1; });
+  });
+  if (isObj){
+    var typeItems = OBJECT_TYPES.filter(function(t){ return cnt.type[t.code] || f.type[t.code]; })
+      .map(function(t){ return {code:t.code, title:t.plural, color:typeColor(t.code), iconHTML:typeIconSVG(t.code), count:cnt.type[t.code]||0}; });
+    if (cnt.type[''] || f.type['']) typeItems.push({code:'', title:UNKNOWN_TYPE_TITLE, color:THEME.typeUnknown, iconHTML:typeIconSVG(''), count:cnt.type['']||0});
+    fillMultiSelect(box.querySelector('[data-ms="type"]'), {items:typeItems, selected:f.type, allLabel:'Все типы', manyLabel:'Типов', emptyText:'Объектов нет', onChange:renderListView});
+  } else {
+    var catCnt = {};
+    Object.keys(state.mechanisms).forEach(function(id){ var m = state.mechanisms[id]; if (isShown(m)) catCnt[m.category] = (catCnt[m.category]||0) + 1; });
+    var catItems = MECH_CATEGORIES.filter(function(c){ return catCnt[c.code] || f.cat[c.code]; })
+      .map(function(c){ return {code:c.code, title:c.title, iconHTML:'<span class="dot dot-diamond" style="background:' + categoryAccent(c.code) + '"></span>', count:catCnt[c.code]||0}; });
+    fillMultiSelect(box.querySelector('[data-ms="cat"]'), {items:catItems, selected:f.cat, allLabel:'Все категории', manyLabel:'Категорий', emptyText:'Механизмов нет', onChange:renderListView});
+  }
+  /* Счётчики подсистем и тегов — по объектам: у механизмов отбор идёт через участников. */
+  fillMultiSelect(box.querySelector('[data-ms="sub"]'), {
+    items: allSubsystems().map(function(s){ return {code:s, title:s, count:cnt.sub[s]||0}; }),
+    selected:f.sub, allLabel:'Все подсистемы', manyLabel:'Подсистем', emptyText:'Подсистем пока нет', onChange:renderListView});
+  fillMultiSelect(box.querySelector('[data-ms="tag"]'), {
+    items: allTags().map(function(t){ return {code:t, title:t, count:cnt.tag[t]||0}; }),
+    selected:f.tag, allLabel:'Все теги', manyLabel:'Тегов', emptyText:'Тегов пока нет', onChange:renderListView});
+}
+
+function visibleListColumns(){
+  return LIST_COLUMNS[listTab].filter(function(c){ return !c.hideBelow || !listTableWidth || listTableWidth >= c.hideBelow; });
+}
+
+function listCellHTML(col, v, entity){
+  var title = '';
+  switch (col.key){
+    case 'name':
+      if (listTab === 'objects') return '<span class="lv-cell is-name" title="' + escapeHtml(v.name) + '"><span class="lv-text">' + escapeHtml(v.name) + '</span></span>';
+      return '<span class="lv-cell is-name" title="' + escapeHtml(v.name) + '"><span class="dot" style="background:' + categoryAccent(entity.category) + '"></span><span class="lv-text">' + escapeHtml(v.name) + '</span></span>';
+    case 'code':
+      return '<span class="lv-cell is-code" title="' + escapeHtml(entity.fullName || '') + '">' + escapeHtml(v.code) + '</span>';
+    case 'mechs':
+      title = v.mechRoles.length ? v.mechRoles.map(function(r){ return r.mech.title + ' — ' + r.roles.join(', '); }).join('\n') : 'Не участвует в механизмах';
+      return '<span class="lv-cell is-count' + (v.mechs ? '' : ' is-zero') + '" title="' + escapeHtml(title) + '"><span class="lv-diamond"></span>' + v.mechs + '</span>';
+    case 'sources': case 'targets':
+      var arr = v[col.key], shown = arr.slice(0, 3), rest = arr.length - shown.length;
+      return '<span class="lv-cell is-list" title="' + escapeHtml(arr.join('\n')) + '"><span class="lv-text">' + escapeHtml(shown.join(', ')) + '</span>' +
+        (rest > 0 ? '<span class="lv-more">+' + rest + '</span>' : '') + '</span>';
+    case 'status':
+      return '<span class="lv-cell">' + (v.status ? '<span class="status-badge status-' + v.statusKind + '">' + escapeHtml(v.status) + '</span>' : '') + '</span>';
+    default:
+      return '<span class="lv-cell" title="' + escapeHtml(v[col.key]) + '">' + escapeHtml(v[col.key]) + '</span>';
+  }
 }
 
 function renderListView(){
-  var found = listSearchedItems();
-  renderListTypeFilter(found);
+  var objs = listFilteredObjects(), mechs = listFilteredMechanisms();
+  document.getElementById('list-count-objects').textContent = objs.length;
+  document.getElementById('list-count-mechanisms').textContent = mechs.length;
+  renderListFilters();
 
-  var filterOn = listFilterActive();
-  var showObjects = !filterOn || Object.keys(listTypeFilter).some(function(c){ return c !== LIST_MECH_TYPE; });
-  var showMechanisms = !filterOn || !!listTypeFilter[LIST_MECH_TYPE];
-  var allObjects = found.objects.filter(function(o){ return !filterOn || listTypeFilter[o.type]; });
-  var allMechanisms = found.mechanisms;
+  var isObj = listTab === 'objects', cols = visibleListColumns(), sort = listSort[listTab];
+  var template = cols.map(function(c){ return c.width; }).join(' ');
+  var rows, groups = [];
+  if (isObj){
+    rows = objs.map(function(o){ var mr = objectMechanismRoles(o.id); var v = listObjectValues(o, mr); v.mechRoles = mr; return {e:o, v:v}; });
+    var byType = {};
+    rows.forEach(function(r){ var k = objectTypeKey(r.e); (byType[k] = byType[k] || []).push(r); });
+    OBJECT_TYPES.forEach(function(t){ if (byType[t.code]) groups.push({title:t.plural, head:'<span style="--c:' + typeColor(t.code) + '">' + typeIconSVG(t.code) + '</span>', rows:byType[t.code]}); });
+    if (byType['']) groups.push({title:UNKNOWN_TYPE_TITLE, head:'<span style="--c:' + THEME.typeUnknown + '">' + typeIconSVG('') + '</span>', rows:byType['']});
+  } else {
+    rows = mechs.map(function(m){ return {e:m, v:listMechanismValues(m)}; });
+    var byCat = {};
+    rows.forEach(function(r){ (byCat[r.e.category] = byCat[r.e.category] || []).push(r); });
+    MECH_CATEGORIES.forEach(function(c){ if (byCat[c.code]) groups.push({title:c.title, head:'<span class="dot dot-diamond" style="background:' + categoryAccent(c.code) + '"></span>', rows:byCat[c.code]}); });
+  }
+  groups.forEach(function(g){ g.rows.sort(function(a, b){ return listCompare(a, b, sort.key, sort.dir); }); });
 
-  var html = '';
-  if (showObjects){
-    html += '<p class="list-view-section-title">Объекты · найдено: '+allObjects.length+'</p>';
-    html += allObjects.length ? renderGroupedObjectRows(allObjects) : '<p class="ref-empty">Ничего не найдено.</p>';
-  }
-  if (showMechanisms){
-    html += '<p class="list-view-section-title">Механизмы · найдено: '+allMechanisms.length+'</p>';
-    html += allMechanisms.length ? renderGroupedMechanismRows(allMechanisms) : '<p class="ref-empty">Ничего не найдено.</p>';
-  }
+  var head = '<div class="lv-head" role="row">' + cols.map(function(c){
+    var on = sort.key === c.key;
+    return '<button type="button" class="lv-sort' + (on ? ' is-sorted' : '') + '" data-sort="' + c.key + '" role="columnheader" aria-sort="' + (on ? (sort.dir > 0 ? 'ascending' : 'descending') : 'none') + '">' +
+      escapeHtml(c.title) + (on ? '<span class="lv-sort-arrow" aria-hidden="true">' + (sort.dir > 0 ? '↑' : '↓') + '</span>' : '') + '</button>';
+  }).join('') + '</div>';
+  var kind = isObj ? 'object' : 'mechanism';
+  var html = groups.length ? head + groups.map(function(g){
+    return '<div class="list-view-group"><p class="lv-group-title">' + g.head + escapeHtml(g.title) + ' · ' + g.rows.length + '</p>' +
+      g.rows.map(function(r){
+        return '<button class="list-view-row lv-row' + (r.e.status === 'deprecated' ? ' is-deprecated' : '') + '" data-kind="' + kind + '" data-id="' + r.e.id + '" type="button">' +
+          cols.map(function(c){ return listCellHTML(c, r.v, r.e); }).join('') + '</button>';
+      }).join('') + '</div>';
+  }).join('') : '<p class="ref-empty" style="margin-top:18px">Ничего не найдено.</p>';
 
   var body = document.getElementById('list-view-body');
+  body.style.setProperty('--lv-cols', template);
   body.innerHTML = html;
   syncSidebarActive();
+  body.querySelectorAll('.lv-sort').forEach(function(b){
+    b.addEventListener('click', function(){
+      var key = b.getAttribute('data-sort');
+      if (sort.key === key) sort.dir = -sort.dir; else { sort.key = key; sort.dir = 1; }
+      renderListView();
+    });
+  });
   body.querySelectorAll('.list-view-row').forEach(function(row){
     row.addEventListener('click', function(){
       selectEntity(row.getAttribute('data-kind')==='object' ? 'obj' : 'mech', row.getAttribute('data-id'));
     });
   });
+}
+
+function setListTab(tab){
+  if (tab === listTab) return;
+  listTab = tab;
+  document.querySelectorAll('.list-tab').forEach(function(t){ t.classList.toggle('active', t.getAttribute('data-list-tab') === tab); });
+  document.getElementById('list-search').value = listSearch[tab];
+  document.getElementById('btn-list-add').textContent = tab === 'objects' ? '+ Объект' : '+ Механизм';
+  closeListDropdowns();
+  renderListView();
+}
+
+/* Ширина таблицы решает, какие колонки видны (перерисовка — только при смене набора). */
+function watchListWidth(){
+  var body = document.getElementById('list-view-body');
+  function update(){
+    var w = body.clientWidth - 40; /* внутренние отступы тела списка */
+    if (w <= 0) return;
+    var before = visibleListColumns().length;
+    listTableWidth = w;
+    if (visibleListColumns().length !== before) renderListView();
+  }
+  if (window.ResizeObserver) new ResizeObserver(update).observe(body);
+  else window.addEventListener('resize', update);
 }
 
 /* Левая панель показывает либо объекты, либо механизмы. У каждой вкладки своя
@@ -3347,62 +3617,34 @@ var sideTab = 'objects';
 var sideSearch = { objects:'', mechanisms:'' };
 var graphFilter = null; /* null — отбор не задан; иначе {nodes:Set, edge:function(e)} */
 
-/* Отбор по типам в левой панели: несколько типов сразу; '' — «Тип не указан». Пусто — все типы. */
-var sideTypeFilter = {};
+/* Отбор по подсистемам в левой панели (дерево и так сгруппировано по типу). Пусто — все. */
+var sideSubFilter = {};
 
-function setSideTypeDropdownOpen(open){
-  document.getElementById('side-filter-type-dropdown').hidden = !open;
-  document.getElementById('side-filter-type-btn').setAttribute('aria-expanded', open ? 'true' : 'false');
-}
-
-function renderSideTypeFilter(){
-  var counts = {};
+function renderSideSubFilter(){
+  var cnt = {};
   Object.keys(state.objects).forEach(function(id){
     var o = state.objects[id]; if (!isShown(o)) return;
-    var k = typeInfo(o.type) ? o.type : ''; counts[k] = (counts[k]||0) + 1;
+    objectSubsystems(o).forEach(function(s){ cnt[s] = (cnt[s]||0) + 1; });
   });
-  var items = OBJECT_TYPES.map(function(t){ return {code:t.code, title:t.plural, color:typeColor(t.code)}; });
-  if (counts['']) items.push({code:'', title:UNKNOWN_TYPE_TITLE, color:THEME.typeUnknown});
-  var dropdown = document.getElementById('side-filter-type-dropdown');
-  var scrollTop = dropdown.scrollTop;
-  dropdown.innerHTML = items.map(function(t){
-    return '<label class="multi-select-item" style="--c:' + t.color + '">' +
-      '<input type="checkbox" value="' + t.code + '"' + (sideTypeFilter[t.code] ? ' checked' : '') + '>' +
-      typeIconSVG(t.code) +
-      '<span class="multi-select-item-text">' + escapeHtml(t.title) + '</span>' +
-      '<span class="multi-select-item-count">' + (counts[t.code]||0) + '</span>' +
-    '</label>';
-  }).join('') + '<div class="multi-select-sep"></div>' +
-    '<button type="button" class="multi-select-reset"' + (Object.keys(sideTypeFilter).length ? '' : ' disabled') + '>Сбросить отбор</button>';
-  dropdown.scrollTop = scrollTop;
-  dropdown.querySelectorAll('input[type=checkbox]').forEach(function(cb){
-    cb.addEventListener('change', function(){
-      if (cb.checked) sideTypeFilter[cb.value] = true; else delete sideTypeFilter[cb.value];
-      renderSidebar();
-    });
-  });
-  dropdown.querySelector('.multi-select-reset').addEventListener('click', function(){ sideTypeFilter = {}; renderSidebar(); });
-  var sel = Object.keys(sideTypeFilter);
-  var btn = document.getElementById('side-filter-type-btn');
-  btn.textContent = !sel.length ? 'Все типы' : (sel.length === 1 ? (sel[0] ? typeInfo(sel[0]).plural : UNKNOWN_TYPE_TITLE) : 'Типов: ' + sel.length);
-  btn.title = sel.map(function(c){ return c ? typeInfo(c).plural : UNKNOWN_TYPE_TITLE; }).join(', ');
-  btn.classList.toggle('has-value', sel.length > 0);
+  fillMultiSelect(document.querySelector('[data-ms="side-sub"]'), {
+    items: allSubsystems().map(function(s){ return {code:s, title:s, count:cnt[s]||0}; }),
+    selected:sideSubFilter, allLabel:'Все подсистемы', manyLabel:'Подсистем', emptyText:'Подсистем пока нет', onChange:renderSidebar});
 }
 
 function filteredSideObjects(){
   var q = sideSearch.objects.toLowerCase().trim();
   var tagFilter = document.getElementById('filter-tag').value;
-  var types = Object.keys(sideTypeFilter);
+  var subsOn = anyKey(sideSubFilter);
   var list = Object.keys(state.objects).map(function(id){return state.objects[id];})
     .filter(isShown)
     .filter(function(o){
       return !q || o.name.toLowerCase().indexOf(q)>=0 || (o.fullName||'').toLowerCase().indexOf(q)>=0 ||
         (o.tags||[]).join(' ').toLowerCase().indexOf(q)>=0;
     })
-    .filter(function(o){ return !types.length || sideTypeFilter[typeInfo(o.type) ? o.type : '']; })
+    .filter(function(o){ return matchesAny(sideSubFilter, objectSubsystems(o)); })
     .filter(function(o){ return !tagFilter || (o.tags||[]).indexOf(tagFilter)>=0; })
     .sort(function(a,b){ return a.name.localeCompare(b.name,'ru'); });
-  return {list:list, active:!!(q || types.length || tagFilter)};
+  return {list:list, active:!!(q || subsOn || tagFilter)};
 }
 
 function filteredSideMechanisms(){
@@ -3584,7 +3826,7 @@ function buildChipEditor(container, opt){
 
 function renderSidebar(){
   refreshTagFilterOptions();
-  renderSideTypeFilter();
+  renderSideSubFilter();
   var objs = filteredSideObjects(), mechs = filteredSideMechanisms();
   document.getElementById('side-count-objects').textContent = objs.list.length;
   document.getElementById('side-count-mechanisms').textContent = mechs.list.length;
@@ -3596,11 +3838,14 @@ function renderSidebar(){
     var mechCount = objectMechanismCounts();
     function objectRow(o){
       var mc = mechCount[o.id] || 0;
-      return '<button class="list-row" data-kind="object" data-id="'+o.id+'" type="button">' +
+      var st = o.status || DEFAULT_OBJECT_STATUS;
+      var badge = st === DEFAULT_OBJECT_STATUS ? '' :
+        '<span class="list-row-sub"><span class="status-badge status-'+statusKind(st)+'">'+escapeHtml(objectStatusTitle(st))+'</span></span>';
+      var tip = 'Участвует в '+mc+' '+pluralRu(mc,'механизме','механизмах','механизмах');
+      return '<button class="list-row'+(st === 'deprecated' ? ' is-deprecated' : '')+'" data-kind="object" data-id="'+o.id+'" type="button">' +
         '<span class="dot" style="background:'+typeColor(o.type)+'"></span>' +
-        '<span class="list-row-main"><span class="list-row-title">'+escapeHtml(o.name)+'</span>' +
-          '<span class="list-row-sub"><span class="cat-badge" style="--cat:'+typeColor(o.type)+'">'+escapeHtml(typeTitle(o.type))+'</span></span></span>' +
-        '<span class="list-row-meta"><span class="list-row-count" title="Участвует в '+mc+' '+pluralRu(mc,'механизме','механизмах','механизмах')+'">'+mc+'</span></span>' +
+        '<span class="list-row-main"><span class="list-row-title">'+escapeHtml(o.name)+'</span>' + badge + '</span>' +
+        '<span class="list-row-meta"><span class="list-row-count'+(mc ? '' : ' is-zero')+'" title="'+tip+'" aria-label="'+tip+'"><span class="lv-diamond" aria-hidden="true"></span>'+mc+'</span></span>' +
       '</button>';
     }
     /* Группы по типу, как в дереве конфигуратора; пустые не показываются.
@@ -3965,7 +4210,7 @@ function setupResizeHandle(handleId, side){
 /* ===================== Масштаб, вписывание, центрирование ===================== */
 var SCALE_MIN = 0.05, SCALE_MAX = 3;
 var VIEW_ANIM_MS = 220;          /* ≤ 250 мс */
-var FIT_PADDING = 40;            /* отступ от краёв холста при «вписать в экран» */
+var FIT_PADDING = 48;            /* отступ от краёв холста до узла с подписью при «вписать в экран» */
 var FIT_MAX_SCALE = 1.5;
 var CENTER_EDGE_MARGIN = 80;     /* ближе к краю — центрируем */
 var ZOOM_STEP = 1.25;
@@ -3998,17 +4243,45 @@ function zoomBy(factor){
   animateView({scale:s, offsetX:cx - w.x*s, offsetY:cy - w.y*s});
 }
 
+/* Границы графа на экране при масштабе s (без сдвига): узлы плюс подписи, которые
+   имеют постоянный экранный размер (у объекта — под кругом, у механизма — над ромбом). */
+function screenExtents(s){
+  ctx2d.font = THEME.labelFont;
+  var e = {x0:Infinity, x1:-Infinity, y0:Infinity, y1:-Infinity};
+  currentNodes.forEach(function(n){
+    var r = nodeRadius(n)*s, cx = n.x*s, cy = n.y*s;
+    var hw = Math.max(r, labelWidth(ctx2d, n)/2 + LABEL_PAD_X), lh = labelHeight(n) + LABEL_GAP;
+    e.x0 = Math.min(e.x0, cx - hw); e.x1 = Math.max(e.x1, cx + hw);
+    e.y0 = Math.min(e.y0, cy - r - (n.kind === 'mechanism' ? lh : 0));
+    e.y1 = Math.max(e.y1, cy + r + (n.kind === 'mechanism' ? 0 : lh));
+  });
+  return e;
+}
+function fitView(){
+  var W = viewportWidth - 2*FIT_PADDING, H = viewportHeight - 2*FIT_PADDING;
+  function fits(s){ var e = screenExtents(s); return e.x1 - e.x0 <= W && e.y1 - e.y0 <= H; }
+  /* Размер подписей не зависит от масштаба — подбираем масштаб двоичным поиском. */
+  var lo = clampScale(0), hi = clampScale(FIT_MAX_SCALE);
+  if (fits(hi)) lo = hi;
+  else for (var i = 0; i < 30; i++){ var mid = (lo + hi)/2; if (fits(mid)) lo = mid; else hi = mid; }
+  var e = screenExtents(lo);
+  return {scale:lo, offsetX:viewportWidth/2 - (e.x0 + e.x1)/2, offsetY:viewportHeight/2 - (e.y0 + e.y1)/2};
+}
 function fitToScreen(){
   if (!currentNodes.length) return;
-  var minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
-  currentNodes.forEach(function(n){
-    var r = nodeRadius(n);
-    minX = Math.min(minX, n.x-r); maxX = Math.max(maxX, n.x+r);
-    minY = Math.min(minY, n.y-r); maxY = Math.max(maxY, n.y+r);
-  });
-  var bw = Math.max(1, maxX-minX), bh = Math.max(1, maxY-minY);
-  var s = clampScale(Math.min((viewportWidth - 2*FIT_PADDING)/bw, (viewportHeight - 2*FIT_PADDING)/bh, FIT_MAX_SCALE));
-  animateView({scale:s, offsetX:viewportWidth/2 - (minX+bw/2)*s, offsetY:viewportHeight/2 - (minY+bh/2)*s});
+  animateView(fitView());
+}
+/* Начальная раскладка (и «Разложить заново»): когда физика успокоилась, граф
+   вписывается, если выходит за отступы. */
+var pendingInitialFit = true;
+function maybeInitialFit(){
+  if (!pendingInitialFit || focusMode || currentView !== 'graph' || !currentNodes.length || !viewportWidth) return;
+  pendingInitialFit = false;
+  var e = screenExtents(view.scale);
+  var fitsNow = e.x0 + view.offsetX >= FIT_PADDING && e.x1 + view.offsetX <= viewportWidth - FIT_PADDING &&
+                e.y0 + view.offsetY >= FIT_PADDING && e.y1 + view.offsetY <= viewportHeight - FIT_PADDING;
+  if (fitsNow) return;
+  animateView(fitView());
 }
 
 /* Точка сущности на холсте: узел объекта/механизма; механизм без узла (режим без
@@ -4115,7 +4388,7 @@ function enterFocus(mid){
   var prevView = {scale:view.scale, offsetX:view.offsetX, offsetY:view.offsetY};
   if (currentMode !== 'full'){
     currentMode = 'full';
-    document.getElementById('toggle-mechanisms').checked = true;
+    syncMechModeUI();
     syncGraphModel();
     /* Узел механизма только что появился в случайном месте — ставим его в центр участников. */
     var mn = nodeById.get('mech:'+mid), pts = focusColumns(mid);
@@ -4156,7 +4429,7 @@ function exitFocus(immediate){
     hideCanvasTooltip();
     if (fm.prevMode !== currentMode){
       currentMode = fm.prevMode;
-      document.getElementById('toggle-mechanisms').checked = currentMode === 'full';
+      syncMechModeUI();
       syncGraphModel();
     }
     /* Перестройка графа «подогревает» физику — возвращаем её состояние до входа,
@@ -4241,11 +4514,61 @@ function drawFocusEdgeLabels(ctx, nodeLabels){
 }
 
 function hideCanvasTooltip(){ var t = document.getElementById('canvas-tooltip'); if (t) t.hidden = true; }
+function showCanvasTooltipAt(tip, sx, sy){
+  tip.hidden = false;
+  var w = tip.offsetWidth, hgt = tip.offsetHeight;
+  tip.style.left = Math.max(4, Math.min(sx + 12, viewportWidth - w - 8)) + 'px';
+  tip.style.top = (sy + 14 + hgt > viewportHeight - 4 ? Math.max(4, sy - hgt - 10) : sy + 14) + 'px';
+}
+/* Ребро в режиме «связями»: все механизмы между двумя объектами — название (ромб в цвете
+   категории), направление «Источник → Приёмник» и описания участия. */
+function edgeTooltipHTML(e){
+  var a = state.objects[e.a.slice(4)], b = state.objects[e.b.slice(4)];
+  if (!a || !b) return '';
+  var ids = Array.from(e.mechanismIds).filter(function(id){ return state.mechanisms[id]; })
+    .sort(function(x, y){ return state.mechanisms[x].title.localeCompare(state.mechanisms[y].title, 'ru'); });
+  return ids.map(function(mid){
+    var m = state.mechanisms[mid];
+    function parts(o){ return m.participants.filter(function(p){ return p.objectId === o.id; }); }
+    function dir(o, d){ return parts(o).some(function(p){ return roleInfo(p.role).direction === d; }); }
+    var arrow;
+    if (dir(a,'source') && dir(b,'target')) arrow = escapeHtml(a.name) + ' → ' + escapeHtml(b.name);
+    else if (dir(b,'source') && dir(a,'target')) arrow = escapeHtml(b.name) + ' → ' + escapeHtml(a.name);
+    else arrow = escapeHtml(a.name) + ' — ' + escapeHtml(b.name);
+    var notes = [a, b].map(function(o){
+      var n = parts(o).map(function(p){ return p.note; }).filter(Boolean);
+      return n.length ? '<div class="ctip-note"><b>' + escapeHtml(o.name) + ':</b> ' + escapeHtml(n.join('; ')) + '</div>' : '';
+    }).join('');
+    return '<div class="ctip-mech"><div class="ctip-title"><span class="om-diamond" style="--c:' + categoryAccent(m.category) + '"></span>' + escapeHtml(m.title) + '</div>' +
+      '<div class="ctip-dir">' + arrow + '</div>' + notes + '</div>';
+  }).join('');
+}
+var graphTipKey = null;
+function updateGraphTooltip(sx, sy, node, wp){
+  var tip = document.getElementById('canvas-tooltip');
+  if (dragNode || isPanning){ tip.hidden = true; graphTipKey = null; return; }
+  var key = null, html = '';
+  if (node){
+    labelInfo(ctx2d, node);
+    if (node._labelTruncated){ key = 'n:' + node.id; html = escapeHtml(node.label); }
+  } else if (currentMode === 'collapsed'){
+    var edge = hitTestEdge(wp.x, wp.y);
+    if (edge){ key = 'e:' + edge.key; html = edgeTooltipHTML(edge); }
+  }
+  if (!key){
+    /* Обрезанная подпись под курсором (сама плашка, не круг). */
+    var lb = (lastLabels || []).filter(function(b){ return b.n._labelTruncated && sx >= b.x0 && sx <= b.x1 && sy >= b.y0 && sy <= b.y1; })[0];
+    if (lb){ key = 'n:' + lb.n.id; html = escapeHtml(lb.n.label); }
+  }
+  if (!key || !html){ tip.hidden = true; graphTipKey = null; return; }
+  if (key !== graphTipKey){ tip.innerHTML = html; graphTipKey = key; }
+  showCanvasTooltipAt(tip, sx, sy);
+}
 function updateCanvasTooltip(sx, sy){
   var tip = document.getElementById('canvas-tooltip');
   var b = edgeLabelBoxes.filter(function(b){ return b.full !== b.text && sx >= b.x0 && sx <= b.x1 && sy >= b.y0 && sy <= b.y1; })[0];
   if (!b){ tip.hidden = true; return; }
-  tip.textContent = b.full;
+  tip.textContent = b.full; graphTipKey = null;
   tip.style.left = Math.min(sx + 12, viewportWidth - 330) + 'px';
   tip.style.top = (sy + 14) + 'px';
   tip.hidden = false;
@@ -4337,6 +4660,17 @@ function updateLegend(){
       return '<div class="legend-item"><span class="dot dot-diamond" style="--c:'+categoryAccent(c.code)+'"></span>'+escapeHtml(c.title)+'</div>';
     }).join('');
   }
+  if (html){
+    /* Линии — те же, что рисует холст (EDGE_DASH, edgeStyle). */
+    var lines = currentMode === 'full'
+      ? [['solid', 'Объект передаёт данные в механизм'], ['dashed', 'Механизм передаёт данные в объект'], ['dotted', 'Участие без направления (параметр, условие)']]
+      : [['solid', 'Передача данных: от источника к приёмнику'], ['dotted', 'Связь без направления (параметр, условие)']];
+    html += '<p class="legend-group-title">Связи</p>' + lines.map(function(l){
+      var dash = EDGE_DASH[l[0]].join(' ');
+      return '<div class="legend-item"><svg class="legend-line" viewBox="0 0 22 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="currentColor" stroke-width="1.5"' +
+        (dash ? ' stroke-dasharray="' + dash + '"' : '') + (l[0] === 'dotted' ? ' stroke-linecap="round"' : '') + '/></svg>' + escapeHtml(l[1]) + '</div>';
+    }).join('');
+  }
   document.getElementById('legend-body').innerHTML = html;
   legend.hidden = !html;
 }
@@ -4366,13 +4700,20 @@ function attachHandlers(){
   bindMinimap();
   window.addEventListener('resize', resizeCanvas);
 
-  /* «Показывать механизмы»: включено = полный режим (объекты и механизмы). */
-  document.getElementById('toggle-mechanisms').addEventListener('change', function(ev){
-    /* Во время фокуса переключатель выводит из фокуса и возвращает прежний режим. */
-    if (focusMode){ exitFocus(true); return; }
-    currentMode = ev.target.checked ? 'full' : 'collapsed';
-    clearSelection();
-    syncGraphModel();
+  /* «Механизмы: узлами» = полный режим (объекты и механизмы), «связями» — только объекты. */
+  syncMechModeUI();
+  document.querySelectorAll('.mech-mode-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var next = btn.getAttribute('data-mode');
+      /* Во время фокуса переключатель выводит из фокуса и возвращает прежний режим. */
+      if (focusMode){ exitFocus(true); if (next === currentMode){ syncMechModeUI(); return; } }
+      if (next === currentMode) return;
+      currentMode = next;
+      try{ localStorage.setItem(MECH_MODE_KEY, currentMode); }catch(e){}
+      syncMechModeUI();
+      clearSelection();
+      syncGraphModel();
+    });
   });
 
   document.querySelectorAll('.view-toggle .mode-btn').forEach(function(btn){
@@ -4383,35 +4724,36 @@ function attachHandlers(){
     });
   });
 
-  document.getElementById('list-search').addEventListener('input', renderListView);
-  document.getElementById('list-filter-type-btn').addEventListener('click', function(){
-    setListTypeDropdownOpen(document.getElementById('list-filter-type-dropdown').hidden);
+  document.getElementById('list-search').addEventListener('input', function(ev){
+    listSearch[listTab] = ev.target.value;
+    renderListView();
+  });
+  document.querySelectorAll('.list-tab').forEach(function(tab){
+    tab.addEventListener('click', function(){ setListTab(tab.getAttribute('data-list-tab')); });
   });
   document.addEventListener('mousedown', function(e){
-    if (!document.getElementById('list-filter-type').contains(e.target)) setListTypeDropdownOpen(false);
+    closeListDropdowns(e.target.closest ? e.target.closest('.multi-select[data-ms]') : null);
   });
-  document.getElementById('btn-list-new').addEventListener('click', function(){
-    openModal({
-      title:'Что создать?',
-      bodyHTML:'<p>Выберите, что добавить.</p>',
-      footerButtons:[
-        {label:'Отмена', onClick:function(){ return true; }},
-        {label:'Механизм', onClick:function(){
-          var m = createMechanism({title:'Новый механизм'});
-          renderListView();
-          setTimeout(function(){ selectEntity('mech', m.id); startInlineTitleEdit(document.getElementById('panel-mechanism')); }, 0);
-        }},
-        {label:'Объект', variant:'primary', onClick:function(){
-          setTimeout(function(){
-            openQuickCreateObject(function(obj){
-              renderListView();
-              setTimeout(function(){ selectEntity('obj', obj.id); }, 0);
-            });
-          }, 0);
-        }}
-      ]
-    });
+  /* «+ Объект» / «+ Механизм»: как в левой панели — сущность создана, карточка открыта,
+     курсор в поле названия. Поиск и отборы вкладки сбрасываются, чтобы строка была видна. */
+  document.getElementById('btn-list-add').addEventListener('click', function(){
+    listSearch[listTab] = '';
+    document.getElementById('list-search').value = '';
+    var f = listFilters[listTab]; Object.keys(f).forEach(function(k){ f[k] = {}; });
+    if (listTab === 'objects'){
+      var obj = createObject({name:'Новый объект'});
+      renderListView();
+      selectEntity('obj', obj.id);
+      startInlineTitleEdit(document.getElementById('panel-object'));
+    } else {
+      var m = createMechanism({title:'Новый механизм'});
+      renderListView();
+      selectEntity('mech', m.id);
+      startInlineTitleEdit(document.getElementById('panel-mechanism'));
+    }
   });
+  watchListWidth();
+  bindMultiSelectToggle(document.querySelector('[data-ms="side-sub"]'));
 
   setupResizeHandle('resize-left', 'left');
   setupResizeHandle('resize-right', 'right');
@@ -4434,7 +4776,7 @@ function attachHandlers(){
     sideSearch[sideTab] = '';
     document.getElementById('search-input').value = '';
     if (sideTab === 'objects'){
-      sideTypeFilter = {};
+      sideSubFilter = {};
       document.getElementById('filter-tag').value = '';
     } else {
       document.getElementById('filter-mechcategory').value = '';
@@ -4472,20 +4814,21 @@ function attachHandlers(){
   });
   document.getElementById('btn-add-object-empty').addEventListener('click', addObjectFromUI);
 
-  document.querySelectorAll('.side-tab').forEach(function(tab){
+  document.querySelectorAll('#sidebar-left .side-tab').forEach(function(tab){
     tab.addEventListener('click', function(){
       var next = tab.getAttribute('data-side');
       if (next === sideTab) return;
       sideTab = next;
-      document.querySelectorAll('.side-tab').forEach(function(t){ t.classList.toggle('active', t === tab); });
+      document.querySelectorAll('#sidebar-left .side-tab').forEach(function(t){ t.classList.toggle('active', t === tab); });
       var isObj = sideTab === 'objects';
       document.getElementById('side-filters-objects').hidden = !isObj;
       document.getElementById('side-filters-mechanisms').hidden = isObj;
       var search = document.getElementById('search-input');
       search.value = sideSearch[sideTab];
       search.placeholder = isObj ? 'Поиск объектов…' : 'Поиск механизмов…';
-      document.getElementById('btn-side-add').textContent = isObj ? '+ Объект' : '+ Механизм';
-      document.getElementById('side-tab-title').textContent = isObj ? 'Объекты' : 'Механизмы';
+      var addBtn = document.getElementById('btn-side-add');
+      addBtn.title = isObj ? 'Создать объект' : 'Создать механизм';
+      addBtn.setAttribute('aria-label', addBtn.title);
       renderSidebar();
     });
   });
@@ -4493,20 +4836,15 @@ function attachHandlers(){
     sideSearch[sideTab] = ev.target.value;
     renderSidebar();
   });
-  document.getElementById('side-filter-type-btn').addEventListener('click', function(){
-    setSideTypeDropdownOpen(document.getElementById('side-filter-type-dropdown').hidden);
-  });
-  document.addEventListener('mousedown', function(e){
-    if (!document.getElementById('side-filter-type').contains(e.target)) setSideTypeDropdownOpen(false);
-  });
-  document.getElementById('toggle-deprecated').checked = showDeprecated;
-  document.getElementById('toggle-deprecated').addEventListener('change', function(ev){
+  syncDeprecatedSwitches();
+  document.querySelectorAll('.toggle-deprecated').forEach(function(cb){ cb.addEventListener('change', function(ev){
     showDeprecated = ev.target.checked;
+    syncDeprecatedSwitches();
     try{ localStorage.setItem(SHOW_DEPRECATED_KEY, showDeprecated ? '1' : '0'); }catch(e){}
     if (focusMode) exitFocus(true);
     syncGraphModel(); renderSidebar();
     if (currentView === 'list') renderListView();
-  });
+  }); });
   document.getElementById('filter-tag').addEventListener('change', renderSidebar);
   document.getElementById('filter-mechcategory').addEventListener('change', renderSidebar);
 
@@ -4517,15 +4855,25 @@ function attachHandlers(){
   document.getElementById('btn-zoom-in').addEventListener('click', function(){ zoomBy(ZOOM_STEP); });
   document.getElementById('btn-zoom-out').addEventListener('click', function(){ zoomBy(1/ZOOM_STEP); });
   document.getElementById('btn-fit').addEventListener('click', fitToScreen);
+  /* Легенда: при первом запуске (нет сохранённого состояния) развёрнута, дальше — как оставил пользователь. */
+  var LEGEND_OPEN_KEY = 'nodusLegendOpen';
+  (function(){
+    var open = true;
+    try{ open = localStorage.getItem(LEGEND_OPEN_KEY) !== '0'; }catch(e){}
+    document.getElementById('legend-body').hidden = !open;
+    document.getElementById('legend-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+  })();
   document.getElementById('legend-toggle').addEventListener('click', function(ev){
     var body = document.getElementById('legend-body');
     body.hidden = !body.hidden;
     ev.currentTarget.setAttribute('aria-expanded', body.hidden ? 'false' : 'true');
+    try{ localStorage.setItem(LEGEND_OPEN_KEY, body.hidden ? '0' : '1'); }catch(e){}
   });
   document.getElementById('btn-relayout').addEventListener('click', function(){
     if (focusMode) exitFocus(true);
     Object.keys(state.objects).forEach(function(id){ state.objects[id].fx=null; state.objects[id].fy=null; });
     Object.keys(state.mechanisms).forEach(function(id){ state.mechanisms[id].fx=null; state.mechanisms[id].fy=null; });
+    pendingInitialFit = true;
     var spread = initialSpread(nodeById.size, 200);
     nodeById.forEach(function(n){
       n.fx=null; n.fy=null;
@@ -4658,8 +5006,7 @@ function attachHandlers(){
     }
     if (e.key === 'Escape'){
       if (!document.getElementById('more-menu').hidden){ document.getElementById('more-menu').hidden = true; document.getElementById('btn-more').setAttribute('aria-expanded','false'); document.getElementById('btn-more').focus(); }
-      else if (!document.getElementById('list-filter-type-dropdown').hidden) setListTypeDropdownOpen(false);
-      else if (!document.getElementById('side-filter-type-dropdown').hidden) setSideTypeDropdownOpen(false);
+      else if (closeListDropdowns()){}
       else if (document.getElementById('modal-root').innerHTML) closeModal();
       else if (focusMode) exitFocus();
       else clearSelection();
