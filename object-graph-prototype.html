@@ -258,7 +258,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .side-group-items[hidden]{ display:none; }
 .side-group-items .list-row{ padding-left:27px; }
 .deprecated-tag{ display:inline-block; margin-left:6px; padding:0 5px; border-radius:3px; font-size:var(--fs-caption); line-height:1.5; font-style:normal; font-weight:400; color:var(--danger); background:var(--danger-soft); vertical-align:1px; }
-.is-deprecated .pcard-name, .is-deprecated > .ref-item-main .ref-item-title{ text-decoration:line-through; text-decoration-color:var(--text-faint); }
+.is-deprecated .pcard-name, .is-deprecated > .ref-item-main .ref-item-title, .om-link.is-deprecated .ref-item-title, .om-mech.is-deprecated .om-mech-title .ref-item-title{ text-decoration:line-through; text-decoration-color:var(--text-faint); }
 .cat-badge{ font-size:var(--fs-caption); line-height:1.4; padding:0 6px; border-radius:3px; color:var(--cat); background:color-mix(in srgb, var(--cat) var(--badge-bg-mix), transparent); }
 .no-summary{ font-size:var(--fs-caption); color:var(--text-faint); font-style:italic; }
 .ref-empty{ font-size:var(--fs-caption); color:var(--text-faint); padding:8px 14px; margin:0; }
@@ -446,6 +446,36 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .panel-hint{ font-size:var(--fs-base); color:var(--text-muted); }
 
 .ref-list{ display:flex; flex-direction:column; gap:4px; }
+/* «Участвует в механизмах»: группы по роли объекта, механизмы без рамок, участники — с одной линией-отступом */
+.panel-section-header .panel-section-title{ margin:0; }
+#obj-mech-title{ white-space:nowrap; }
+#btn-add-to-mech{ white-space:nowrap; padding-left:8px; padding-right:8px; }
+.om-group + .om-group{ margin-top:10px; }
+.om-group-title{ margin:0 0 4px; font-size:var(--fs-caption); color:var(--text-faint); text-transform:none; }
+.om-mech + .om-mech{ margin-top:6px; }
+.om-mech-row{ display:flex; align-items:flex-start; gap:6px; }
+.om-toggle{ flex:none; width:16px; height:20px; padding:0; margin-top:1px; background:transparent; border:none; color:var(--text-muted); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.om-toggle::before{ content:''; width:6px; height:6px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(45deg); margin-top:-3px; }
+.om-toggle[aria-expanded="false"]::before{ transform:rotate(-45deg); margin-top:0; margin-left:-2px; }
+.om-toggle:hover{ color:var(--text); }
+.om-link{ flex:1; min-width:0; display:block; padding:1px 4px; margin:0 -4px; background:transparent; border:none; border-radius:var(--radius); text-align:left; cursor:pointer; color:var(--text); font:inherit; }
+.om-link:hover{ background:var(--bg-elevated); }
+.om-mech-title{ display:flex; align-items:center; gap:7px; font-size:var(--fs-base); font-weight:500; }
+.om-diamond{ width:8px; height:8px; flex:none; border:2px solid var(--c); border-radius:2px; transform:rotate(45deg); }
+.om-note{ display:block; font-size:var(--fs-caption); color:var(--text-muted); margin-top:1px; padding-left:15px; }
+.om-parts{ margin:4px 0 0 7px; padding-left:14px; border-left:1px solid var(--border); display:flex; flex-direction:column; gap:3px; }
+.om-parts[hidden]{ display:none; }
+.om-part-title{ display:flex; align-items:center; gap:7px; font-size:var(--fs-base); }
+.om-part-title .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+.om-part-meta{ display:block; font-size:var(--fs-caption); color:var(--text-faint); padding-left:15px; }
+.om-part-note{ display:block; font-size:var(--fs-caption); color:var(--text-muted); padding-left:15px; }
+.om-empty-parts{ font-size:var(--fs-caption); color:var(--text-faint); margin:0; }
+.om-add{ margin:6px 0 10px; padding:8px; background:var(--bg-elevated); border:1px dashed var(--border); border-radius:var(--radius); display:flex; flex-direction:column; gap:8px; }
+.om-add-label{ font-size:var(--fs-caption); color:var(--text-muted); }
+.om-add-roles{ display:flex; flex-wrap:wrap; gap:4px; }
+.om-add-role{ padding:3px 8px; border:1px solid var(--border); border-radius:var(--radius); background:transparent; color:var(--text); font-size:var(--fs-caption); cursor:pointer; }
+.om-add-role.is-on{ border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+.om-add-actions{ display:flex; gap:6px; justify-content:flex-end; }
 .ref-item{ display:flex; align-items:center; gap:8px; padding:6px 8px; background:var(--bg-elevated); border:1px solid var(--border-soft); border-radius:var(--radius); cursor:pointer; text-align:left; width:100%; }
 .ref-item:hover{ border-color:var(--text-faint); }
 .ref-item .dot{ width:8px; height:8px; border-radius:2px; transform:rotate(45deg); flex:none; }
@@ -1534,6 +1564,11 @@ function getFocus(){
     if (!f) f = objectFocus(graphHint.objId);
     f.hint = 'obj:' + graphHint.objId;
     if (graphHint.mechId) f.hintMech = graphHint.mechId;
+  } else if (graphHint && graphHint.mechOnly && state.mechanisms[graphHint.mechOnly]){
+    /* Наведение на механизм в карточке объекта: подсвечиваются рёбра механизма. */
+    if (!f) f = mechanismFocus(graphHint.mechOnly);
+    f.hintMechAll = graphHint.mechOnly;
+    if (currentMode === 'full') f.hint = 'mech:' + graphHint.mechOnly;
   }
   /* Наведение поверх закреплённого выделения: подсветку не меняет, но подпись
      узла под курсором показывается (см. layoutLabels). */
@@ -1552,6 +1587,10 @@ function nodeAlpha(id, focus){
 
 function isEdgeHighlighted(e, focus){
   if (!focus) return false;
+  if (focus.hintMechAll){
+    if (currentMode === 'full'){ var hmid = 'mech:'+focus.hintMechAll; return e.a === hmid || e.b === hmid; }
+    return e.mechanismIds.has(focus.hintMechAll);
+  }
   if (focus.hintMech){
     /* Ребро участника: объект ↔ механизм (или рёбра этого механизма у объекта без режима механизмов). */
     var touches = e.a === focus.hint || e.b === focus.hint;
@@ -2469,7 +2508,7 @@ function renderBodyHTML(text){
 }
 
 /* Подсветка объекта на графе при наведении на чип / участника (не меняет выделение). */
-var graphHint = null; /* {objId, mechId?} */
+var graphHint = null; /* {objId, mechId?} | {mechOnly} */
 function setGraphHint(hint){
   graphHint = hint;
   requestRender();
@@ -2540,8 +2579,10 @@ function objectPanelTemplate(obj){
       name1cHTML(obj) +
     '</div>' +
     '<div class="panel-section is-tight">' +
-      '<p class="panel-section-title">Участвует в механизмах</p>' +
-      '<div id="obj-mech-list" class="ref-list"></div>' +
+      '<div class="panel-section-header"><p class="panel-section-title" id="obj-mech-title">Участвует в механизмах</p>' +
+        '<button class="btn btn-sm" id="btn-add-to-mech" type="button" title="Добавить объект в механизм" aria-label="Добавить в механизм">+ Добавить</button></div>' +
+      '<div id="obj-add-to-mech"></div>' +
+      '<div id="obj-mech-list"></div>' +
     '</div>' +
     viewFieldHTML('description', 'Описание') +
     '<div class="vfield" data-key="subtags"><div class="vfield-label">Подсистема · Теги</div><div class="vfield-value" tabindex="0"></div></div>' +
@@ -2657,11 +2698,12 @@ function renderObjectPanel(obj, panel){
     attachFilesToEntity('obj', obj.id, function(){ renderAttachmentsList(panel, '#obj-attachments-list', 'obj', obj.id); });
   });
   renderObjectMechList(obj, panel);
+  bindAddToMechanism(panel, obj);
   renderAttachmentsList(panel, '#obj-attachments-list', 'obj', obj.id);
 }
 
-/* Механизмы, где участвует объект, и под каждым — остальные участники этого механизма.
-   Если объект входит в механизм несколькими ролями, роли перечисляются через запятую. */
+/* Роли объекта в механизме → группы блока «Участвует в механизмах». Объект с двумя ролями
+   в одном механизме попадает в обе группы. */
 function participantRolesByObject(mech){
   var order = [], roles = {};
   mech.participants.forEach(function(p){
@@ -2672,44 +2714,159 @@ function participantRolesByObject(mech){
   });
   return {order:order, roles:roles};
 }
+function objectRoleGroupKey(roleCode){
+  var r = roleInfo(roleCode);
+  if (r.direction === 'target') return {key:'in', title:'Получает данные из', order:0};
+  if (r.direction === 'source') return {key:'out', title:'Передаёт данные в', order:1};
+  return {key:'role:' + r.code, title:r.title, order:2};
+}
+var OM_AUTO_COLLAPSE_OVER = 3;
+var omCollapsed = {}; /* ключ «объект|группа|механизм» → true/false (выбор пользователя в этой сессии) */
 
 function renderObjectMechList(obj, panel){
   var container = panel.querySelector('#obj-mech-list');
   if (!container) return;
-  var isSidebar = (panel.id === 'panel-object');
-  var rows = Object.keys(state.mechanisms).map(function(k){return state.mechanisms[k];})
-    .filter(function(m){ return m.participants.some(function(p){return p.objectId===obj.id;}); });
-  if (rows.length===0){ container.innerHTML = '<p class="ref-empty">Пока не участвует ни в одном механизме.</p>'; return; }
-  container.innerHTML = rows.map(function(m){
-    var parts = participantRolesByObject(m);
-    var others = parts.order.filter(function(id){ return id !== obj.id; });
-    var sub = others.length
-      ? others.map(function(id){
-          var o = state.objects[id];
-          return '<button class="ref-item ref-item-obj' + (o.status === 'deprecated' ? ' is-deprecated' : '') + '" data-obj="'+id+'" type="button">' +
-            '<span class="dot" style="background:'+typeColor(o.type)+'"></span>' +
-            '<span class="ref-item-main"><span class="ref-item-title">'+escapeHtml(o.name)+deprecatedTagHTML(o)+'</span>' +
-            '<span class="ref-item-role">'+escapeHtml(typeTitle(o.type))+' · '+escapeHtml(parts.roles[id].join(', '))+'</span></span>' +
-          '</button>';
-        }).join('')
-      : '<p class="ref-sub-empty">Других участников нет</p>';
-    return '<div class="ref-group">' +
-      '<button class="ref-item' + (m.status === 'deprecated' ? ' is-deprecated' : '') + '" data-mech="'+m.id+'" type="button">' +
-        '<span class="dot" style="background:'+categoryAccent(m.category)+'"></span>' +
-        '<span class="ref-item-main"><span class="ref-item-title">'+escapeHtml(m.title)+deprecatedTagHTML(m)+'</span><span class="ref-item-role">'+escapeHtml((parts.roles[obj.id]||[]).join(', '))+'</span></span>' +
-      '</button>' +
-      '<div class="ref-sublist">'+sub+'</div>' +
-    '</div>';
-  }).join('');
-  container.querySelectorAll('.ref-item[data-mech]').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      selectEntity('mech', btn.getAttribute('data-mech'));
+  var groups = {}, mechIds = {};
+  Object.keys(state.mechanisms).forEach(function(mid){
+    var m = state.mechanisms[mid];
+    m.participants.forEach(function(p){
+      if (p.objectId !== obj.id) return;
+      var g = objectRoleGroupKey(p.role);
+      var grp = groups[g.key] || (groups[g.key] = {title:g.title, order:g.order, items:{} , list:[]});
+      if (!grp.items[mid]){ grp.items[mid] = {mech:m, notes:[]}; grp.list.push(mid); }
+      if (p.note && grp.items[mid].notes.indexOf(p.note) < 0) grp.items[mid].notes.push(p.note);
+      mechIds[mid] = true;
     });
   });
-  container.querySelectorAll('.ref-item[data-obj]').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      selectEntity('obj', btn.getAttribute('data-obj'));
+  var total = Object.keys(mechIds).length;
+  var titleEl = panel.querySelector('#obj-mech-title');
+  if (titleEl) titleEl.textContent = 'Участвует в механизмах · ' + total;
+  if (!total){ container.innerHTML = '<p class="ref-empty">Пока не участвует ни в одном механизме.</p>'; return; }
+
+  var ordered = Object.keys(groups).map(function(k){ return {key:k, g:groups[k]}; })
+    .sort(function(a,b){ return a.g.order - b.g.order || a.g.title.localeCompare(b.g.title,'ru'); });
+  container.innerHTML = ordered.map(function(x){
+    var g = x.g, auto = g.list.length > OM_AUTO_COLLAPSE_OVER;
+    return '<div class="om-group"><p class="om-group-title">' + escapeHtml(g.title) + '</p>' +
+      g.list.map(function(mid){
+        var it = g.items[mid], m = it.mech;
+        var ck = obj.id + '|' + x.key + '|' + mid;
+        var collapsed = (ck in omCollapsed) ? omCollapsed[ck] : auto;
+        var parts = participantRolesByObject(m);
+        var notesByObj = {};
+        m.participants.forEach(function(p){ if (p.objectId && p.note) (notesByObj[p.objectId] = notesByObj[p.objectId] || []).push(p.note); });
+        var others = parts.order.filter(function(id){ return id !== obj.id; });
+        var sub = others.length ? others.map(function(id){
+          var o = state.objects[id];
+          return '<button type="button" class="om-link om-part' + (o.status === 'deprecated' ? ' is-deprecated' : '') + '" data-obj="' + id + '">' +
+            '<span class="om-part-title"><span class="dot" style="background:' + typeColor(o.type) + '"></span><span class="ref-item-title">' + escapeHtml(o.name) + deprecatedTagHTML(o) + '</span></span>' +
+            '<span class="om-part-meta">' + escapeHtml(typeTitle(o.type)) + ' · ' + escapeHtml(parts.roles[id].join(', ')) + '</span>' +
+            (notesByObj[id] ? '<span class="om-part-note">' + escapeHtml(notesByObj[id].join('; ')) + '</span>' : '') +
+          '</button>';
+        }).join('') : '<p class="om-empty-parts">Других участников нет</p>';
+        return '<div class="om-mech' + (m.status === 'deprecated' ? ' is-deprecated' : '') + '">' +
+          '<div class="om-mech-row">' +
+            '<button type="button" class="om-toggle" data-ck="' + escapeHtml(ck) + '" aria-expanded="' + (!collapsed) + '" aria-label="Свернуть или развернуть участников"></button>' +
+            '<button type="button" class="om-link om-mech-link" data-mech="' + mid + '">' +
+              '<span class="om-mech-title"><span class="om-diamond" style="--c:' + categoryAccent(m.category) + '"></span><span class="ref-item-title">' + escapeHtml(m.title) + deprecatedTagHTML(m) + '</span></span>' +
+              (it.notes.length ? '<span class="om-note">' + escapeHtml(it.notes.join('; ')) + '</span>' : '') +
+            '</button>' +
+          '</div>' +
+          '<div class="om-parts"' + (collapsed ? ' hidden' : '') + '>' + sub + '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+  }).join('');
+
+  container.querySelectorAll('.om-toggle').forEach(function(t){
+    t.addEventListener('click', function(){
+      var open = t.getAttribute('aria-expanded') !== 'true';
+      t.setAttribute('aria-expanded', open ? 'true' : 'false');
+      t.closest('.om-mech').querySelector('.om-parts').hidden = !open;
+      omCollapsed[t.getAttribute('data-ck')] = !open;
     });
+  });
+  container.querySelectorAll('.om-mech-link').forEach(function(btn){
+    var mid = btn.getAttribute('data-mech');
+    btn.addEventListener('click', function(){ setGraphHint(null); selectEntity('mech', mid); });
+    btn.addEventListener('mouseenter', function(){ setGraphHint({mechOnly:mid}); });
+    btn.addEventListener('mouseleave', function(){ setGraphHint(null); });
+  });
+  container.querySelectorAll('.om-part').forEach(function(btn){
+    var oid = btn.getAttribute('data-obj');
+    btn.addEventListener('click', function(){ setGraphHint(null); selectEntity('obj', oid); });
+    btn.addEventListener('mouseenter', function(){ setGraphHint({objId:oid}); });
+    btn.addEventListener('mouseleave', function(){ setGraphHint(null); });
+  });
+}
+
+/* «+ Добавить в механизм»: выбор механизма → роль → необязательное описание → участник добавлен. */
+function buildMechanismPicker(container, onPick){
+  container.innerHTML = '<div class="combo"><input type="text" class="field-input combo-input" autocomplete="off" placeholder="Начните вводить название механизма…"><div class="combo-dropdown" hidden></div></div>';
+  var input = container.querySelector('.combo-input'), dropdown = container.querySelector('.combo-dropdown');
+  var items = [], active = -1;
+  function render(){
+    var q = input.value.trim().toLowerCase();
+    items = Object.keys(state.mechanisms).map(function(id){ return state.mechanisms[id]; })
+      .filter(isShown)
+      .filter(function(m){ return !q || m.title.toLowerCase().indexOf(q) >= 0; })
+      .sort(function(a,b){ return a.title.localeCompare(b.title,'ru'); }).slice(0, 10);
+    active = items.length ? 0 : -1;
+    dropdown.innerHTML = items.length ? items.map(function(m, i){
+      return '<div class="combo-item' + (i === active ? ' is-active' : '') + '" data-i="' + i + '"><span class="om-diamond" style="--c:' + categoryAccent(m.category) + '"></span><span class="combo-item-text">' + escapeHtml(m.title) + '</span><span class="combo-item-type">' + escapeHtml(categoryTitle(m.category)) + '</span></div>';
+    }).join('') : '<div class="combo-empty">Механизмы не найдены</div>';
+    dropdown.hidden = false;
+    dropdown.querySelectorAll('.combo-item').forEach(function(el){
+      el.addEventListener('mousedown', function(e){ e.preventDefault(); choose(Number(el.getAttribute('data-i'))); });
+    });
+  }
+  function choose(i){ var m = items[i]; if (!m) return; dropdown.hidden = true; input.value = m.title; onPick(m); }
+  input.addEventListener('input', render);
+  input.addEventListener('focus', render);
+  input.addEventListener('blur', function(){ setTimeout(function(){ dropdown.hidden = true; }, 150); });
+  input.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowDown' && items.length){ e.preventDefault(); active = (active + 1) % items.length; hl(); }
+    else if (e.key === 'ArrowUp' && items.length){ e.preventDefault(); active = (active - 1 + items.length) % items.length; hl(); }
+    else if (e.key === 'Enter'){ e.preventDefault(); choose(active); }
+  });
+  function hl(){ dropdown.querySelectorAll('.combo-item').forEach(function(el, i){ el.classList.toggle('is-active', i === active); }); }
+  return input;
+}
+
+function bindAddToMechanism(panel, obj){
+  var btn = panel.querySelector('#btn-add-to-mech'), host = panel.querySelector('#obj-add-to-mech');
+  btn.addEventListener('click', function(){
+    if (host.firstChild){ host.innerHTML = ''; return; }
+    var chosen = null, role = 'target';
+    host.innerHTML = '<div class="om-add">' +
+      '<div><div class="om-add-label">Механизм</div><div class="om-add-picker"></div></div>' +
+      '<div><div class="om-add-label">Роль объекта</div><div class="om-add-roles">' +
+        PARTICIPANT_ROLES.map(function(r){ return '<button type="button" class="om-add-role' + (r.code === role ? ' is-on' : '') + '" data-role="' + r.code + '">' + escapeHtml(r.title) + '</button>'; }).join('') +
+      '</div></div>' +
+      '<div><div class="om-add-label">Что передаётся (необязательно)</div><input type="text" class="field-input om-add-note" placeholder="Например: «Забирает к-во дней»"></div>' +
+      '<div class="om-add-actions"><button type="button" class="btn btn-sm om-add-cancel">Отмена</button><button type="button" class="btn btn-sm btn-accent om-add-ok" disabled>Добавить</button></div>' +
+    '</div>';
+    var ok = host.querySelector('.om-add-ok');
+    var input = buildMechanismPicker(host.querySelector('.om-add-picker'), function(m){ chosen = m; ok.disabled = false; host.querySelector('.om-add-note').focus(); });
+    input.addEventListener('input', function(){ chosen = null; ok.disabled = true; });
+    host.querySelectorAll('.om-add-role').forEach(function(b){
+      b.addEventListener('click', function(){
+        role = b.getAttribute('data-role');
+        host.querySelectorAll('.om-add-role').forEach(function(x){ x.classList.toggle('is-on', x === b); });
+      });
+    });
+    host.querySelector('.om-add-cancel').addEventListener('click', function(){ host.innerHTML = ''; });
+    host.querySelector('.om-add-note').addEventListener('keydown', function(e){ if (e.key === 'Enter' && !ok.disabled){ e.preventDefault(); ok.click(); } });
+    ok.addEventListener('click', function(){
+      if (!chosen) return;
+      chosen.participants.push({objectId:obj.id, role:role, note:normalizeLabel(host.querySelector('.om-add-note').value)});
+      persist(); syncGraphModel(); renderSidebar(); updateStats();
+      if (currentView === 'list') renderListView();
+      host.innerHTML = '';
+      renderObjectMechList(obj, panel);
+    });
+    host.addEventListener('keydown', function(e){ if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); host.innerHTML = ''; btn.focus(); } });
+    input.focus();
   });
 }
 
