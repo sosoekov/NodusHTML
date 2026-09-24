@@ -152,7 +152,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 /* Переключатель-чекбокс «Показывать механизмы» */
 .switch{ display:flex; align-items:center; gap:8px; font-size:var(--fs-base); color:var(--text-muted); cursor:pointer; user-select:none; }
 /* Скрытый переключатель держит место — чтобы шапка не «ехала» при смене Граф/Список. */
-.switch.is-hidden{ visibility:hidden; }
 .switch input{ position:absolute; opacity:0; width:1px; height:1px; }
 .switch-track{ width:30px; height:17px; border-radius:9px; background:var(--bg-elevated); border:1px solid var(--border); position:relative; flex:none; }
 .switch-track::after{ content:''; position:absolute; top:2px; left:2px; width:11px; height:11px; border-radius:50%; background:var(--text-faint); }
@@ -217,17 +216,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .filters-row{ display:flex; gap:6px; }
 .filters-row .select-sm{ flex:1; min-width:0; }
 .filters-row[hidden]{ display:none; }
-.filters-row .side-type-filter{ flex:1; min-width:0; }
-.side-type-filter .multi-select-btn{ min-width:0; width:100%; }
-.side-type-filter .multi-select-dropdown{ left:0; right:auto; min-width:0; width:calc(200% + 6px); } /* ширина — вся строка фильтров */
+.filters-row .side-sub-filter{ flex:1; min-width:0; }
+.side-sub-filter .multi-select-btn{ min-width:0; width:100%; }
+.side-sub-filter .multi-select-dropdown{ left:0; right:auto; min-width:0; width:calc(200% + 6px); } /* ширина — вся строка фильтров */
+.deprecated-switch{ font-size:var(--fs-caption); }
+.filters .deprecated-switch{ margin-top:2px; }
 .multi-select-item .type-icon{ color:var(--c); }
 .select-sm{ padding:6px 8px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); color:var(--text-muted); font-size:var(--fs-caption); }
 .side-tabs{ display:flex; border-bottom:1px solid var(--border-soft); flex:none; }
 .side-tab{ flex:1 1 0; min-width:0; background:transparent; border:none; border-bottom:2px solid transparent; padding:11px 4px 9px; color:var(--text-muted); font-size:var(--fs-base); cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.side-tab-header{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 14px 0; flex:none; }
-.side-tab-title{ margin:0; font-size:var(--fs-md); font-weight:600; color:var(--text); }
-.side-create{ white-space:nowrap; }
-.side-tab-header + .side-search{ border-top:none; }
+.side-search{ display:flex; gap:6px; }
+.side-create{ flex:none; width:34px; padding:0; font-size:var(--fs-md); line-height:1; }
 .side-tab:hover:not(.active){ color:var(--text); }
 .side-tab.active{ background:var(--bg-selected); color:var(--text); border-bottom-color:var(--text-muted); }
 .side-search .search-input{ width:100%; }
@@ -244,7 +243,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .list-row-sub{ font-size:var(--fs-caption); color:var(--text-faint); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 .list-row-main{ flex:1; }
 .list-row-meta{ display:flex; align-items:center; gap:6px; flex:none; margin-left:auto; }
-.list-row-count{ font-size:var(--fs-caption); color:var(--text-muted); font-variant-numeric:tabular-nums; min-width:14px; text-align:right; }
+.list-row-count{ display:flex; align-items:center; justify-content:flex-end; gap:5px; font-size:var(--fs-caption); color:var(--text-muted); font-variant-numeric:tabular-nums; min-width:14px; }
+.list-row-count .lv-diamond{ width:6px; height:6px; }
+.list-row-count.is-zero{ color:var(--text-faint); }
 .list-row-warn{ font-size:var(--fs-caption); color:var(--warning); cursor:help; }
 .type-icon{ width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:1.3; stroke-linecap:round; stroke-linejoin:round; }
 .side-group-header{ width:100%; display:flex; align-items:center; gap:7px; padding:7px 14px 7px 8px; background:transparent; border:none; text-align:left; cursor:pointer; color:var(--text); font-size:var(--fs-base); }
@@ -272,7 +273,16 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .empty-hint{ font-size:var(--fs-base); color:var(--text-muted); margin:0; max-width:320px; }
 
 /* Легенда (левый нижний угол холста) */
-.graph-legend{ position:absolute; left:16px; bottom:14px; max-width:260px; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); font-size:var(--fs-caption); }
+.canvas-bottom-left{ position:absolute; left:16px; bottom:14px; display:flex; align-items:flex-end; gap:8px; pointer-events:none; }
+.canvas-bottom-left > *{ pointer-events:auto; }
+.mech-mode{ display:flex; align-items:center; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; font-size:var(--fs-caption); }
+.mech-mode-label{ padding:6px 4px 6px 10px; color:var(--text-muted); }
+.mech-mode-btn{ background:transparent; border:none; border-left:1px solid var(--border); color:var(--text-muted); font-size:var(--fs-caption); padding:6px 10px; cursor:pointer; }
+.mech-mode-label + .mech-mode-btn{ border-left:none; }
+.mech-mode-btn[aria-checked="true"]{ background:var(--bg-selected); color:var(--text); }
+.mech-mode-btn:hover:not([aria-checked="true"]){ background:var(--bg-elevated); color:var(--text); }
+.mech-mode-btn:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px; }
+.graph-legend{ max-width:260px; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); font-size:var(--fs-caption); }
 .graph-legend[hidden]{ display:none; }
 .legend-toggle{ display:flex; align-items:center; gap:6px; width:100%; padding:6px 10px; background:transparent; border:none; color:var(--text-muted); font-size:var(--fs-caption); cursor:pointer; text-align:left; }
 .legend-toggle::after{ content:''; width:6px; height:6px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(45deg); margin-left:auto; margin-top:-3px; }
@@ -595,16 +605,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <button class="mode-btn active" data-view="graph" type="button">Граф</button>
         <button class="mode-btn" data-view="list" type="button">Список</button>
       </div>
-      <label class="switch" id="deprecated-toggle">
-        <input type="checkbox" id="toggle-deprecated">
-        <span class="switch-track" aria-hidden="true"></span>
-        <span class="switch-label">Показывать устаревшие</span>
-      </label>
-      <label class="switch" id="graph-mode-toggle">
-        <input type="checkbox" id="toggle-mechanisms">
-        <span class="switch-track" aria-hidden="true"></span>
-        <span class="switch-label">Показывать механизмы</span>
-      </label>
     </div>
     <div class="global-search" id="global-search">
       <input type="text" id="global-search-input" class="global-search-input" placeholder="Поиск объектов и механизмов" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="global-search-dropdown">
@@ -632,24 +632,26 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <button class="side-tab active" data-side="objects" type="button" role="tab">Объекты <span id="side-count-objects">0</span></button>
         <button class="side-tab" data-side="mechanisms" type="button" role="tab">Механизмы <span id="side-count-mechanisms">0</span></button>
       </div>
-      <div class="side-tab-header">
-        <h2 class="side-tab-title" id="side-tab-title">Объекты</h2>
-        <button class="btn btn-accent btn-sm side-create" id="btn-side-add" type="button">+ Объект</button>
-      </div>
       <div class="sidebar-section side-search">
         <input type="text" id="search-input" class="search-input" placeholder="Поиск объектов…" autocomplete="off">
+        <button class="btn btn-accent side-create" id="btn-side-add" type="button" title="Создать объект" aria-label="Создать объект">+</button>
       </div>
       <div class="sidebar-section filters">
         <div class="filters-row" id="side-filters-objects">
-          <div class="multi-select side-type-filter" id="side-filter-type">
-            <button class="select-sm multi-select-btn" id="side-filter-type-btn" type="button" aria-haspopup="true" aria-expanded="false">Все типы</button>
-            <div class="multi-select-dropdown" id="side-filter-type-dropdown" hidden></div>
+          <div class="multi-select side-sub-filter" data-ms="side-sub">
+            <button class="select-sm multi-select-btn" type="button" aria-haspopup="true" aria-expanded="false">Все подсистемы</button>
+            <div class="multi-select-dropdown" hidden></div>
           </div>
           <select id="filter-tag" class="select-sm"><option value="">Все теги</option></select>
         </div>
         <div class="filters-row" id="side-filters-mechanisms" hidden>
           <select id="filter-mechcategory" class="select-sm"><option value="">Все категории</option></select>
         </div>
+        <label class="switch deprecated-switch">
+          <input type="checkbox" class="toggle-deprecated">
+          <span class="switch-track" aria-hidden="true"></span>
+          <span class="switch-label">Показывать устаревшие</span>
+        </label>
       </div>
       <div class="sidebar-section list-wrap">
         <div id="object-list"></div>
@@ -663,9 +665,16 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <p class="empty-hint">Данные хранятся только в этом браузере. Добавьте первый объект, чтобы увидеть граф связей.</p>
         <button class="btn btn-accent" id="btn-add-object-empty" type="button">Добавить объект</button>
       </div>
-      <div class="graph-legend" id="graph-legend" hidden>
-        <button class="legend-toggle" id="legend-toggle" type="button" aria-expanded="true" aria-controls="legend-body">Легенда</button>
-        <div class="legend-body" id="legend-body"></div>
+      <div class="canvas-bottom-left">
+        <div class="graph-legend" id="graph-legend" hidden>
+          <button class="legend-toggle" id="legend-toggle" type="button" aria-expanded="true" aria-controls="legend-body">Легенда</button>
+          <div class="legend-body" id="legend-body"></div>
+        </div>
+        <div class="mech-mode" id="mech-mode" role="radiogroup" aria-label="Механизмы">
+          <span class="mech-mode-label">Механизмы:</span>
+          <button type="button" class="mech-mode-btn" data-mode="full" role="radio" aria-checked="false">узлами</button>
+          <button type="button" class="mech-mode-btn" data-mode="collapsed" role="radio" aria-checked="true">связями</button>
+        </div>
       </div>
       <div class="focus-banner" id="focus-banner" hidden>
         <span class="focus-banner-title" id="focus-banner-title"></span>
@@ -692,6 +701,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     <div class="list-view-toolbar">
       <input type="text" id="list-search" class="search-input" placeholder="Имя, синоним или описание" autocomplete="off">
       <div id="list-filters" class="list-filters"></div>
+      <label class="switch deprecated-switch">
+        <input type="checkbox" class="toggle-deprecated">
+        <span class="switch-track" aria-hidden="true"></span>
+        <span class="switch-label">Показывать устаревшие</span>
+      </label>
       <button class="btn btn-accent" id="btn-list-add" type="button">+ Объект</button>
     </div>
     <div class="list-view-body" id="list-view-body"></div>
@@ -829,7 +843,7 @@ var folderSupported = ('showDirectoryPicker' in window);
 var autoSaveStatus = 'disconnected'; /* disconnected | connected | needs-permission | error */
 var lastFolderSaveAt = null;
 
-var currentMode = 'collapsed';
+var currentMode = (function(){ try{ return localStorage.getItem('nodusMechMode') === 'full' ? 'full' : 'collapsed'; }catch(e){ return 'collapsed'; } })();
 var currentView = 'graph';
 var currentNodes = [];
 var currentEdges = [];
@@ -899,6 +913,17 @@ function statusKind(code){ return code === 'deprecated' ? 'deprecated' : (code =
 var SHOW_DEPRECATED_KEY = 'nodusShowDeprecated';
 var showDeprecated = (function(){ try{ return localStorage.getItem(SHOW_DEPRECATED_KEY) !== '0'; }catch(e){ return true; } })();
 function isShown(entity){ return showDeprecated || !entity || entity.status !== 'deprecated'; }
+/* Переключатель есть в левой панели «Графа» и в фильтрах «Списка» — состояние одно на оба. */
+function syncDeprecatedSwitches(){
+  document.querySelectorAll('.toggle-deprecated').forEach(function(cb){ cb.checked = showDeprecated; });
+}
+/* «Механизмы: узлами | связями» — запоминается между перезагрузками. */
+var MECH_MODE_KEY = 'nodusMechMode';
+function syncMechModeUI(){
+  document.querySelectorAll('.mech-mode-btn').forEach(function(b){
+    b.setAttribute('aria-checked', b.getAttribute('data-mode') === currentMode ? 'true' : 'false');
+  });
+}
 function deprecatedTagHTML(entity){ return entity && entity.status === 'deprecated' ? '<span class="deprecated-tag" title="Устарел">устарел</span>' : ''; }
 
 function objectStatusTitle(s){ return s==='stub' ? STATUS_TITLES.dev : (s==='deprecated' ? STATUS_TITLES.deprecated : STATUS_TITLES.prod); }
@@ -2181,11 +2206,9 @@ function switchView(view){
   document.body.classList.toggle('view-list', view === 'list');
   var main = document.getElementById('main');
   var listView = document.getElementById('list-view');
-  var graphModeToggle = document.getElementById('graph-mode-toggle');
   if (view === 'list'){
     main.hidden = true;
     listView.hidden = false;
-    graphModeToggle.classList.add('is-hidden');
     /* Ребро в «Списке» не показывается — его карточку закрываем, выбор объекта/механизма сохраняется. */
     if (pinnedEdgeKey) clearSelection();
     renderListView();
@@ -2194,7 +2217,6 @@ function switchView(view){
   } else {
     listView.hidden = true;
     main.hidden = false;
-    graphModeToggle.classList.remove('is-hidden');
     updateDetailPanelVisibility();
     resizeCanvas();
   }
@@ -3381,9 +3403,17 @@ function fillMultiSelect(root, opts){
   btn.title = titles.join(', ');
   btn.classList.toggle('has-value', titles.length > 0);
 }
+function bindMultiSelectToggle(ms){
+  ms.querySelector('.multi-select-btn').addEventListener('click', function(){
+    var dd = ms.querySelector('.multi-select-dropdown');
+    var open = dd.hidden;
+    closeListDropdowns(ms);
+    dd.hidden = !open; this.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+}
 function closeListDropdowns(except){
   var any = false;
-  document.querySelectorAll('#list-filters .multi-select').forEach(function(ms){
+  document.querySelectorAll('.multi-select[data-ms]').forEach(function(ms){
     if (ms === except) return;
     var dd = ms.querySelector('.multi-select-dropdown');
     if (!dd.hidden) any = true;
@@ -3399,14 +3429,7 @@ function renderListFilters(){
   if (listFiltersTab !== listTab){
     box.innerHTML = (isObj ? multiSelectHTML('type', 'Все типы') : multiSelectHTML('cat', 'Все категории')) +
       multiSelectHTML('sub', 'Все подсистемы') + multiSelectHTML('tag', 'Все теги');
-    box.querySelectorAll('.multi-select').forEach(function(ms){
-      ms.querySelector('.multi-select-btn').addEventListener('click', function(){
-        var dd = ms.querySelector('.multi-select-dropdown');
-        var open = dd.hidden;
-        closeListDropdowns(ms);
-        dd.hidden = !open; this.setAttribute('aria-expanded', open ? 'true' : 'false');
-      });
-    });
+    box.querySelectorAll('.multi-select').forEach(bindMultiSelectToggle);
     listFiltersTab = listTab;
   }
   var shownObjects = Object.keys(state.objects).map(function(id){ return state.objects[id]; }).filter(isShown);
@@ -3549,62 +3572,34 @@ var sideTab = 'objects';
 var sideSearch = { objects:'', mechanisms:'' };
 var graphFilter = null; /* null — отбор не задан; иначе {nodes:Set, edge:function(e)} */
 
-/* Отбор по типам в левой панели: несколько типов сразу; '' — «Тип не указан». Пусто — все типы. */
-var sideTypeFilter = {};
+/* Отбор по подсистемам в левой панели (дерево и так сгруппировано по типу). Пусто — все. */
+var sideSubFilter = {};
 
-function setSideTypeDropdownOpen(open){
-  document.getElementById('side-filter-type-dropdown').hidden = !open;
-  document.getElementById('side-filter-type-btn').setAttribute('aria-expanded', open ? 'true' : 'false');
-}
-
-function renderSideTypeFilter(){
-  var counts = {};
+function renderSideSubFilter(){
+  var cnt = {};
   Object.keys(state.objects).forEach(function(id){
     var o = state.objects[id]; if (!isShown(o)) return;
-    var k = typeInfo(o.type) ? o.type : ''; counts[k] = (counts[k]||0) + 1;
+    objectSubsystems(o).forEach(function(s){ cnt[s] = (cnt[s]||0) + 1; });
   });
-  var items = OBJECT_TYPES.map(function(t){ return {code:t.code, title:t.plural, color:typeColor(t.code)}; });
-  if (counts['']) items.push({code:'', title:UNKNOWN_TYPE_TITLE, color:THEME.typeUnknown});
-  var dropdown = document.getElementById('side-filter-type-dropdown');
-  var scrollTop = dropdown.scrollTop;
-  dropdown.innerHTML = items.map(function(t){
-    return '<label class="multi-select-item" style="--c:' + t.color + '">' +
-      '<input type="checkbox" value="' + t.code + '"' + (sideTypeFilter[t.code] ? ' checked' : '') + '>' +
-      typeIconSVG(t.code) +
-      '<span class="multi-select-item-text">' + escapeHtml(t.title) + '</span>' +
-      '<span class="multi-select-item-count">' + (counts[t.code]||0) + '</span>' +
-    '</label>';
-  }).join('') + '<div class="multi-select-sep"></div>' +
-    '<button type="button" class="multi-select-reset"' + (Object.keys(sideTypeFilter).length ? '' : ' disabled') + '>Сбросить отбор</button>';
-  dropdown.scrollTop = scrollTop;
-  dropdown.querySelectorAll('input[type=checkbox]').forEach(function(cb){
-    cb.addEventListener('change', function(){
-      if (cb.checked) sideTypeFilter[cb.value] = true; else delete sideTypeFilter[cb.value];
-      renderSidebar();
-    });
-  });
-  dropdown.querySelector('.multi-select-reset').addEventListener('click', function(){ sideTypeFilter = {}; renderSidebar(); });
-  var sel = Object.keys(sideTypeFilter);
-  var btn = document.getElementById('side-filter-type-btn');
-  btn.textContent = !sel.length ? 'Все типы' : (sel.length === 1 ? (sel[0] ? typeInfo(sel[0]).plural : UNKNOWN_TYPE_TITLE) : 'Типов: ' + sel.length);
-  btn.title = sel.map(function(c){ return c ? typeInfo(c).plural : UNKNOWN_TYPE_TITLE; }).join(', ');
-  btn.classList.toggle('has-value', sel.length > 0);
+  fillMultiSelect(document.querySelector('[data-ms="side-sub"]'), {
+    items: allSubsystems().map(function(s){ return {code:s, title:s, count:cnt[s]||0}; }),
+    selected:sideSubFilter, allLabel:'Все подсистемы', manyLabel:'Подсистем', emptyText:'Подсистем пока нет', onChange:renderSidebar});
 }
 
 function filteredSideObjects(){
   var q = sideSearch.objects.toLowerCase().trim();
   var tagFilter = document.getElementById('filter-tag').value;
-  var types = Object.keys(sideTypeFilter);
+  var subsOn = anyKey(sideSubFilter);
   var list = Object.keys(state.objects).map(function(id){return state.objects[id];})
     .filter(isShown)
     .filter(function(o){
       return !q || o.name.toLowerCase().indexOf(q)>=0 || (o.fullName||'').toLowerCase().indexOf(q)>=0 ||
         (o.tags||[]).join(' ').toLowerCase().indexOf(q)>=0;
     })
-    .filter(function(o){ return !types.length || sideTypeFilter[typeInfo(o.type) ? o.type : '']; })
+    .filter(function(o){ return matchesAny(sideSubFilter, objectSubsystems(o)); })
     .filter(function(o){ return !tagFilter || (o.tags||[]).indexOf(tagFilter)>=0; })
     .sort(function(a,b){ return a.name.localeCompare(b.name,'ru'); });
-  return {list:list, active:!!(q || types.length || tagFilter)};
+  return {list:list, active:!!(q || subsOn || tagFilter)};
 }
 
 function filteredSideMechanisms(){
@@ -3786,7 +3781,7 @@ function buildChipEditor(container, opt){
 
 function renderSidebar(){
   refreshTagFilterOptions();
-  renderSideTypeFilter();
+  renderSideSubFilter();
   var objs = filteredSideObjects(), mechs = filteredSideMechanisms();
   document.getElementById('side-count-objects').textContent = objs.list.length;
   document.getElementById('side-count-mechanisms').textContent = mechs.list.length;
@@ -3798,11 +3793,14 @@ function renderSidebar(){
     var mechCount = objectMechanismCounts();
     function objectRow(o){
       var mc = mechCount[o.id] || 0;
-      return '<button class="list-row" data-kind="object" data-id="'+o.id+'" type="button">' +
+      var st = o.status || DEFAULT_OBJECT_STATUS;
+      var badge = st === DEFAULT_OBJECT_STATUS ? '' :
+        '<span class="list-row-sub"><span class="status-badge status-'+statusKind(st)+'">'+escapeHtml(objectStatusTitle(st))+'</span></span>';
+      var tip = 'Участвует в '+mc+' '+pluralRu(mc,'механизме','механизмах','механизмах');
+      return '<button class="list-row'+(st === 'deprecated' ? ' is-deprecated' : '')+'" data-kind="object" data-id="'+o.id+'" type="button">' +
         '<span class="dot" style="background:'+typeColor(o.type)+'"></span>' +
-        '<span class="list-row-main"><span class="list-row-title">'+escapeHtml(o.name)+'</span>' +
-          '<span class="list-row-sub"><span class="cat-badge" style="--cat:'+typeColor(o.type)+'">'+escapeHtml(typeTitle(o.type))+'</span></span></span>' +
-        '<span class="list-row-meta"><span class="list-row-count" title="Участвует в '+mc+' '+pluralRu(mc,'механизме','механизмах','механизмах')+'">'+mc+'</span></span>' +
+        '<span class="list-row-main"><span class="list-row-title">'+escapeHtml(o.name)+'</span>' + badge + '</span>' +
+        '<span class="list-row-meta"><span class="list-row-count'+(mc ? '' : ' is-zero')+'" title="'+tip+'" aria-label="'+tip+'"><span class="lv-diamond" aria-hidden="true"></span>'+mc+'</span></span>' +
       '</button>';
     }
     /* Группы по типу, как в дереве конфигуратора; пустые не показываются.
@@ -4317,7 +4315,7 @@ function enterFocus(mid){
   var prevView = {scale:view.scale, offsetX:view.offsetX, offsetY:view.offsetY};
   if (currentMode !== 'full'){
     currentMode = 'full';
-    document.getElementById('toggle-mechanisms').checked = true;
+    syncMechModeUI();
     syncGraphModel();
     /* Узел механизма только что появился в случайном месте — ставим его в центр участников. */
     var mn = nodeById.get('mech:'+mid), pts = focusColumns(mid);
@@ -4358,7 +4356,7 @@ function exitFocus(immediate){
     hideCanvasTooltip();
     if (fm.prevMode !== currentMode){
       currentMode = fm.prevMode;
-      document.getElementById('toggle-mechanisms').checked = currentMode === 'full';
+      syncMechModeUI();
       syncGraphModel();
     }
     /* Перестройка графа «подогревает» физику — возвращаем её состояние до входа,
@@ -4568,13 +4566,20 @@ function attachHandlers(){
   bindMinimap();
   window.addEventListener('resize', resizeCanvas);
 
-  /* «Показывать механизмы»: включено = полный режим (объекты и механизмы). */
-  document.getElementById('toggle-mechanisms').addEventListener('change', function(ev){
-    /* Во время фокуса переключатель выводит из фокуса и возвращает прежний режим. */
-    if (focusMode){ exitFocus(true); return; }
-    currentMode = ev.target.checked ? 'full' : 'collapsed';
-    clearSelection();
-    syncGraphModel();
+  /* «Механизмы: узлами» = полный режим (объекты и механизмы), «связями» — только объекты. */
+  syncMechModeUI();
+  document.querySelectorAll('.mech-mode-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var next = btn.getAttribute('data-mode');
+      /* Во время фокуса переключатель выводит из фокуса и возвращает прежний режим. */
+      if (focusMode){ exitFocus(true); if (next === currentMode){ syncMechModeUI(); return; } }
+      if (next === currentMode) return;
+      currentMode = next;
+      try{ localStorage.setItem(MECH_MODE_KEY, currentMode); }catch(e){}
+      syncMechModeUI();
+      clearSelection();
+      syncGraphModel();
+    });
   });
 
   document.querySelectorAll('.view-toggle .mode-btn').forEach(function(btn){
@@ -4593,7 +4598,7 @@ function attachHandlers(){
     tab.addEventListener('click', function(){ setListTab(tab.getAttribute('data-list-tab')); });
   });
   document.addEventListener('mousedown', function(e){
-    if (!e.target.closest || !e.target.closest('#list-filters .multi-select')) closeListDropdowns();
+    closeListDropdowns(e.target.closest ? e.target.closest('.multi-select[data-ms]') : null);
   });
   /* «+ Объект» / «+ Механизм»: как в левой панели — сущность создана, карточка открыта,
      курсор в поле названия. Поиск и отборы вкладки сбрасываются, чтобы строка была видна. */
@@ -4614,6 +4619,7 @@ function attachHandlers(){
     }
   });
   watchListWidth();
+  bindMultiSelectToggle(document.querySelector('[data-ms="side-sub"]'));
 
   setupResizeHandle('resize-left', 'left');
   setupResizeHandle('resize-right', 'right');
@@ -4636,7 +4642,7 @@ function attachHandlers(){
     sideSearch[sideTab] = '';
     document.getElementById('search-input').value = '';
     if (sideTab === 'objects'){
-      sideTypeFilter = {};
+      sideSubFilter = {};
       document.getElementById('filter-tag').value = '';
     } else {
       document.getElementById('filter-mechcategory').value = '';
@@ -4686,8 +4692,9 @@ function attachHandlers(){
       var search = document.getElementById('search-input');
       search.value = sideSearch[sideTab];
       search.placeholder = isObj ? 'Поиск объектов…' : 'Поиск механизмов…';
-      document.getElementById('btn-side-add').textContent = isObj ? '+ Объект' : '+ Механизм';
-      document.getElementById('side-tab-title').textContent = isObj ? 'Объекты' : 'Механизмы';
+      var addBtn = document.getElementById('btn-side-add');
+      addBtn.title = isObj ? 'Создать объект' : 'Создать механизм';
+      addBtn.setAttribute('aria-label', addBtn.title);
       renderSidebar();
     });
   });
@@ -4695,20 +4702,15 @@ function attachHandlers(){
     sideSearch[sideTab] = ev.target.value;
     renderSidebar();
   });
-  document.getElementById('side-filter-type-btn').addEventListener('click', function(){
-    setSideTypeDropdownOpen(document.getElementById('side-filter-type-dropdown').hidden);
-  });
-  document.addEventListener('mousedown', function(e){
-    if (!document.getElementById('side-filter-type').contains(e.target)) setSideTypeDropdownOpen(false);
-  });
-  document.getElementById('toggle-deprecated').checked = showDeprecated;
-  document.getElementById('toggle-deprecated').addEventListener('change', function(ev){
+  syncDeprecatedSwitches();
+  document.querySelectorAll('.toggle-deprecated').forEach(function(cb){ cb.addEventListener('change', function(ev){
     showDeprecated = ev.target.checked;
+    syncDeprecatedSwitches();
     try{ localStorage.setItem(SHOW_DEPRECATED_KEY, showDeprecated ? '1' : '0'); }catch(e){}
     if (focusMode) exitFocus(true);
     syncGraphModel(); renderSidebar();
     if (currentView === 'list') renderListView();
-  });
+  }); });
   document.getElementById('filter-tag').addEventListener('change', renderSidebar);
   document.getElementById('filter-mechcategory').addEventListener('change', renderSidebar);
 
@@ -4861,7 +4863,6 @@ function attachHandlers(){
     if (e.key === 'Escape'){
       if (!document.getElementById('more-menu').hidden){ document.getElementById('more-menu').hidden = true; document.getElementById('btn-more').setAttribute('aria-expanded','false'); document.getElementById('btn-more').focus(); }
       else if (closeListDropdowns()){}
-      else if (!document.getElementById('side-filter-type-dropdown').hidden) setSideTypeDropdownOpen(false);
       else if (document.getElementById('modal-root').innerHTML) closeModal();
       else if (focusMode) exitFocus();
       else clearSelection();
