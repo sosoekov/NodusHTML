@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nodus v.0.5.0 — локальный прототип</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!--
+  Локальный прототип для тестирования UX перед сборкой полноценного сервиса.
+  Данные хранятся в localStorage этого браузера. Экспорт/импорт — кнопки в шапке.
+  Справочники (типы объектов, категории механизмов, роли участников) заданы
+  константами в начале js/core.js — их можно поправить прямо там при необходимости.
+  Этот файл открывается двойным кликом как есть; один файл для передачи —
+  dist/nodus.html, собирается командой «node build.js» (см. docs/HANDOFF.md).
+-->
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div class="topbar-left">
+      <h1 class="app-title">
+        <svg class="app-logo" viewBox="0 0 24 24" aria-hidden="true"><polyline class="logo-line" points="5,19 5,5 19,19 19,5" stroke-width="2" stroke-linejoin="round"/><circle class="logo-n2" cx="5" cy="19" r="2.6"/><circle class="logo-n1" cx="5" cy="5" r="2.6"/><circle class="logo-n3" cx="19" cy="19" r="2.6"/><circle class="logo-n4" cx="19" cy="5" r="2.6"/></svg>
+        Nodus <span class="app-version">v.0.5.0</span>
+      </h1>
+    </div>
+    <div class="topbar-group">
+      <div class="view-toggle" role="tablist">
+        <button class="mode-btn active" data-view="graph" type="button">Граф</button>
+        <button class="mode-btn" data-view="list" type="button">Список</button>
+      </div>
+    </div>
+    <div class="global-search" id="global-search">
+      <input type="text" id="global-search-input" class="global-search-input" placeholder="Поиск объектов и механизмов" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="global-search-dropdown">
+      <span class="global-search-kbd" id="global-search-kbd">Ctrl+K</span>
+      <div class="global-search-dropdown" id="global-search-dropdown" role="listbox" hidden></div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn" id="btn-settings" type="button">Настройки</button>
+      <div class="menu-wrap">
+        <button class="btn menu-btn" id="btn-more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Ещё действия" title="Ещё действия">⋯</button>
+        <div class="menu" id="more-menu" role="menu" hidden>
+          <button class="menu-item" id="btn-export" type="button" role="menuitem">Экспорт</button>
+          <button class="menu-item" id="btn-import" type="button" role="menuitem">Импорт</button>
+          <div class="menu-sep" role="separator"></div>
+          <button class="menu-item menu-item-danger" id="btn-reset" type="button" role="menuitem">Очистить всё</button>
+        </div>
+      </div>
+      <input type="file" id="file-import" accept="application/json" hidden>
+    </div>
+  </header>
+  <div id="workspace">
+  <div id="main">
+    <aside id="sidebar-left">
+      <div class="side-tabs" role="tablist">
+        <button class="side-tab active" data-side="objects" type="button" role="tab">Объекты <span id="side-count-objects">0</span></button>
+        <button class="side-tab" data-side="mechanisms" type="button" role="tab">Механизмы <span id="side-count-mechanisms">0</span></button>
+      </div>
+      <div class="sidebar-section side-search">
+        <input type="text" id="search-input" class="search-input" placeholder="Поиск объектов…" autocomplete="off">
+        <button class="btn btn-accent side-create" id="btn-side-add" type="button" title="Создать объект" aria-label="Создать объект">+</button>
+      </div>
+      <div class="sidebar-section filters">
+        <div class="filters-row" id="side-filters-objects">
+          <div class="multi-select side-sub-filter" data-ms="side-sub">
+            <button class="select-sm multi-select-btn" type="button" aria-haspopup="true" aria-expanded="false">Все подсистемы</button>
+            <div class="multi-select-dropdown" hidden></div>
+          </div>
+          <select id="filter-tag" class="select-sm"><option value="">Все теги</option></select>
+        </div>
+        <div class="filters-row" id="side-filters-mechanisms" hidden>
+          <select id="filter-mechcategory" class="select-sm"><option value="">Все категории</option></select>
+        </div>
+        <label class="switch deprecated-switch">
+          <input type="checkbox" class="toggle-deprecated">
+          <span class="switch-track" aria-hidden="true"></span>
+          <span class="switch-label">Показывать устаревшие</span>
+        </label>
+      </div>
+      <div class="sidebar-section list-wrap">
+        <div id="object-list"></div>
+      </div>
+    </aside>
+    <div class="resize-handle" id="resize-left" aria-hidden="true"></div>
+    <main id="canvas-wrap">
+      <canvas id="graph-canvas"></canvas>
+      <div id="empty-state" class="empty-state">
+        <p class="empty-title">Пока нет ни одного объекта</p>
+        <p class="empty-hint">Данные хранятся только в этом браузере. Добавьте первый объект, чтобы увидеть граф связей.</p>
+        <button class="btn btn-accent" id="btn-add-object-empty" type="button">Добавить объект</button>
+      </div>
+      <div class="canvas-bottom-left">
+        <div class="graph-legend" id="graph-legend" hidden>
+          <button class="legend-toggle" id="legend-toggle" type="button" aria-expanded="true" aria-controls="legend-body">Легенда</button>
+          <div class="legend-body" id="legend-body"></div>
+        </div>
+        <div class="mech-mode" id="mech-mode" role="radiogroup" aria-label="Механизмы">
+          <span class="mech-mode-label">Механизмы:</span>
+          <button type="button" class="mech-mode-btn" data-mode="full" role="radio" aria-checked="false">узлами</button>
+          <button type="button" class="mech-mode-btn" data-mode="collapsed" role="radio" aria-checked="true">связями</button>
+        </div>
+      </div>
+      <div class="focus-banner" id="focus-banner" hidden>
+        <span class="focus-banner-title" id="focus-banner-title"></span>
+        <button class="btn btn-sm" id="btn-exit-focus" type="button">Выйти из фокуса</button>
+      </div>
+      <div class="canvas-tooltip" id="canvas-tooltip" role="tooltip" hidden></div>
+      <div class="minimap" id="minimap">
+        <button class="minimap-toggle" id="minimap-toggle" type="button" aria-expanded="false" aria-controls="minimap-canvas">Мини-карта</button>
+        <canvas class="minimap-canvas" id="minimap-canvas" hidden></canvas>
+      </div>
+      <div class="canvas-controls" role="toolbar" aria-label="Управление холстом">
+        <button class="canvas-ctl" id="btn-zoom-in" type="button" title="Приблизить" aria-label="Приблизить">+</button>
+        <button class="canvas-ctl" id="btn-zoom-out" type="button" title="Отдалить" aria-label="Отдалить">−</button>
+        <button class="canvas-ctl" id="btn-fit" type="button" title="Вписать в экран" aria-label="Вписать в экран">⤢</button>
+        <button class="canvas-ctl" id="btn-relayout" type="button" title="Разложить заново" aria-label="Разложить заново">↻</button>
+      </div>
+    </main>
+  </div>
+  <div id="list-view" class="list-view" hidden>
+    <div class="side-tabs list-tabs" role="tablist">
+      <button class="side-tab list-tab active" data-list-tab="objects" type="button" role="tab">Объекты <span id="list-count-objects">0</span></button>
+      <button class="side-tab list-tab" data-list-tab="mechanisms" type="button" role="tab">Механизмы <span id="list-count-mechanisms">0</span></button>
+    </div>
+    <div class="list-view-toolbar">
+      <input type="text" id="list-search" class="search-input" placeholder="Имя, синоним или описание" autocomplete="off">
+      <div id="list-filters" class="list-filters"></div>
+      <label class="switch deprecated-switch">
+        <input type="checkbox" class="toggle-deprecated">
+        <span class="switch-track" aria-hidden="true"></span>
+        <span class="switch-label">Показывать устаревшие</span>
+      </label>
+      <button class="btn btn-accent" id="btn-list-add" type="button">+ Объект</button>
+    </div>
+    <div class="list-view-body" id="list-view-body"></div>
+  </div>
+    <div class="resize-handle" id="resize-right" aria-hidden="true"></div>
+    <aside id="detail-panel">
+      <div id="panel-empty" class="panel-empty">
+        <p>Ничего не выбрано.</p>
+        <p>Выберите объект или механизм на графе или в списке слева, чтобы увидеть и отредактировать детали.</p>
+      </div>
+      <div id="panel-object" class="panel-content" hidden></div>
+      <div id="panel-mechanism" class="panel-content" hidden></div>
+      <div id="panel-edge" class="panel-content" hidden></div>
+    </aside>
+  </div>
+</div>
+<div id="modal-root"></div>
+
+<script src="js/core.js"></script>
+<script src="js/graph.js"></script>
+<script src="js/cards.js"></script>
+<script src="js/list.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/search.js"></script>
+<script src="js/canvas.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
