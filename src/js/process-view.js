@@ -24,6 +24,11 @@ var procReturn = null;
 /* «Только в проме»: приглушить всё «в разработке» и пометить шаги «ручная работа». */
 var PROC_ONLY_PROD_KEY = 'nodusProcOnlyProd';
 var procOnlyProd = (function(){ try{ return localStorage.getItem(PROC_ONLY_PROD_KEY) === '1'; }catch(e){ return false; } })();
+/* Вид центра: «Лента» или «Матрица»; запоминается в браузере. */
+var PROC_VIEW_KEY = 'nodusProcView';
+var procViewMode = (function(){ try{ return localStorage.getItem(PROC_VIEW_KEY) === 'matrix' ? 'matrix' : 'ribbon'; }catch(e){ return 'ribbon'; } })();
+/* Проверки текущего процесса — пересчитываются при каждой отрисовке центра. */
+var currentChecks = null;
 var READINESS_MARKS = {
   full:{glyph:'●', title:'Все механизмы и автоматические контроли шага — в проме'},
   part:{glyph:'◐', title:'Часть механизмов и автоматических контролей шага — в разработке'},
@@ -93,6 +98,7 @@ function showProcessDefaultPanel(){
 }
 /* Esc в «Процессах»: карточка шага → карточка процесса; карточка участника → обратно (clearSelection). */
 function processEscape(){
+  if (!document.getElementById('proc-problems').hidden){ toggleProblemsPanel(false); return true; }
   if (!document.getElementById('panel-step').hidden){ deselectStep(); return true; }
   if (!document.getElementById('panel-process').hidden) return true;
   return false;
@@ -220,6 +226,7 @@ function stepCardHTML(s, num, unreachable){
       (mark ? '<span class="step-ready is-' + rd.level + '" title="' + escapeHtml(mark.title) + '">' + mark.glyph + '</span>' : '') +
       (s.kind === 'decision' ? '<span class="step-decision-mark" title="Решение" aria-label="Решение"></span>' : '') +
       '<span class="step-card-name" title="' + escapeHtml(s.name) + '">' + escapeHtml(s.name) + '</span>' +
+      (currentChecks ? checksBadgeHTML(currentChecks.byStep[s.id], 'step-check') : '') +
       '<button type="button" class="card-menu-btn step-menu-btn" aria-haspopup="menu" aria-expanded="false" aria-label="Действия с шагом" title="Действия">⋯</button></div>' +
     stepRoleLineHTML(s) +
     (manual ? '<span class="step-manual-badge" title="В проме у шага не осталось ни механизмов, ни контролей">ручная работа</span>' : '') +
@@ -237,15 +244,60 @@ function renderRibbon(){
   empty.hidden = !!p;
   document.getElementById('proc-main').classList.toggle('is-empty', !p);
   if (!p){
-    head.innerHTML = ''; stage.innerHTML = '';
+    head.innerHTML = ''; stage.innerHTML = ''; currentChecks = null;
+    document.getElementById('proc-problems').hidden = true;
     document.getElementById('proc-empty-title').textContent = allProcesses().length ? 'Выберите процесс слева' : 'Процессов пока нет';
     return;
   }
   var n = p.steps.length;
+  currentChecks = computeProcessChecks(p);
+  var probs = currentChecks.problems, warns = probs.filter(function(x){ return x.level === 'warn'; }).length;
   head.innerHTML = '<h2 class="proc-title">' + escapeHtml(p.name) + '</h2>' +
-    '<span class="proc-meta">' + n + ' ' + pluralRu(n,'шаг','шага','шагов') + ' · ' + readinessText(processReadiness(p)) + '</span>';
+    '<span class="proc-meta">' + n + ' ' + pluralRu(n,'шаг','шага','шагов') + ' · ' + readinessText(processReadiness(p)) + '</span>' +
+    '<button type="button" class="proc-problems-btn' + (warns ? ' is-warn' : (probs.length ? ' is-info' : ' is-ok')) + '" aria-haspopup="true" aria-expanded="' + !document.getElementById('proc-problems').hidden + '"' +
+      (probs.length ? '' : ' disabled') + '>' + (probs.length ? CHECK_ICONS[warns ? 'warn' : 'info'] + ' ' : '') + 'Проблем: ' + probs.length + '</button>';
+  var btn = head.querySelector('.proc-problems-btn');
+  btn.addEventListener('click', function(){ toggleProblemsPanel(); });
+  if (!document.getElementById('proc-problems').hidden) renderProblemsPanel();
+  var matrix = procViewMode === 'matrix';
+  document.getElementById('proc-main').classList.toggle('is-matrix', matrix);
+  document.getElementById('proc-scroll').hidden = matrix;
+  document.getElementById('proc-matrix').hidden = !matrix;
+  document.querySelectorAll('.proc-view-btn').forEach(function(b){ b.setAttribute('aria-checked', b.getAttribute('data-pview') === procViewMode ? 'true' : 'false'); });
+  if (matrix){ renderMatrix(document.getElementById('proc-matrix'), p, currentChecks); return; }
   stage.classList.toggle('only-prod', procOnlyProd);
-  renderRibbonLayout(stage, p, processLayout(p));
+  renderRibbonLayout(stage, p, currentChecks.layout);
+}
+
+/* ----- «Проблем: N»: список с переходом к шагу ----- */
+function toggleProblemsPanel(open){
+  var panel = document.getElementById('proc-problems');
+  if (open === undefined) open = panel.hidden;
+  panel.hidden = !open;
+  var btn = document.querySelector('.proc-problems-btn'); if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open) renderProblemsPanel();
+}
+function renderProblemsPanel(){
+  var panel = document.getElementById('proc-problems'), c = currentChecks;
+  if (!c || !c.problems.length){ panel.hidden = true; return; }
+  var nums = c.layout.numbers, p = currentProcess();
+  panel.innerHTML = '<div class="pp-head">Проблемы процесса · ' + c.problems.length + '</div>' + c.problems.map(function(x, i){
+    var s = x.stepId && stepById(p, x.stepId);
+    return '<button type="button" class="pp-item is-' + x.level + '" data-i="' + i + '">' +
+      '<span class="pp-icon">' + CHECK_ICONS[x.level] + '</span><span class="pp-text">' + escapeHtml(x.text) + '</span>' +
+      (s ? '<span class="pp-step"><span class="step-num">' + nums[s.id] + '</span>' + escapeHtml(s.name) + '</span>' : '') + '</button>';
+  }).join('');
+  panel.querySelectorAll('.pp-item').forEach(function(b){
+    b.addEventListener('click', function(){
+      var x = c.problems[Number(b.getAttribute('data-i'))];
+      toggleProblemsPanel(false);
+      if (x.stepId){
+        selectStep(x.stepId);
+        var el = document.querySelector('#proc-stage .step-card[data-step="' + x.stepId + '"], #proc-matrix .pm-col[data-step="' + x.stepId + '"]');
+        if (el) el.scrollIntoView({block:'nearest', inline:'nearest'});
+      }
+    });
+  });
 }
 /* Группа чипов — одна строка; не поместившиеся прячутся под «+N» (с подсказкой). */
 function fitChipLines(){
@@ -264,6 +316,7 @@ function fitChipLines(){
 }
 function markActiveStep(){
   document.querySelectorAll('#proc-stage .step-card').forEach(function(c){ c.classList.toggle('is-active', c.getAttribute('data-step') === procSel.stepId); });
+  markActiveMatrixColumn();
 }
 
 /* ----- Действия с шагами на ленте ----- */
@@ -394,6 +447,17 @@ function bindProcessView(){
   document.getElementById('btn-proc-zoom-in').addEventListener('click', function(){ setProcZoom(procZoom * PROC_ZOOM_STEP); });
   document.getElementById('btn-proc-zoom-out').addEventListener('click', function(){ setProcZoom(procZoom / PROC_ZOOM_STEP); });
   document.getElementById('btn-proc-fit').addEventListener('click', fitProcessRibbon);
+  document.querySelectorAll('.proc-view-btn').forEach(function(b){
+    b.addEventListener('click', function(){
+      procViewMode = b.getAttribute('data-pview');
+      try{ localStorage.setItem(PROC_VIEW_KEY, procViewMode); }catch(e){}
+      renderRibbon();
+    });
+  });
+  document.addEventListener('mousedown', function(e){
+    var panel = document.getElementById('proc-problems');
+    if (!panel.hidden && !panel.contains(e.target) && !e.target.closest('.proc-problems-btn')) toggleProblemsPanel(false);
+  });
   var onlyProd = document.getElementById('proc-only-prod');
   onlyProd.checked = procOnlyProd;
   onlyProd.addEventListener('change', function(){
