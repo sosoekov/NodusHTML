@@ -70,6 +70,11 @@ function attachHandlers(){
       renderListView();
       selectEntity('obj', obj.id);
       startInlineTitleEdit(document.getElementById('panel-object'));
+    } else if (listTab === 'roles'){
+      var role = createRole({name:'Новая роль'});
+      renderListView();
+      selectEntity('role', role.id);
+      startInlineTitleEdit(document.getElementById('panel-role'));
     } else {
       var m = createMechanism({title:'Новый механизм'});
       renderListView();
@@ -210,7 +215,7 @@ function attachHandlers(){
   });
 
   function exportData(){
-    var data = JSON.stringify({objects:state.objects, mechanisms:state.mechanisms}, null, 2);
+    var data = JSON.stringify(serializeState(), null, 2);
     var blob = new Blob([data], {type:'application/json'});
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -230,17 +235,13 @@ function attachHandlers(){
       var data;
       try { data = JSON.parse(reader.result); }
       catch(e){ alert('Не удалось прочитать файл: это не корректный JSON.'); ev.target.value=''; return; }
-      var newObjCount = Object.keys(data.objects||{}).length;
-      var newMechCount = Object.keys(data.mechanisms||{}).length;
       openModal({
         title:'Импортировать данные?',
-        bodyHTML:'<p>Текущие данные (' + Object.keys(state.objects).length + ' объектов, ' + Object.keys(state.mechanisms).length +
-          ' механизмов) будут заменены содержимым файла (' + newObjCount + ' объектов, ' + newMechCount + ' механизмов). Это необратимо.</p>',
+        bodyHTML:'<p>Текущие данные (' + dataSummary(serializeState()) + ') будут заменены содержимым файла (' + dataSummary(data) + '). Это необратимо.</p>',
         footerButtons:[
           {label:'Отмена', onClick:function(){ return true; }},
           {label:'Импортировать', variant:'danger', onClick:function(){
-            state.objects = data.objects || {};
-            state.mechanisms = data.mechanisms || {};
+            applyState(data);
             nodeById.clear();
             persist(); syncGraphModel(); renderSidebar(); updateStats(); clearSelection();
           }}
@@ -254,7 +255,7 @@ function attachHandlers(){
   /* Очистка: подтверждение вводом слова, логика удаления прежняя. */
   var RESET_CONFIRM_WORD = 'удалить';
   document.getElementById('btn-reset').addEventListener('click', function(){
-    var oc = Object.keys(state.objects).length, mc = Object.keys(state.mechanisms).length, ac = 0;
+    var ac = 0;
     Object.keys(state.objects).forEach(function(id){ ac += (state.objects[id].attachments||[]).length; });
     Object.keys(state.mechanisms).forEach(function(id){ ac += (state.mechanisms[id].attachments||[]).length; });
     function confirmed(root){
@@ -265,8 +266,7 @@ function attachHandlers(){
       title:'Очистить все данные?',
       wide:true,
       bodyHTML:
-        '<p>Будет удалено ' + oc + ' ' + pluralRu(oc,'объект','объекта','объектов') + ', ' +
-          mc + ' ' + pluralRu(mc,'механизм','механизма','механизмов') + ' и ' +
+        '<p>Будет удалено: ' + dataSummary(serializeState()) + ' и ' +
           ac + ' ' + pluralRu(ac,'вложение','вложения','вложений') + '. Действие необратимо.</p>' +
         '<p class="confirm-note">Сами файлы вложений в подключённой папке останутся на диске.</p>' +
         '<label class="field-label confirm-input" for="reset-confirm-input">Чтобы подтвердить, введите слово «' + RESET_CONFIRM_WORD + '»</label>' +
@@ -276,7 +276,7 @@ function attachHandlers(){
         {label:'Сначала сделать экспорт', onClick:function(){ exportData(); return false; }},
         {label:'Удалить всё', variant:'danger', onClick:function(root){
           if (!confirmed(root)) return false;
-          state.objects = {}; state.mechanisms = {}; nodeById.clear();
+          emptyState(); nodeById.clear();
           persist(); syncGraphModel(); renderSidebar(); updateStats(); clearSelection();
         }}
       ]

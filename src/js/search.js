@@ -32,6 +32,14 @@ function selectEntity(kind, id){
     if (!state.objects[id]) return;
     pinnedNodeId = 'obj:'+id; pinnedMechanismId = null; pinnedEdgeKey = null;
     renderObjectPanel(state.objects[id]);
+  } else if (kind === 'role'){
+    /* Роль — не узел графа: карточка открывается, граф не центрируется. */
+    if (!state.roles[id]) return;
+    pinnedNodeId = null; pinnedMechanismId = null; pinnedEdgeKey = null;
+    renderRolePanel(state.roles[id]); pinnedRoleId = id;
+    syncSidebarActive(); requestRender();
+    if (currentView === 'list') scrollActiveListRowIntoView();
+    return;
   } else {
     if (!state.mechanisms[id]) return;
     pinnedMechanismId = id; pinnedNodeId = null; pinnedEdgeKey = null;
@@ -115,7 +123,7 @@ function moveListSelection(step){
   if (!rows.length) return;
   var i = rows.findIndex(function(r){ return r.classList.contains('active'); });
   var next = rows[i < 0 ? 0 : Math.max(0, Math.min(rows.length - 1, i + step))];
-  selectEntity(next.getAttribute('data-kind')==='object' ? 'obj' : 'mech', next.getAttribute('data-id'));
+  selectEntity(LIST_ROW_ENTITY[next.getAttribute('data-kind')], next.getAttribute('data-id'));
 }
 
 function syncSidebarActive(){
@@ -130,7 +138,8 @@ function syncSidebarActive(){
   document.querySelectorAll('#list-view-body .list-view-row').forEach(function(row){
     var id = row.getAttribute('data-id');
     var on = (row.getAttribute('data-kind')==='object' && pinnedNodeId==='obj:'+id) ||
-             (row.getAttribute('data-kind')==='mechanism' && pinnedMechanismId===id);
+             (row.getAttribute('data-kind')==='mechanism' && pinnedMechanismId===id) ||
+             (row.getAttribute('data-kind')==='role' && pinnedRoleId===id);
     row.classList.toggle('active', on);
   });
 }

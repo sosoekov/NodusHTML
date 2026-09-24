@@ -20,20 +20,22 @@ function refreshTagFilterOptions(){
 /* Две вкладки, как в левой панели «Графа». У каждой — свой поиск, отборы и сортировка
    (в памяти, на время сессии). Сортировка — внутри группы (тип объекта / категория механизма). */
 var listTab = 'objects';
-var listSearch = { objects:'', mechanisms:'' };
+var listSearch = { objects:'', mechanisms:'', roles:'' };
 var listFilters = {
   objects:    { type:{}, sub:{}, tag:{} },
-  mechanisms: { cat:{},  sub:{}, tag:{} }
+  mechanisms: { cat:{},  sub:{}, tag:{} },
+  roles:      {}
 };
-var listSort = { objects:{key:'name', dir:1}, mechanisms:{key:'name', dir:1} };
+var listSort = { objects:{key:'name', dir:1}, mechanisms:{key:'name', dir:1}, roles:{key:'name', dir:1} };
 /* Колонки. hideBelow — ширина таблицы (px), ниже которой колонка скрывается
-   (открытая карточка сужает таблицу: сначала уходят «Теги», затем «Подсистема»). */
+   (открытая карточка сужает таблицу: сначала уходят «Реквизиты», затем «Теги», затем «Подсистема»). */
 var LIST_COLUMNS = {
   objects: [
     {key:'name',   title:'Синоним',               width:'minmax(0,2.2fr)'},
     {key:'code',   title:'Имя в конфигураторе',   width:'minmax(0,2fr)'},
     {key:'sub',    title:'Подсистема',            width:'minmax(0,1.4fr)', hideBelow:860},
     {key:'mechs',  title:'Механизмы',             width:'96px'},
+    {key:'attrs',  title:'Реквизиты',             width:'96px', hideBelow:1180},
     {key:'tags',   title:'Теги',                  width:'minmax(0,1.4fr)', hideBelow:1060},
     {key:'status', title:'Статус',                width:'112px'}
   ],
@@ -43,6 +45,11 @@ var LIST_COLUMNS = {
     {key:'sources', title:'Источники',  width:'minmax(0,2fr)'},
     {key:'targets', title:'Приёмники',  width:'minmax(0,2fr)'},
     {key:'status',  title:'Статус',     width:'112px'}
+  ],
+  roles: [
+    {key:'name',  title:'Название',                 width:'minmax(0,1.6fr)'},
+    {key:'desc',  title:'Описание',                 width:'minmax(0,3fr)'},
+    {key:'procs', title:'Используется в процессах', width:'200px'}
   ]
 };
 var listTableWidth = 0;
@@ -81,7 +88,7 @@ function mechanismParticipantObjects(m){
 }
 
 /* Значения ячеек: text — показ и сортировка; пустая строка — пустая ячейка (в сортировке всегда в конце). */
-function listObjectValues(o, mechRoles){
+function listObjectValues(o, mechRoles, attrCount){
   var subs = objectSubsystems(o), tags = o.tags || [];
   var st = o.status || DEFAULT_OBJECT_STATUS;
   return {
@@ -89,6 +96,7 @@ function listObjectValues(o, mechRoles){
     code: objectIdentifier(o),
     sub: subs.join(', '),
     mechs: mechRoles.length,
+    attrs: attrCount || 0,
     tags: tags.join(', '),
     status: st === DEFAULT_OBJECT_STATUS ? '' : objectStatusTitle(st),
     statusKind: statusKind(st)
@@ -104,6 +112,10 @@ function listMechanismValues(m){
     status: st === DEFAULT_MECH_STATUS ? '' : mechanismStatusTitle(st),
     statusKind: statusKind(st)
   };
+}
+
+function listRoleValues(r){
+  return { name:r.name, desc:r.description || '', procs:roleProcessCount(r.id) };
 }
 
 function listSortValue(v, key){
@@ -137,6 +149,11 @@ function listFilteredObjects(){
     .filter(function(o){ return !anyKey(f.type) || f.type[objectTypeKey(o)]; })
     .filter(function(o){ return matchesAny(f.sub, objectSubsystems(o)); })
     .filter(function(o){ return matchesAny(f.tag, o.tags || []); });
+}
+function listFilteredRoles(){
+  var q = listSearch.roles.toLowerCase().trim();
+  return Object.keys(state.roles).map(function(id){ return state.roles[id]; })
+    .filter(function(r){ return !q || r.name.toLowerCase().indexOf(q) >= 0 || (r.description||'').toLowerCase().indexOf(q) >= 0; });
 }
 /* У механизма нет своих подсистем и тегов — отбор по ним идёт по объектам-участникам. */
 function listFilteredMechanisms(){
@@ -213,6 +230,9 @@ var listFiltersTab = null;
 function renderListFilters(){
   var box = document.getElementById('list-filters');
   var isObj = listTab === 'objects', f = listFilters[listTab];
+  /* У ролей нет отборов и устаревших — только поиск. */
+  document.querySelector('.list-view-toolbar .deprecated-switch').hidden = listTab === 'roles';
+  if (listTab === 'roles'){ box.innerHTML = ''; listFiltersTab = listTab; return; }
   if (listFiltersTab !== listTab){
     box.innerHTML = (isObj ? multiSelectHTML('type', 'Все типы') : multiSelectHTML('cat', 'Все категории')) +
       multiSelectHTML('sub', 'Все подсистемы') + multiSelectHTML('tag', 'Все теги');
@@ -255,10 +275,14 @@ function listCellHTML(col, v, entity){
   var title = '';
   switch (col.key){
     case 'name':
-      if (listTab === 'objects') return '<span class="lv-cell is-name" title="' + escapeHtml(v.name) + '"><span class="lv-text">' + escapeHtml(v.name) + '</span></span>';
+      if (listTab !== 'mechanisms') return '<span class="lv-cell is-name" title="' + escapeHtml(v.name) + '"><span class="lv-text">' + escapeHtml(v.name) + '</span></span>';
       return '<span class="lv-cell is-name" title="' + escapeHtml(v.name) + '"><span class="dot" style="background:' + categoryAccent(entity.category) + '"></span><span class="lv-text">' + escapeHtml(v.name) + '</span></span>';
     case 'code':
       return '<span class="lv-cell is-code" title="' + escapeHtml(entity.fullName || '') + '">' + escapeHtml(v.code) + '</span>';
+    case 'attrs':
+      return '<span class="lv-cell is-count' + (v.attrs ? '' : ' is-zero') + '" title="' + escapeHtml(v.attrs ? v.attrs + ' ' + pluralRu(v.attrs,'реквизит','реквизита','реквизитов') : 'Реквизитов нет') + '">' + v.attrs + '</span>';
+    case 'procs':
+      return '<span class="lv-cell is-count' + (v.procs ? '' : ' is-zero') + '">' + v.procs + '</span>';
     case 'mechs':
       title = v.mechRoles.length ? v.mechRoles.map(function(r){ return r.mech.title + ' — ' + r.roles.join(', '); }).join('\n') : 'Не участвует в механизмах';
       return '<span class="lv-cell is-count' + (v.mechs ? '' : ' is-zero') + '" title="' + escapeHtml(title) + '"><span class="lv-diamond"></span>' + v.mechs + '</span>';
@@ -274,20 +298,26 @@ function listCellHTML(col, v, entity){
 }
 
 function renderListView(){
-  var objs = listFilteredObjects(), mechs = listFilteredMechanisms();
+  var objs = listFilteredObjects(), mechs = listFilteredMechanisms(), roles = listFilteredRoles();
   document.getElementById('list-count-objects').textContent = objs.length;
   document.getElementById('list-count-mechanisms').textContent = mechs.length;
+  document.getElementById('list-count-roles').textContent = roles.length;
   renderListFilters();
 
   var isObj = listTab === 'objects', cols = visibleListColumns(), sort = listSort[listTab];
   var template = cols.map(function(c){ return c.width; }).join(' ');
   var rows, groups = [];
   if (isObj){
-    rows = objs.map(function(o){ var mr = objectMechanismRoles(o.id); var v = listObjectValues(o, mr); v.mechRoles = mr; return {e:o, v:v}; });
+    var attrCounts = objectAttributeCounts();
+    rows = objs.map(function(o){ var mr = objectMechanismRoles(o.id); var v = listObjectValues(o, mr, attrCounts[o.id]); v.mechRoles = mr; return {e:o, v:v}; });
     var byType = {};
     rows.forEach(function(r){ var k = objectTypeKey(r.e); (byType[k] = byType[k] || []).push(r); });
     OBJECT_TYPES.forEach(function(t){ if (byType[t.code]) groups.push({title:t.plural, head:'<span style="--c:' + typeColor(t.code) + '">' + typeIconSVG(t.code) + '</span>', rows:byType[t.code]}); });
     if (byType['']) groups.push({title:UNKNOWN_TYPE_TITLE, head:'<span style="--c:' + THEME.typeUnknown + '">' + typeIconSVG('') + '</span>', rows:byType['']});
+  } else if (listTab === 'roles'){
+    /* Роли не группируются — одна группа без заголовка. */
+    groups.push({title:null, rows:roles.map(function(r){ return {e:r, v:listRoleValues(r)}; })});
+    if (!roles.length) groups = [];
   } else {
     rows = mechs.map(function(m){ return {e:m, v:listMechanismValues(m)}; });
     var byCat = {};
@@ -301,9 +331,9 @@ function renderListView(){
     return '<button type="button" class="lv-sort' + (on ? ' is-sorted' : '') + '" data-sort="' + c.key + '" role="columnheader" aria-sort="' + (on ? (sort.dir > 0 ? 'ascending' : 'descending') : 'none') + '">' +
       escapeHtml(c.title) + (on ? '<span class="lv-sort-arrow" aria-hidden="true">' + (sort.dir > 0 ? '↑' : '↓') + '</span>' : '') + '</button>';
   }).join('') + '</div>';
-  var kind = isObj ? 'object' : 'mechanism';
+  var kind = {objects:'object', mechanisms:'mechanism', roles:'role'}[listTab];
   var html = groups.length ? head + groups.map(function(g){
-    return '<div class="list-view-group"><p class="lv-group-title">' + g.head + escapeHtml(g.title) + ' · ' + g.rows.length + '</p>' +
+    return '<div class="list-view-group">' + (g.title ? '<p class="lv-group-title">' + g.head + escapeHtml(g.title) + ' · ' + g.rows.length + '</p>' : '') +
       g.rows.map(function(r){
         return '<button class="list-view-row lv-row' + (r.e.status === 'deprecated' ? ' is-deprecated' : '') + '" data-kind="' + kind + '" data-id="' + r.e.id + '" type="button">' +
           cols.map(function(c){ return listCellHTML(c, r.v, r.e); }).join('') + '</button>';
@@ -323,17 +353,20 @@ function renderListView(){
   });
   body.querySelectorAll('.list-view-row').forEach(function(row){
     row.addEventListener('click', function(){
-      selectEntity(row.getAttribute('data-kind')==='object' ? 'obj' : 'mech', row.getAttribute('data-id'));
+      selectEntity(LIST_ROW_ENTITY[row.getAttribute('data-kind')], row.getAttribute('data-id'));
     });
   });
 }
+/* data-kind строки списка → вид сущности для selectEntity. */
+var LIST_ROW_ENTITY = {object:'obj', mechanism:'mech', role:'role'};
 
 function setListTab(tab){
   if (tab === listTab) return;
   listTab = tab;
   document.querySelectorAll('.list-tab').forEach(function(t){ t.classList.toggle('active', t.getAttribute('data-list-tab') === tab); });
   document.getElementById('list-search').value = listSearch[tab];
-  document.getElementById('btn-list-add').textContent = tab === 'objects' ? '+ Объект' : '+ Механизм';
+  document.getElementById('list-search').placeholder = tab === 'roles' ? 'Название или описание' : 'Имя, синоним или описание';
+  document.getElementById('btn-list-add').textContent = {objects:'+ Объект', mechanisms:'+ Механизм', roles:'+ Роль'}[tab];
   closeListDropdowns();
   renderListView();
 }

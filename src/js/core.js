@@ -108,8 +108,33 @@ function readTheme(){
 
 /* ===================== Состояние ===================== */
 
-var state = { objects:{}, mechanisms:{} };
+var state = { objects:{}, mechanisms:{}, roles:{}, attributes:{} };
 var STORAGE_KEY = 'objectGraphPrototypeV1';
+
+/* Формат данных (localStorage, папка, экспорт). Разделы roles и attributes появились в
+   formatVersion 2 и необязательны: файл без них читается как «ролей и реквизитов нет». */
+var FORMAT_VERSION = 2;
+function serializeState(){
+  return {formatVersion:FORMAT_VERSION, objects:state.objects, mechanisms:state.mechanisms, roles:state.roles, attributes:state.attributes};
+}
+function applyState(data){
+  data = data || {};
+  state.objects = data.objects || {};
+  state.mechanisms = data.mechanisms || {};
+  state.roles = data.roles || {};
+  state.attributes = data.attributes || {};
+}
+function emptyState(){ applyState({}); }
+/* «16 объектов, 6 механизмов, 3 роли, 12 реквизитов» — для подтверждений импорта и очистки.
+   Роли и реквизиты упоминаются, только если они есть. */
+function dataSummary(data){
+  function n(sec){ return Object.keys((data && data[sec]) || {}).length; }
+  var oc = n('objects'), mc = n('mechanisms'), rc = n('roles'), ac = n('attributes');
+  var parts = [oc + ' ' + pluralRu(oc,'объект','объекта','объектов'), mc + ' ' + pluralRu(mc,'механизм','механизма','механизмов')];
+  if (rc) parts.push(rc + ' ' + pluralRu(rc,'роль','роли','ролей'));
+  if (ac) parts.push(ac + ' ' + pluralRu(ac,'реквизит','реквизита','реквизитов'));
+  return parts.join(', ');
+}
 
 var folderHandle = null;
 var folderSupported = ('showDirectoryPicker' in window);
@@ -243,7 +268,7 @@ function retrySave(){
 function persist(){
   lastLocalSaveFailed = false;
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({objects:state.objects, mechanisms:state.mechanisms}));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeState()));
   }catch(e){
     lastLocalSaveFailed = true;
     console.warn('Не удалось сохранить в localStorage (нормально для предпросмотра внутри Claude — при открытии файла напрямую в браузере сохранение работает).', e);
@@ -261,9 +286,7 @@ function loadPersisted(){
   try{
     var raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
-    var data = JSON.parse(raw);
-    state.objects = data.objects || {};
-    state.mechanisms = data.mechanisms || {};
+    applyState(JSON.parse(raw));
   }catch(e){
     console.warn('Не удалось прочитать localStorage.', e);
   }
@@ -359,7 +382,7 @@ function tryRestoreFolder(){
 function saveToFolder(){
   if (!folderHandle) return Promise.resolve(true);
   if (autoSaveStatus !== 'connected') return Promise.resolve(autoSaveStatus !== 'error');
-  var data = JSON.stringify({objects:state.objects, mechanisms:state.mechanisms}, null, 2);
+  var data = JSON.stringify(serializeState(), null, 2);
   return folderHandle.getFileHandle('object-graph-data.json', {create:true}).then(function(fh){
     return fh.createWritable();
   }).then(function(writable){
@@ -529,17 +552,21 @@ function createMechanism(partial){
 function deleteObject(id, onCancel){
   var refs = Object.keys(state.mechanisms).map(function(k){return state.mechanisms[k];})
     .filter(function(m){ return m.participants.some(function(p){return p.objectId===id;}); });
+  var attrs = objectAttributes(id);
   var proceed = function(){
     refs.forEach(function(m){ m.participants = m.participants.filter(function(p){return p.objectId!==id;}); });
+    attrs.forEach(function(a){ delete state.attributes[a.id]; });
     delete state.objects[id];
     persist(); syncGraphModel(); renderSidebar(); updateStats(); clearSelection();
     closeModal();
   };
-  if (refs.length === 0){ proceed(); return; }
+  if (refs.length === 0 && attrs.length === 0){ proceed(); return; }
   openModal({
     title:'Удалить объект?',
-    bodyHTML:'<p>Объект участвует в ' + refs.length + ' ' + pluralRu(refs.length,'механизме','механизмах','механизмах') + ': ' +
-      escapeHtml(refs.map(function(m){return m.title;}).join(', ')) + '. Он будет убран из ' + pluralRu(refs.length,'него','них','них') + '.</p>',
+    bodyHTML:(refs.length ? '<p>Объект участвует в ' + refs.length + ' ' + pluralRu(refs.length,'механизме','механизмах','механизмах') + ': ' +
+      escapeHtml(refs.map(function(m){return m.title;}).join(', ')) + '. Он будет убран из ' + pluralRu(refs.length,'него','них','них') + '.</p>' : '') +
+      (attrs.length ? '<p>У объекта ' + attrs.length + ' ' + pluralRu(attrs.length,'реквизит','реквизита','реквизитов') + ' — ' +
+        pluralRu(attrs.length,'он будет удалён','они будут удалены','они будут удалены') + ' вместе с объектом.</p>' : ''),
     footerButtons:[
       {label:'Отмена', onClick:function(){ if (onCancel) setTimeout(onCancel, 0); return true; }},
       {label:'Удалить', variant:'danger', onClick:function(){ proceed(); }}

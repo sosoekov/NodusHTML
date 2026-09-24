@@ -4,16 +4,17 @@
 
 function showPanel(kind){
   document.getElementById('panel-empty').hidden = !!kind;
-  ['object','mechanism','edge'].forEach(function(k){
+  ['object','mechanism','edge','role'].forEach(function(k){
     document.getElementById('panel-'+k).hidden = (k!==kind);
   });
+  if (kind !== 'role') pinnedRoleId = null;
   updateDetailPanelVisibility();
 }
 
 /* Правая панель одна на оба режима. В «Графе» видна всегда; в «Списке» — только
    с открытой карточкой объекта или механизма (список при этом сужается). */
 function updateDetailPanelVisibility(){
-  var hasCard = !document.getElementById('panel-object').hidden || !document.getElementById('panel-mechanism').hidden;
+  var hasCard = ['object','mechanism','role'].some(function(k){ return !document.getElementById('panel-' + k).hidden; });
   var show = currentView === 'graph' || hasCard;
   document.getElementById('detail-panel').hidden = !show;
   document.getElementById('resize-right').hidden = !show;
@@ -27,8 +28,9 @@ function bindField(panel, sel, evt, handler){
 /* ===================== Общие части карточек ===================== */
 
 /* Заголовок карточки редактируется по клику: Enter / уход фокуса — сохранить,
-   Esc — отменить. Пустое название не сохраняется. */
-function bindInlineTitle(panel, getValue, setValue, fieldLabel){
+   Esc — отменить. Пустое название не сохраняется. validate(v) — необязательная проверка:
+   вернула текст ошибки — значение не сохраняется, ошибка показывается под заголовком. */
+function bindInlineTitle(panel, getValue, setValue, fieldLabel, validate){
   var h = panel.querySelector('.inline-title');
   var msg = panel.querySelector('.inline-msg');
   var msgTimer = null;
@@ -51,8 +53,9 @@ function bindInlineTitle(panel, getValue, setValue, fieldLabel){
     var finished = false;
     function finish(save){
       if (finished) return; finished = true;
-      var v = input.value.trim();
+      var v = input.value.trim(), err;
       if (save && !v) showMsg((fieldLabel || 'Название') + ' не может быть пустым — оставлено прежнее.');
+      else if (save && v !== getValue() && validate && (err = validate(v))) showMsg(err + ' Оставлено прежнее.');
       else if (save && v !== getValue()) setValue(v);
       h.textContent = getValue();
       input.remove(); h.hidden = false;
@@ -405,6 +408,7 @@ function objectPanelTemplate(obj){
       '<div id="obj-add-to-mech"></div>' +
       '<div id="obj-mech-list"></div>' +
     '</div>' +
+    attributesSectionHTML() +
     viewFieldHTML('description', 'Описание') +
     '<div class="vfield" data-key="subtags"><div class="vfield-label">Подсистема · Теги</div><div class="vfield-value" tabindex="0"></div></div>' +
     '<div class="panel-section is-tight">' +
@@ -520,6 +524,8 @@ function renderObjectPanel(obj, panel){
   });
   renderObjectMechList(obj, panel);
   bindAddToMechanism(panel, obj);
+  renderAttributesBlock(obj, panel);
+  bindAddAttribute(panel, obj);
   renderAttachmentsList(panel, '#obj-attachments-list', 'obj', obj.id);
 }
 
@@ -760,6 +766,61 @@ function buildObjectCombobox(container, selectedId, onChange, reopenAfterCreate)
   input.addEventListener('keydown', function(e){
     if (e.key === 'Escape'){ dropdown.hidden = true; input.blur(); }
   });
+}
+
+/* Комбобокс с автодополнением — общий для новых полей выбора (табличная часть реквизита,
+   далее роли, контроли, шаги).
+   opt: {value, placeholder, ariaLabel,
+         source(q) → [{value, label, sub?, iconHTML?}] — пункты для введённого текста,
+         createLabel(q) → строка пункта «+ Создать „…“» или null,
+         onPick(item) — выбран пункт (item.create — выбран пункт создания, item.value = текст)}
+   ↑/↓ выбирают пункт, Enter применяет выбранный. Пока пункт не выбран стрелками, Enter
+   не перехватывается — форма вокруг может сохранить введённый текст. Esc закрывает список. */
+function buildCombobox(container, opt){
+  container.innerHTML = '<div class="combo"><input type="text" class="field-input combo-input" autocomplete="off"><div class="combo-dropdown" hidden></div></div>';
+  var input = container.querySelector('.combo-input'), dropdown = container.querySelector('.combo-dropdown');
+  input.value = opt.value || '';
+  if (opt.placeholder) input.placeholder = opt.placeholder;
+  if (opt.ariaLabel) input.setAttribute('aria-label', opt.ariaLabel);
+  var items = [], active = -1;
+  function render(){
+    var q = input.value.trim();
+    items = opt.source(q).slice();
+    var cl = opt.createLabel ? opt.createLabel(q) : null;
+    if (cl) items.push({value:q, label:cl, create:true});
+    active = -1;
+    if (!items.length){ dropdown.hidden = true; return; }
+    dropdown.innerHTML = items.map(function(it, i){
+      return '<div class="combo-item' + (it.create ? ' combo-item-create' : '') + '" data-i="' + i + '">' + (it.iconHTML || '') +
+        '<span class="combo-item-text">' + escapeHtml(it.label) + '</span>' +
+        (it.sub ? '<span class="combo-item-type">' + escapeHtml(it.sub) + '</span>' : '') + '</div>';
+    }).join('');
+    dropdown.hidden = false;
+    dropdown.querySelectorAll('.combo-item').forEach(function(el){
+      el.addEventListener('mousedown', function(e){ e.preventDefault(); choose(Number(el.getAttribute('data-i'))); });
+    });
+  }
+  function hl(){ dropdown.querySelectorAll('.combo-item').forEach(function(el, i){ el.classList.toggle('is-active', i === active); }); }
+  function choose(i){ var it = items[i]; if (!it) return; dropdown.hidden = true; active = -1; opt.onPick(it); }
+  input.addEventListener('input', render);
+  input.addEventListener('focus', render);
+  input.addEventListener('blur', function(){ setTimeout(function(){ dropdown.hidden = true; }, 150); });
+  input.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+      if (dropdown.hidden) render();
+      if (!items.length) return;
+      e.preventDefault();
+      active = e.key === 'ArrowDown' ? (active + 1) % items.length : (active <= 0 ? items.length - 1 : active - 1);
+      hl();
+    } else if (e.key === 'Enter' && !dropdown.hidden && active >= 0){
+      e.preventDefault(); e.stopPropagation(); choose(active);
+    } else if (e.key === 'Escape' && !dropdown.hidden){
+      e.preventDefault(); e.stopPropagation(); dropdown.hidden = true;
+    } else if (e.key === 'Tab'){
+      dropdown.hidden = true;
+    }
+  });
+  return input;
 }
 
 

@@ -598,6 +598,29 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .settings-meta{ margin-top:6px; font-size:var(--fs-caption); color:var(--text-faint); }
 .logo-line{ fill:none; stroke:var(--accent); }
 .logo-n1{ fill:var(--logo-1); } .logo-n2{ fill:var(--logo-2); } .logo-n3{ fill:var(--logo-3); } .logo-n4{ fill:var(--logo-4); }
+
+/* ===== Роли и реквизиты (процессы, фаза 1) ===== */
+.deprecated-switch[hidden]{ display:none; }
+.card-icon-role{ color:var(--text-muted); }
+.attr-head, .attr-row{ display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.75fr) 26px; column-gap:8px; align-items:center; }
+.attr-head{ font-size:var(--fs-caption); color:var(--text-faint); padding:2px 0 4px; border-bottom:1px solid var(--border-soft); }
+.attr-group-toggle{ width:100%; display:flex; align-items:center; gap:6px; padding:6px 0 2px; background:transparent; border:none; text-align:left; cursor:pointer; color:var(--text-muted); font-size:var(--fs-caption); }
+.attr-group-toggle:hover{ color:var(--text); }
+.attr-group-chevron{ width:12px; height:12px; display:flex; align-items:center; justify-content:center; flex:none; }
+.attr-group-chevron::before{ content:''; width:5px; height:5px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(45deg); margin-top:-3px; }
+.attr-group-toggle[aria-expanded="false"] .attr-group-chevron::before{ transform:rotate(-45deg); margin-top:0; margin-left:-2px; }
+.attr-group-count{ color:var(--text-faint); }
+.attr-rows[hidden]{ display:none; }
+.attr-cell{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:2px 4px; border-radius:var(--radius); color:var(--text-muted); cursor:text; }
+.attr-cell:hover, .attr-cell:focus-visible{ background:var(--bg-elevated); outline:none; }
+.attr-cell.is-name{ font-family:var(--mono); font-size:var(--fs-caption); color:var(--text); }
+.attr-cell.is-empty{ color:var(--text-faint); }
+.attr-menu-btn{ width:24px; height:22px; }
+.attr-cell-input{ padding:2px 4px; font-size:var(--fs-caption); }
+.attr-cell-input.is-name, .attr-add-name{ font-family:var(--mono); }
+.attr-add-grid{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.attr-add-grid .field-input{ padding:5px 7px; font-size:var(--fs-caption); }
+.attr-add-hint{ margin:0; font-size:var(--fs-caption); color:var(--text-faint); }
 </style>
 </head>
 <body>
@@ -706,6 +729,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     <div class="side-tabs list-tabs" role="tablist">
       <button class="side-tab list-tab active" data-list-tab="objects" type="button" role="tab">Объекты <span id="list-count-objects">0</span></button>
       <button class="side-tab list-tab" data-list-tab="mechanisms" type="button" role="tab">Механизмы <span id="list-count-mechanisms">0</span></button>
+      <button class="side-tab list-tab" data-list-tab="roles" type="button" role="tab">Роли <span id="list-count-roles">0</span></button>
     </div>
     <div class="list-view-toolbar">
       <input type="text" id="list-search" class="search-input" placeholder="Имя, синоним или описание" autocomplete="off">
@@ -728,6 +752,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       <div id="panel-object" class="panel-content" hidden></div>
       <div id="panel-mechanism" class="panel-content" hidden></div>
       <div id="panel-edge" class="panel-content" hidden></div>
+      <div id="panel-role" class="panel-content" hidden></div>
     </aside>
   </div>
 </div>
@@ -844,8 +869,33 @@ function readTheme(){
 
 /* ===================== Состояние ===================== */
 
-var state = { objects:{}, mechanisms:{} };
+var state = { objects:{}, mechanisms:{}, roles:{}, attributes:{} };
 var STORAGE_KEY = 'objectGraphPrototypeV1';
+
+/* Формат данных (localStorage, папка, экспорт). Разделы roles и attributes появились в
+   formatVersion 2 и необязательны: файл без них читается как «ролей и реквизитов нет». */
+var FORMAT_VERSION = 2;
+function serializeState(){
+  return {formatVersion:FORMAT_VERSION, objects:state.objects, mechanisms:state.mechanisms, roles:state.roles, attributes:state.attributes};
+}
+function applyState(data){
+  data = data || {};
+  state.objects = data.objects || {};
+  state.mechanisms = data.mechanisms || {};
+  state.roles = data.roles || {};
+  state.attributes = data.attributes || {};
+}
+function emptyState(){ applyState({}); }
+/* «16 объектов, 6 механизмов, 3 роли, 12 реквизитов» — для подтверждений импорта и очистки.
+   Роли и реквизиты упоминаются, только если они есть. */
+function dataSummary(data){
+  function n(sec){ return Object.keys((data && data[sec]) || {}).length; }
+  var oc = n('objects'), mc = n('mechanisms'), rc = n('roles'), ac = n('attributes');
+  var parts = [oc + ' ' + pluralRu(oc,'объект','объекта','объектов'), mc + ' ' + pluralRu(mc,'механизм','механизма','механизмов')];
+  if (rc) parts.push(rc + ' ' + pluralRu(rc,'роль','роли','ролей'));
+  if (ac) parts.push(ac + ' ' + pluralRu(ac,'реквизит','реквизита','реквизитов'));
+  return parts.join(', ');
+}
 
 var folderHandle = null;
 var folderSupported = ('showDirectoryPicker' in window);
@@ -979,7 +1029,7 @@ function retrySave(){
 function persist(){
   lastLocalSaveFailed = false;
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({objects:state.objects, mechanisms:state.mechanisms}));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeState()));
   }catch(e){
     lastLocalSaveFailed = true;
     console.warn('Не удалось сохранить в localStorage (нормально для предпросмотра внутри Claude — при открытии файла напрямую в браузере сохранение работает).', e);
@@ -997,9 +1047,7 @@ function loadPersisted(){
   try{
     var raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
-    var data = JSON.parse(raw);
-    state.objects = data.objects || {};
-    state.mechanisms = data.mechanisms || {};
+    applyState(JSON.parse(raw));
   }catch(e){
     console.warn('Не удалось прочитать localStorage.', e);
   }
@@ -1095,7 +1143,7 @@ function tryRestoreFolder(){
 function saveToFolder(){
   if (!folderHandle) return Promise.resolve(true);
   if (autoSaveStatus !== 'connected') return Promise.resolve(autoSaveStatus !== 'error');
-  var data = JSON.stringify({objects:state.objects, mechanisms:state.mechanisms}, null, 2);
+  var data = JSON.stringify(serializeState(), null, 2);
   return folderHandle.getFileHandle('object-graph-data.json', {create:true}).then(function(fh){
     return fh.createWritable();
   }).then(function(writable){
@@ -1265,17 +1313,21 @@ function createMechanism(partial){
 function deleteObject(id, onCancel){
   var refs = Object.keys(state.mechanisms).map(function(k){return state.mechanisms[k];})
     .filter(function(m){ return m.participants.some(function(p){return p.objectId===id;}); });
+  var attrs = objectAttributes(id);
   var proceed = function(){
     refs.forEach(function(m){ m.participants = m.participants.filter(function(p){return p.objectId!==id;}); });
+    attrs.forEach(function(a){ delete state.attributes[a.id]; });
     delete state.objects[id];
     persist(); syncGraphModel(); renderSidebar(); updateStats(); clearSelection();
     closeModal();
   };
-  if (refs.length === 0){ proceed(); return; }
+  if (refs.length === 0 && attrs.length === 0){ proceed(); return; }
   openModal({
     title:'Удалить объект?',
-    bodyHTML:'<p>Объект участвует в ' + refs.length + ' ' + pluralRu(refs.length,'механизме','механизмах','механизмах') + ': ' +
-      escapeHtml(refs.map(function(m){return m.title;}).join(', ')) + '. Он будет убран из ' + pluralRu(refs.length,'него','них','них') + '.</p>',
+    bodyHTML:(refs.length ? '<p>Объект участвует в ' + refs.length + ' ' + pluralRu(refs.length,'механизме','механизмах','механизмах') + ': ' +
+      escapeHtml(refs.map(function(m){return m.title;}).join(', ')) + '. Он будет убран из ' + pluralRu(refs.length,'него','них','них') + '.</p>' : '') +
+      (attrs.length ? '<p>У объекта ' + attrs.length + ' ' + pluralRu(attrs.length,'реквизит','реквизита','реквизитов') + ' — ' +
+        pluralRu(attrs.length,'он будет удалён','они будут удалены','они будут удалены') + ' вместе с объектом.</p>' : ''),
     footerButtons:[
       {label:'Отмена', onClick:function(){ if (onCancel) setTimeout(onCancel, 0); return true; }},
       {label:'Удалить', variant:'danger', onClick:function(){ proceed(); }}
@@ -2276,16 +2328,17 @@ function switchView(view){
 
 function showPanel(kind){
   document.getElementById('panel-empty').hidden = !!kind;
-  ['object','mechanism','edge'].forEach(function(k){
+  ['object','mechanism','edge','role'].forEach(function(k){
     document.getElementById('panel-'+k).hidden = (k!==kind);
   });
+  if (kind !== 'role') pinnedRoleId = null;
   updateDetailPanelVisibility();
 }
 
 /* Правая панель одна на оба режима. В «Графе» видна всегда; в «Списке» — только
    с открытой карточкой объекта или механизма (список при этом сужается). */
 function updateDetailPanelVisibility(){
-  var hasCard = !document.getElementById('panel-object').hidden || !document.getElementById('panel-mechanism').hidden;
+  var hasCard = ['object','mechanism','role'].some(function(k){ return !document.getElementById('panel-' + k).hidden; });
   var show = currentView === 'graph' || hasCard;
   document.getElementById('detail-panel').hidden = !show;
   document.getElementById('resize-right').hidden = !show;
@@ -2299,8 +2352,9 @@ function bindField(panel, sel, evt, handler){
 /* ===================== Общие части карточек ===================== */
 
 /* Заголовок карточки редактируется по клику: Enter / уход фокуса — сохранить,
-   Esc — отменить. Пустое название не сохраняется. */
-function bindInlineTitle(panel, getValue, setValue, fieldLabel){
+   Esc — отменить. Пустое название не сохраняется. validate(v) — необязательная проверка:
+   вернула текст ошибки — значение не сохраняется, ошибка показывается под заголовком. */
+function bindInlineTitle(panel, getValue, setValue, fieldLabel, validate){
   var h = panel.querySelector('.inline-title');
   var msg = panel.querySelector('.inline-msg');
   var msgTimer = null;
@@ -2323,8 +2377,9 @@ function bindInlineTitle(panel, getValue, setValue, fieldLabel){
     var finished = false;
     function finish(save){
       if (finished) return; finished = true;
-      var v = input.value.trim();
+      var v = input.value.trim(), err;
       if (save && !v) showMsg((fieldLabel || 'Название') + ' не может быть пустым — оставлено прежнее.');
+      else if (save && v !== getValue() && validate && (err = validate(v))) showMsg(err + ' Оставлено прежнее.');
       else if (save && v !== getValue()) setValue(v);
       h.textContent = getValue();
       input.remove(); h.hidden = false;
@@ -2677,6 +2732,7 @@ function objectPanelTemplate(obj){
       '<div id="obj-add-to-mech"></div>' +
       '<div id="obj-mech-list"></div>' +
     '</div>' +
+    attributesSectionHTML() +
     viewFieldHTML('description', 'Описание') +
     '<div class="vfield" data-key="subtags"><div class="vfield-label">Подсистема · Теги</div><div class="vfield-value" tabindex="0"></div></div>' +
     '<div class="panel-section is-tight">' +
@@ -2792,6 +2848,8 @@ function renderObjectPanel(obj, panel){
   });
   renderObjectMechList(obj, panel);
   bindAddToMechanism(panel, obj);
+  renderAttributesBlock(obj, panel);
+  bindAddAttribute(panel, obj);
   renderAttachmentsList(panel, '#obj-attachments-list', 'obj', obj.id);
 }
 
@@ -3032,6 +3090,61 @@ function buildObjectCombobox(container, selectedId, onChange, reopenAfterCreate)
   input.addEventListener('keydown', function(e){
     if (e.key === 'Escape'){ dropdown.hidden = true; input.blur(); }
   });
+}
+
+/* Комбобокс с автодополнением — общий для новых полей выбора (табличная часть реквизита,
+   далее роли, контроли, шаги).
+   opt: {value, placeholder, ariaLabel,
+         source(q) → [{value, label, sub?, iconHTML?}] — пункты для введённого текста,
+         createLabel(q) → строка пункта «+ Создать „…“» или null,
+         onPick(item) — выбран пункт (item.create — выбран пункт создания, item.value = текст)}
+   ↑/↓ выбирают пункт, Enter применяет выбранный. Пока пункт не выбран стрелками, Enter
+   не перехватывается — форма вокруг может сохранить введённый текст. Esc закрывает список. */
+function buildCombobox(container, opt){
+  container.innerHTML = '<div class="combo"><input type="text" class="field-input combo-input" autocomplete="off"><div class="combo-dropdown" hidden></div></div>';
+  var input = container.querySelector('.combo-input'), dropdown = container.querySelector('.combo-dropdown');
+  input.value = opt.value || '';
+  if (opt.placeholder) input.placeholder = opt.placeholder;
+  if (opt.ariaLabel) input.setAttribute('aria-label', opt.ariaLabel);
+  var items = [], active = -1;
+  function render(){
+    var q = input.value.trim();
+    items = opt.source(q).slice();
+    var cl = opt.createLabel ? opt.createLabel(q) : null;
+    if (cl) items.push({value:q, label:cl, create:true});
+    active = -1;
+    if (!items.length){ dropdown.hidden = true; return; }
+    dropdown.innerHTML = items.map(function(it, i){
+      return '<div class="combo-item' + (it.create ? ' combo-item-create' : '') + '" data-i="' + i + '">' + (it.iconHTML || '') +
+        '<span class="combo-item-text">' + escapeHtml(it.label) + '</span>' +
+        (it.sub ? '<span class="combo-item-type">' + escapeHtml(it.sub) + '</span>' : '') + '</div>';
+    }).join('');
+    dropdown.hidden = false;
+    dropdown.querySelectorAll('.combo-item').forEach(function(el){
+      el.addEventListener('mousedown', function(e){ e.preventDefault(); choose(Number(el.getAttribute('data-i'))); });
+    });
+  }
+  function hl(){ dropdown.querySelectorAll('.combo-item').forEach(function(el, i){ el.classList.toggle('is-active', i === active); }); }
+  function choose(i){ var it = items[i]; if (!it) return; dropdown.hidden = true; active = -1; opt.onPick(it); }
+  input.addEventListener('input', render);
+  input.addEventListener('focus', render);
+  input.addEventListener('blur', function(){ setTimeout(function(){ dropdown.hidden = true; }, 150); });
+  input.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+      if (dropdown.hidden) render();
+      if (!items.length) return;
+      e.preventDefault();
+      active = e.key === 'ArrowDown' ? (active + 1) % items.length : (active <= 0 ? items.length - 1 : active - 1);
+      hl();
+    } else if (e.key === 'Enter' && !dropdown.hidden && active >= 0){
+      e.preventDefault(); e.stopPropagation(); choose(active);
+    } else if (e.key === 'Escape' && !dropdown.hidden){
+      e.preventDefault(); e.stopPropagation(); dropdown.hidden = true;
+    } else if (e.key === 'Tab'){
+      dropdown.hidden = true;
+    }
+  });
+  return input;
 }
 
 
@@ -3286,20 +3399,22 @@ function refreshTagFilterOptions(){
 /* Две вкладки, как в левой панели «Графа». У каждой — свой поиск, отборы и сортировка
    (в памяти, на время сессии). Сортировка — внутри группы (тип объекта / категория механизма). */
 var listTab = 'objects';
-var listSearch = { objects:'', mechanisms:'' };
+var listSearch = { objects:'', mechanisms:'', roles:'' };
 var listFilters = {
   objects:    { type:{}, sub:{}, tag:{} },
-  mechanisms: { cat:{},  sub:{}, tag:{} }
+  mechanisms: { cat:{},  sub:{}, tag:{} },
+  roles:      {}
 };
-var listSort = { objects:{key:'name', dir:1}, mechanisms:{key:'name', dir:1} };
+var listSort = { objects:{key:'name', dir:1}, mechanisms:{key:'name', dir:1}, roles:{key:'name', dir:1} };
 /* Колонки. hideBelow — ширина таблицы (px), ниже которой колонка скрывается
-   (открытая карточка сужает таблицу: сначала уходят «Теги», затем «Подсистема»). */
+   (открытая карточка сужает таблицу: сначала уходят «Реквизиты», затем «Теги», затем «Подсистема»). */
 var LIST_COLUMNS = {
   objects: [
     {key:'name',   title:'Синоним',               width:'minmax(0,2.2fr)'},
     {key:'code',   title:'Имя в конфигураторе',   width:'minmax(0,2fr)'},
     {key:'sub',    title:'Подсистема',            width:'minmax(0,1.4fr)', hideBelow:860},
     {key:'mechs',  title:'Механизмы',             width:'96px'},
+    {key:'attrs',  title:'Реквизиты',             width:'96px', hideBelow:1180},
     {key:'tags',   title:'Теги',                  width:'minmax(0,1.4fr)', hideBelow:1060},
     {key:'status', title:'Статус',                width:'112px'}
   ],
@@ -3309,6 +3424,11 @@ var LIST_COLUMNS = {
     {key:'sources', title:'Источники',  width:'minmax(0,2fr)'},
     {key:'targets', title:'Приёмники',  width:'minmax(0,2fr)'},
     {key:'status',  title:'Статус',     width:'112px'}
+  ],
+  roles: [
+    {key:'name',  title:'Название',                 width:'minmax(0,1.6fr)'},
+    {key:'desc',  title:'Описание',                 width:'minmax(0,3fr)'},
+    {key:'procs', title:'Используется в процессах', width:'200px'}
   ]
 };
 var listTableWidth = 0;
@@ -3347,7 +3467,7 @@ function mechanismParticipantObjects(m){
 }
 
 /* Значения ячеек: text — показ и сортировка; пустая строка — пустая ячейка (в сортировке всегда в конце). */
-function listObjectValues(o, mechRoles){
+function listObjectValues(o, mechRoles, attrCount){
   var subs = objectSubsystems(o), tags = o.tags || [];
   var st = o.status || DEFAULT_OBJECT_STATUS;
   return {
@@ -3355,6 +3475,7 @@ function listObjectValues(o, mechRoles){
     code: objectIdentifier(o),
     sub: subs.join(', '),
     mechs: mechRoles.length,
+    attrs: attrCount || 0,
     tags: tags.join(', '),
     status: st === DEFAULT_OBJECT_STATUS ? '' : objectStatusTitle(st),
     statusKind: statusKind(st)
@@ -3370,6 +3491,10 @@ function listMechanismValues(m){
     status: st === DEFAULT_MECH_STATUS ? '' : mechanismStatusTitle(st),
     statusKind: statusKind(st)
   };
+}
+
+function listRoleValues(r){
+  return { name:r.name, desc:r.description || '', procs:roleProcessCount(r.id) };
 }
 
 function listSortValue(v, key){
@@ -3403,6 +3528,11 @@ function listFilteredObjects(){
     .filter(function(o){ return !anyKey(f.type) || f.type[objectTypeKey(o)]; })
     .filter(function(o){ return matchesAny(f.sub, objectSubsystems(o)); })
     .filter(function(o){ return matchesAny(f.tag, o.tags || []); });
+}
+function listFilteredRoles(){
+  var q = listSearch.roles.toLowerCase().trim();
+  return Object.keys(state.roles).map(function(id){ return state.roles[id]; })
+    .filter(function(r){ return !q || r.name.toLowerCase().indexOf(q) >= 0 || (r.description||'').toLowerCase().indexOf(q) >= 0; });
 }
 /* У механизма нет своих подсистем и тегов — отбор по ним идёт по объектам-участникам. */
 function listFilteredMechanisms(){
@@ -3479,6 +3609,9 @@ var listFiltersTab = null;
 function renderListFilters(){
   var box = document.getElementById('list-filters');
   var isObj = listTab === 'objects', f = listFilters[listTab];
+  /* У ролей нет отборов и устаревших — только поиск. */
+  document.querySelector('.list-view-toolbar .deprecated-switch').hidden = listTab === 'roles';
+  if (listTab === 'roles'){ box.innerHTML = ''; listFiltersTab = listTab; return; }
   if (listFiltersTab !== listTab){
     box.innerHTML = (isObj ? multiSelectHTML('type', 'Все типы') : multiSelectHTML('cat', 'Все категории')) +
       multiSelectHTML('sub', 'Все подсистемы') + multiSelectHTML('tag', 'Все теги');
@@ -3521,10 +3654,14 @@ function listCellHTML(col, v, entity){
   var title = '';
   switch (col.key){
     case 'name':
-      if (listTab === 'objects') return '<span class="lv-cell is-name" title="' + escapeHtml(v.name) + '"><span class="lv-text">' + escapeHtml(v.name) + '</span></span>';
+      if (listTab !== 'mechanisms') return '<span class="lv-cell is-name" title="' + escapeHtml(v.name) + '"><span class="lv-text">' + escapeHtml(v.name) + '</span></span>';
       return '<span class="lv-cell is-name" title="' + escapeHtml(v.name) + '"><span class="dot" style="background:' + categoryAccent(entity.category) + '"></span><span class="lv-text">' + escapeHtml(v.name) + '</span></span>';
     case 'code':
       return '<span class="lv-cell is-code" title="' + escapeHtml(entity.fullName || '') + '">' + escapeHtml(v.code) + '</span>';
+    case 'attrs':
+      return '<span class="lv-cell is-count' + (v.attrs ? '' : ' is-zero') + '" title="' + escapeHtml(v.attrs ? v.attrs + ' ' + pluralRu(v.attrs,'реквизит','реквизита','реквизитов') : 'Реквизитов нет') + '">' + v.attrs + '</span>';
+    case 'procs':
+      return '<span class="lv-cell is-count' + (v.procs ? '' : ' is-zero') + '">' + v.procs + '</span>';
     case 'mechs':
       title = v.mechRoles.length ? v.mechRoles.map(function(r){ return r.mech.title + ' — ' + r.roles.join(', '); }).join('\n') : 'Не участвует в механизмах';
       return '<span class="lv-cell is-count' + (v.mechs ? '' : ' is-zero') + '" title="' + escapeHtml(title) + '"><span class="lv-diamond"></span>' + v.mechs + '</span>';
@@ -3540,20 +3677,26 @@ function listCellHTML(col, v, entity){
 }
 
 function renderListView(){
-  var objs = listFilteredObjects(), mechs = listFilteredMechanisms();
+  var objs = listFilteredObjects(), mechs = listFilteredMechanisms(), roles = listFilteredRoles();
   document.getElementById('list-count-objects').textContent = objs.length;
   document.getElementById('list-count-mechanisms').textContent = mechs.length;
+  document.getElementById('list-count-roles').textContent = roles.length;
   renderListFilters();
 
   var isObj = listTab === 'objects', cols = visibleListColumns(), sort = listSort[listTab];
   var template = cols.map(function(c){ return c.width; }).join(' ');
   var rows, groups = [];
   if (isObj){
-    rows = objs.map(function(o){ var mr = objectMechanismRoles(o.id); var v = listObjectValues(o, mr); v.mechRoles = mr; return {e:o, v:v}; });
+    var attrCounts = objectAttributeCounts();
+    rows = objs.map(function(o){ var mr = objectMechanismRoles(o.id); var v = listObjectValues(o, mr, attrCounts[o.id]); v.mechRoles = mr; return {e:o, v:v}; });
     var byType = {};
     rows.forEach(function(r){ var k = objectTypeKey(r.e); (byType[k] = byType[k] || []).push(r); });
     OBJECT_TYPES.forEach(function(t){ if (byType[t.code]) groups.push({title:t.plural, head:'<span style="--c:' + typeColor(t.code) + '">' + typeIconSVG(t.code) + '</span>', rows:byType[t.code]}); });
     if (byType['']) groups.push({title:UNKNOWN_TYPE_TITLE, head:'<span style="--c:' + THEME.typeUnknown + '">' + typeIconSVG('') + '</span>', rows:byType['']});
+  } else if (listTab === 'roles'){
+    /* Роли не группируются — одна группа без заголовка. */
+    groups.push({title:null, rows:roles.map(function(r){ return {e:r, v:listRoleValues(r)}; })});
+    if (!roles.length) groups = [];
   } else {
     rows = mechs.map(function(m){ return {e:m, v:listMechanismValues(m)}; });
     var byCat = {};
@@ -3567,9 +3710,9 @@ function renderListView(){
     return '<button type="button" class="lv-sort' + (on ? ' is-sorted' : '') + '" data-sort="' + c.key + '" role="columnheader" aria-sort="' + (on ? (sort.dir > 0 ? 'ascending' : 'descending') : 'none') + '">' +
       escapeHtml(c.title) + (on ? '<span class="lv-sort-arrow" aria-hidden="true">' + (sort.dir > 0 ? '↑' : '↓') + '</span>' : '') + '</button>';
   }).join('') + '</div>';
-  var kind = isObj ? 'object' : 'mechanism';
+  var kind = {objects:'object', mechanisms:'mechanism', roles:'role'}[listTab];
   var html = groups.length ? head + groups.map(function(g){
-    return '<div class="list-view-group"><p class="lv-group-title">' + g.head + escapeHtml(g.title) + ' · ' + g.rows.length + '</p>' +
+    return '<div class="list-view-group">' + (g.title ? '<p class="lv-group-title">' + g.head + escapeHtml(g.title) + ' · ' + g.rows.length + '</p>' : '') +
       g.rows.map(function(r){
         return '<button class="list-view-row lv-row' + (r.e.status === 'deprecated' ? ' is-deprecated' : '') + '" data-kind="' + kind + '" data-id="' + r.e.id + '" type="button">' +
           cols.map(function(c){ return listCellHTML(c, r.v, r.e); }).join('') + '</button>';
@@ -3589,17 +3732,20 @@ function renderListView(){
   });
   body.querySelectorAll('.list-view-row').forEach(function(row){
     row.addEventListener('click', function(){
-      selectEntity(row.getAttribute('data-kind')==='object' ? 'obj' : 'mech', row.getAttribute('data-id'));
+      selectEntity(LIST_ROW_ENTITY[row.getAttribute('data-kind')], row.getAttribute('data-id'));
     });
   });
 }
+/* data-kind строки списка → вид сущности для selectEntity. */
+var LIST_ROW_ENTITY = {object:'obj', mechanism:'mech', role:'role'};
 
 function setListTab(tab){
   if (tab === listTab) return;
   listTab = tab;
   document.querySelectorAll('.list-tab').forEach(function(t){ t.classList.toggle('active', t.getAttribute('data-list-tab') === tab); });
   document.getElementById('list-search').value = listSearch[tab];
-  document.getElementById('btn-list-add').textContent = tab === 'objects' ? '+ Объект' : '+ Механизм';
+  document.getElementById('list-search').placeholder = tab === 'roles' ? 'Название или описание' : 'Имя, синоним или описание';
+  document.getElementById('btn-list-add').textContent = {objects:'+ Объект', mechanisms:'+ Механизм', roles:'+ Роль'}[tab];
   closeListDropdowns();
   renderListView();
 }
@@ -3953,6 +4099,14 @@ function selectEntity(kind, id){
     if (!state.objects[id]) return;
     pinnedNodeId = 'obj:'+id; pinnedMechanismId = null; pinnedEdgeKey = null;
     renderObjectPanel(state.objects[id]);
+  } else if (kind === 'role'){
+    /* Роль — не узел графа: карточка открывается, граф не центрируется. */
+    if (!state.roles[id]) return;
+    pinnedNodeId = null; pinnedMechanismId = null; pinnedEdgeKey = null;
+    renderRolePanel(state.roles[id]); pinnedRoleId = id;
+    syncSidebarActive(); requestRender();
+    if (currentView === 'list') scrollActiveListRowIntoView();
+    return;
   } else {
     if (!state.mechanisms[id]) return;
     pinnedMechanismId = id; pinnedNodeId = null; pinnedEdgeKey = null;
@@ -4036,7 +4190,7 @@ function moveListSelection(step){
   if (!rows.length) return;
   var i = rows.findIndex(function(r){ return r.classList.contains('active'); });
   var next = rows[i < 0 ? 0 : Math.max(0, Math.min(rows.length - 1, i + step))];
-  selectEntity(next.getAttribute('data-kind')==='object' ? 'obj' : 'mech', next.getAttribute('data-id'));
+  selectEntity(LIST_ROW_ENTITY[next.getAttribute('data-kind')], next.getAttribute('data-id'));
 }
 
 function syncSidebarActive(){
@@ -4051,7 +4205,8 @@ function syncSidebarActive(){
   document.querySelectorAll('#list-view-body .list-view-row').forEach(function(row){
     var id = row.getAttribute('data-id');
     var on = (row.getAttribute('data-kind')==='object' && pinnedNodeId==='obj:'+id) ||
-             (row.getAttribute('data-kind')==='mechanism' && pinnedMechanismId===id);
+             (row.getAttribute('data-kind')==='mechanism' && pinnedMechanismId===id) ||
+             (row.getAttribute('data-kind')==='role' && pinnedRoleId===id);
     row.classList.toggle('active', on);
   });
 }
@@ -4683,6 +4838,329 @@ function updateLegend(){
   legend.hidden = !html;
 }
 
+/* ===================== Роли (исполнители шагов процессов) =====================
+   Коллекция state.roles: {id, name, description}. Не путать с ролями участников механизма
+   (PARTICIPANT_ROLES / roleInfo) и с типом объекта 1С «Роль». Название уникально без учёта регистра. */
+
+var pinnedRoleId = null;
+
+function roleNameError(name, exceptId){
+  var k = normalizeLabel(name).toLowerCase();
+  var dup = Object.keys(state.roles).some(function(id){ return id !== exceptId && state.roles[id].name.toLowerCase() === k; });
+  return dup ? 'Роль «' + normalizeLabel(name) + '» уже есть.' : '';
+}
+/* «Новая роль», «Новая роль 2», … — первое свободное название. */
+function uniqueRoleName(base){
+  var name = base, i = 2;
+  while (roleNameError(name)) name = base + ' ' + (i++);
+  return name;
+}
+function createRole(partial){
+  var id = uid('role');
+  var r = {id:id, name:uniqueRoleName(normalizeLabel((partial && partial.name) || 'Новая роль')), description:''};
+  state.roles[id] = r;
+  persist();
+  return r;
+}
+/* Число процессов, в которых используется роль. Процессов пока нет (фаза 3) — всегда 0. */
+function roleProcessCount(roleId){ return 0; }
+
+function deleteRole(id){
+  var r = state.roles[id];
+  if (!r) return;
+  openModal({
+    title:'Удалить роль?',
+    bodyHTML:'<p>Роль «' + escapeHtml(r.name) + '» будет удалена без возможности восстановления.</p>',
+    footerButtons:[
+      {label:'Отмена', onClick:function(){ return true; }},
+      {label:'Удалить', variant:'danger', onClick:function(){
+        delete state.roles[id];
+        persist(); clearSelection();
+        if (currentView === 'list') renderListView();
+      }}
+    ]
+  });
+}
+
+function rolePanelTemplate(r){
+  return (
+    '<div class="card-head">' +
+      '<div class="card-head-row">' +
+        '<span class="card-icon card-icon-role" aria-hidden="true">' + typeIconSVG('role') + '</span>' +
+        '<h2 class="inline-title" tabindex="0" title="Название роли — нажмите, чтобы изменить">' + escapeHtml(r.name) + '</h2>' +
+        '<span class="save-indicator" aria-live="polite"></span>' + cardMenuButtonHTML() +
+      '</div>' +
+      '<p class="inline-msg" hidden></p>' +
+      '<div class="card-head-badges"><span class="status-badge is-default">Роль в процессах</span></div>' +
+    '</div>' +
+    viewFieldHTML('description', 'Описание') +
+    '<div class="panel-section is-tight">' +
+      '<div class="panel-section-header"><p class="panel-section-title">Используется в процессах · ' + roleProcessCount(r.id) + '</p></div>' +
+      '<p class="ref-empty">Пока не используется.</p>' +
+    '</div>'
+  );
+}
+
+function renderRolePanel(r){
+  if (!r) return;
+  var panel = document.getElementById('panel-role');
+  showPanel('role');
+  panel.innerHTML = rolePanelTemplate(r);
+  bindInlineTitle(panel, function(){ return r.name; }, function(v){
+    r.name = normalizeLabel(v); persist();
+    if (currentView === 'list') renderListView();
+  }, 'Название роли', function(v){ return roleNameError(v, r.id); });
+  var menuBtn = panel.querySelector('.card-menu-btn');
+  menuBtn.addEventListener('click', function(){
+    openPopoverMenu(menuBtn, [{value:'delete', label:'Удалить роль', danger:true}], function(){ deleteRole(r.id); });
+  });
+  bindViewField(panel, 'description', {label:'Описание', addText:'Добавить описание', multiline:true,
+    get:function(){ return r.description || ''; },
+    set:function(v){ r.description = v; persist(); if (currentView === 'list') renderListView(); }});
+}
+/* ===================== Реквизиты объектов =====================
+   Коллекция state.attributes: {id, objectId, name, synonym, valueType, tabularSection, description}.
+   name — имя в конфигураторе (ключ для будущего импорта из XML-выгрузки); tabularSection —
+   имя табличной части, пусто — реквизит шапки. Порядок реквизитов — порядок создания. */
+
+var ATTR_HEADER_TITLE = 'Шапка';
+
+function objectAttributes(objId){
+  return Object.keys(state.attributes).map(function(id){ return state.attributes[id]; })
+    .filter(function(a){ return a.objectId === objId; });
+}
+function objectAttributeCounts(){
+  var counts = {};
+  Object.keys(state.attributes).forEach(function(id){ var o = state.attributes[id].objectId; counts[o] = (counts[o] || 0) + 1; });
+  return counts;
+}
+/* Табличные части объекта — по алфавиту, без учёта регистра. */
+function objectTabularSections(objId){
+  var seen = {}, out = [];
+  objectAttributes(objId).forEach(function(a){
+    var ts = a.tabularSection || ''; if (!ts) return;
+    var k = ts.toLowerCase(); if (!seen[k]){ seen[k] = true; out.push(ts); }
+  });
+  return out.sort(function(a,b){ return a.localeCompare(b,'ru'); });
+}
+/* Полное имя для отображения: «ЗаявкаНаПодборПерсонала.Подразделение» или
+   «ЗаявкаНаПодборПерсонала.Кандидаты.ФИО». Без имени в конфигураторе — синоним объекта. */
+function attributeFullName(a){
+  var o = state.objects[a.objectId];
+  var owner = o ? (objectIdentifier(o) || o.name) : '?';
+  return owner + '.' + (a.tabularSection ? a.tabularSection + '.' : '') + a.name;
+}
+
+/* Имя реквизита: обязательно, правила идентификатора 1С, уникально в пределах объекта и
+   табличной части без учёта регистра. Возвращает текст ошибки или ''. */
+function attributeNameError(name, objId, ts, exceptId){
+  if (!name) return 'Укажите имя реквизита.';
+  if (!validIdentifier(name)) return 'Имя — без пробелов и точек и не начинается с цифры.';
+  var k = name.toLowerCase(), tk = (ts || '').toLowerCase();
+  var dup = objectAttributes(objId).some(function(a){
+    return a.id !== exceptId && (a.tabularSection || '').toLowerCase() === tk && a.name.toLowerCase() === k;
+  });
+  return dup ? 'Реквизит «' + name + '» уже есть ' + (ts ? 'в табличной части «' + ts + '»' : 'в шапке') + '.' : '';
+}
+function tabularSectionError(ts){
+  return validIdentifier(ts) ? '' : 'Табличная часть — без пробелов и точек и не начинается с цифры.';
+}
+
+function createAttribute(partial){
+  var id = uid('attr');
+  var a = {
+    id:id, objectId:partial.objectId, name:partial.name,
+    synonym:partial.synonym || '', valueType:partial.valueType || '',
+    tabularSection:partial.tabularSection || '', description:''
+  };
+  state.attributes[id] = a;
+  persist();
+  return a;
+}
+function attributesChanged(obj, panel){
+  persist();
+  renderAttributesBlock(obj, panel);
+  if (currentView === 'list') renderListView();
+}
+
+/* ----- Блок «Реквизиты · N» в карточке объекта ----- */
+
+function attributesSectionHTML(){
+  return '<div class="panel-section is-tight">' +
+    '<div class="panel-section-header"><p class="panel-section-title" id="obj-attrs-title">Реквизиты</p>' +
+      '<button class="btn btn-sm" id="btn-add-attr" type="button" title="Добавить реквизит">+ Добавить</button></div>' +
+    '<div id="obj-attrs-list"></div>' +
+    '<div id="obj-attr-add"></div>' +
+  '</div>';
+}
+
+/* Свёрнутые группы (табличные части) — на время сессии; ключ «объект|табличная часть». */
+var attrGroupCollapsed = {};
+
+function renderAttributesBlock(obj, panel){
+  var container = panel.querySelector('#obj-attrs-list');
+  if (!container) return;
+  var attrs = objectAttributes(obj.id);
+  panel.querySelector('#obj-attrs-title').textContent = 'Реквизиты · ' + attrs.length;
+  if (!attrs.length){ container.innerHTML = '<p class="ref-empty">Реквизитов пока нет.</p>'; return; }
+
+  var byTs = {}, tsOrder = [];
+  attrs.forEach(function(a){
+    var ts = a.tabularSection || '';
+    var k = ts.toLowerCase();
+    if (!byTs[k]){ byTs[k] = {ts:ts, list:[]}; tsOrder.push(k); }
+    byTs[k].list.push(a);
+  });
+  tsOrder.sort(function(a, b){ return (a === '' ? -1 : b === '' ? 1 : byTs[a].ts.localeCompare(byTs[b].ts, 'ru')); });
+
+  container.innerHTML = '<div class="attr-table">' +
+    '<div class="attr-head"><span>Имя</span><span>Синоним</span><span>Тип</span><span></span></div>' +
+    tsOrder.map(function(k){
+      var g = byTs[k], ck = obj.id + '|' + k, collapsed = !!attrGroupCollapsed[ck];
+      return '<div class="attr-group">' +
+        '<button type="button" class="attr-group-toggle" data-ck="' + escapeHtml(ck) + '" aria-expanded="' + !collapsed + '">' +
+          '<span class="attr-group-chevron" aria-hidden="true"></span>' +
+          '<span class="attr-group-title">' + (g.ts ? escapeHtml(g.ts) : ATTR_HEADER_TITLE) + '</span>' +
+          '<span class="attr-group-count">' + g.list.length + '</span>' +
+        '</button>' +
+        '<div class="attr-rows"' + (collapsed ? ' hidden' : '') + '>' +
+          g.list.map(function(a){
+            return '<div class="attr-row" data-id="' + a.id + '">' +
+              '<span class="attr-cell is-name" data-field="name" tabindex="0" title="' + escapeHtml(attributeFullName(a)) + '">' + escapeHtml(a.name) + '</span>' +
+              '<span class="attr-cell' + (a.synonym ? '' : ' is-empty') + '" data-field="synonym" tabindex="0" title="' + escapeHtml(a.synonym || 'Синоним') + '">' + escapeHtml(a.synonym || '—') + '</span>' +
+              '<span class="attr-cell' + (a.valueType ? '' : ' is-empty') + '" data-field="valueType" tabindex="0" title="' + escapeHtml(a.valueType || 'Тип значения') + '">' + escapeHtml(a.valueType || '—') + '</span>' +
+              '<button type="button" class="card-menu-btn attr-menu-btn" aria-haspopup="menu" aria-expanded="false" aria-label="Действия с реквизитом" title="Действия">⋯</button>' +
+            '</div>' +
+            '<p class="field-error attr-row-error" hidden></p>';
+          }).join('') +
+        '</div>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+
+  container.querySelectorAll('.attr-group-toggle').forEach(function(t){
+    t.addEventListener('click', function(){
+      var open = t.getAttribute('aria-expanded') !== 'true';
+      t.setAttribute('aria-expanded', open ? 'true' : 'false');
+      t.nextElementSibling.hidden = !open;
+      attrGroupCollapsed[t.getAttribute('data-ck')] = !open;
+    });
+  });
+  container.querySelectorAll('.attr-row').forEach(function(row){
+    var a = state.attributes[row.getAttribute('data-id')];
+    row.querySelectorAll('.attr-cell').forEach(function(cell){
+      cell.addEventListener('click', function(){ editAttributeCell(obj, panel, a, cell); });
+      cell.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); editAttributeCell(obj, panel, a, cell); } });
+    });
+    var menuBtn = row.querySelector('.attr-menu-btn');
+    menuBtn.addEventListener('click', function(){
+      openPopoverMenu(menuBtn, [{value:'delete', label:'Удалить реквизит', danger:true}], function(){
+        delete state.attributes[a.id];
+        attributesChanged(obj, panel);
+      });
+    });
+  });
+}
+
+/* Правка ячейки по клику: Enter / уход фокуса — сохранить, Esc — отменить. Некорректное
+   имя не сохраняется: по Enter ошибка видна под строкой, по уходу фокуса — возвращается прежнее. */
+function editAttributeCell(obj, panel, a, cell){
+  var field = cell.getAttribute('data-field');
+  var err = cell.parentNode.nextElementSibling;
+  var input = document.createElement('input');
+  input.type = 'text'; input.className = 'field-input attr-cell-input' + (field === 'name' ? ' is-name' : '');
+  input.value = a[field] || '';
+  input.setAttribute('aria-label', {name:'Имя', synonym:'Синоним', valueType:'Тип значения'}[field]);
+  cell.replaceWith(input);
+  input.focus(); input.select();
+  var done = false;
+  function finish(save, onBlur){
+    if (done) return true;
+    var v = normalizeLabel(input.value);
+    if (save && field === 'name'){
+      var e = attributeNameError(v, a.objectId, a.tabularSection, a.id);
+      if (e && !onBlur){ err.textContent = e; err.hidden = false; return false; }
+      if (e){ done = true; renderAttributesBlock(obj, panel); showRowError(panel, a.id, e + ' Значение не сохранено.'); return true; }
+    }
+    done = true;
+    if (save && v !== (a[field] || '')){ a[field] = v; attributesChanged(obj, panel); }
+    else renderAttributesBlock(obj, panel);
+    return true;
+  }
+  input.addEventListener('keydown', function(e){
+    if (e.key === 'Enter'){ e.preventDefault(); if (finish(true)) focusAttrCell(panel, a.id, field); }
+    else if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); finish(false); focusAttrCell(panel, a.id, field); }
+  });
+  input.addEventListener('input', function(){ err.hidden = true; });
+  input.addEventListener('blur', function(){ finish(true, true); });
+}
+function focusAttrCell(panel, id, field){
+  var c = panel.querySelector('.attr-row[data-id="' + id + '"] .attr-cell[data-field="' + field + '"]');
+  if (c) c.focus();
+}
+function showRowError(panel, id, text){
+  var row = panel.querySelector('.attr-row[data-id="' + id + '"]');
+  if (!row) return;
+  var err = row.nextElementSibling; err.textContent = text; err.hidden = false;
+}
+
+/* «+ Добавить»: строка ввода внизу блока. Tab — по полям, Enter — сохранить и открыть
+   следующую пустую строку (табличная часть сохраняется), Esc — закрыть. */
+function bindAddAttribute(panel, obj){
+  var btn = panel.querySelector('#btn-add-attr'), host = panel.querySelector('#obj-attr-add');
+  btn.addEventListener('click', function(){
+    if (host.firstChild){ host.innerHTML = ''; return; }
+    host.innerHTML = '<div class="om-add attr-add">' +
+      '<div class="attr-add-grid">' +
+        '<div><input type="text" class="field-input attr-add-name" placeholder="Имя *" aria-label="Имя реквизита" autocomplete="off"><p class="field-error attr-add-name-err" hidden></p></div>' +
+        '<div><input type="text" class="field-input attr-add-syn" placeholder="Синоним" aria-label="Синоним" autocomplete="off"></div>' +
+        '<div><input type="text" class="field-input attr-add-type" placeholder="Тип значения" aria-label="Тип значения" autocomplete="off"></div>' +
+        '<div><div class="attr-add-ts"></div><p class="field-error attr-add-ts-err" hidden></p></div>' +
+      '</div>' +
+      '<p class="attr-add-hint">Enter — сохранить и ввести следующий · Esc — закрыть</p>' +
+    '</div>';
+    var nameIn = host.querySelector('.attr-add-name'), synIn = host.querySelector('.attr-add-syn'), typeIn = host.querySelector('.attr-add-type');
+    var nameErr = host.querySelector('.attr-add-name-err'), tsErr = host.querySelector('.attr-add-ts-err');
+    var tsIn = buildCombobox(host.querySelector('.attr-add-ts'), {
+      placeholder:'Табличная часть: ' + ATTR_HEADER_TITLE, ariaLabel:'Табличная часть (пусто — шапка)',
+      source:function(q){
+        var k = q.toLowerCase();
+        var list = objectTabularSections(obj.id).filter(function(ts){ return !k || ts.toLowerCase().indexOf(k) >= 0; })
+          .map(function(ts){ return {value:ts, label:ts, sub:'табличная часть'}; });
+        if (!q) list.unshift({value:'', label:ATTR_HEADER_TITLE, sub:'реквизиты шапки'});
+        return list;
+      },
+      createLabel:function(q){
+        if (!q) return null;
+        var k = q.toLowerCase();
+        return objectTabularSections(obj.id).some(function(ts){ return ts.toLowerCase() === k; }) ? null : '+ Создать табличную часть «' + q + '»';
+      },
+      onPick:function(it){ tsIn.value = it.value; tsErr.hidden = true; }
+    });
+    function save(){
+      var name = normalizeLabel(nameIn.value);
+      var ts = canonicalLabel(tsIn.value, objectTabularSections(obj.id));
+      var te = tabularSectionError(ts);
+      tsErr.textContent = te; tsErr.hidden = !te;
+      var ne = attributeNameError(name, obj.id, ts);
+      nameErr.textContent = ne; nameErr.hidden = !ne;
+      if (ne){ nameIn.focus(); return; }
+      if (te){ tsIn.focus(); return; }
+      createAttribute({objectId:obj.id, name:name, synonym:normalizeLabel(synIn.value), valueType:normalizeLabel(typeIn.value), tabularSection:ts});
+      tsIn.value = ts;
+      nameIn.value = ''; synIn.value = ''; typeIn.value = '';
+      attributesChanged(obj, panel);
+      nameIn.focus();
+    }
+    host.querySelector('.attr-add').addEventListener('keydown', function(e){
+      if (e.key === 'Enter'){ e.preventDefault(); save(); }
+      else if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); host.innerHTML = ''; btn.focus(); }
+    });
+    nameIn.addEventListener('input', function(){ nameErr.hidden = true; });
+    tsIn.addEventListener('input', function(){ tsErr.hidden = true; });
+    nameIn.focus();
+  });
+}
 function resizeCanvas(){
   var wrap = document.getElementById('canvas-wrap');
   var rect = wrap.getBoundingClientRect();
@@ -4753,6 +5231,11 @@ function attachHandlers(){
       renderListView();
       selectEntity('obj', obj.id);
       startInlineTitleEdit(document.getElementById('panel-object'));
+    } else if (listTab === 'roles'){
+      var role = createRole({name:'Новая роль'});
+      renderListView();
+      selectEntity('role', role.id);
+      startInlineTitleEdit(document.getElementById('panel-role'));
     } else {
       var m = createMechanism({title:'Новый механизм'});
       renderListView();
@@ -4893,7 +5376,7 @@ function attachHandlers(){
   });
 
   function exportData(){
-    var data = JSON.stringify({objects:state.objects, mechanisms:state.mechanisms}, null, 2);
+    var data = JSON.stringify(serializeState(), null, 2);
     var blob = new Blob([data], {type:'application/json'});
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -4913,17 +5396,13 @@ function attachHandlers(){
       var data;
       try { data = JSON.parse(reader.result); }
       catch(e){ alert('Не удалось прочитать файл: это не корректный JSON.'); ev.target.value=''; return; }
-      var newObjCount = Object.keys(data.objects||{}).length;
-      var newMechCount = Object.keys(data.mechanisms||{}).length;
       openModal({
         title:'Импортировать данные?',
-        bodyHTML:'<p>Текущие данные (' + Object.keys(state.objects).length + ' объектов, ' + Object.keys(state.mechanisms).length +
-          ' механизмов) будут заменены содержимым файла (' + newObjCount + ' объектов, ' + newMechCount + ' механизмов). Это необратимо.</p>',
+        bodyHTML:'<p>Текущие данные (' + dataSummary(serializeState()) + ') будут заменены содержимым файла (' + dataSummary(data) + '). Это необратимо.</p>',
         footerButtons:[
           {label:'Отмена', onClick:function(){ return true; }},
           {label:'Импортировать', variant:'danger', onClick:function(){
-            state.objects = data.objects || {};
-            state.mechanisms = data.mechanisms || {};
+            applyState(data);
             nodeById.clear();
             persist(); syncGraphModel(); renderSidebar(); updateStats(); clearSelection();
           }}
@@ -4937,7 +5416,7 @@ function attachHandlers(){
   /* Очистка: подтверждение вводом слова, логика удаления прежняя. */
   var RESET_CONFIRM_WORD = 'удалить';
   document.getElementById('btn-reset').addEventListener('click', function(){
-    var oc = Object.keys(state.objects).length, mc = Object.keys(state.mechanisms).length, ac = 0;
+    var ac = 0;
     Object.keys(state.objects).forEach(function(id){ ac += (state.objects[id].attachments||[]).length; });
     Object.keys(state.mechanisms).forEach(function(id){ ac += (state.mechanisms[id].attachments||[]).length; });
     function confirmed(root){
@@ -4948,8 +5427,7 @@ function attachHandlers(){
       title:'Очистить все данные?',
       wide:true,
       bodyHTML:
-        '<p>Будет удалено ' + oc + ' ' + pluralRu(oc,'объект','объекта','объектов') + ', ' +
-          mc + ' ' + pluralRu(mc,'механизм','механизма','механизмов') + ' и ' +
+        '<p>Будет удалено: ' + dataSummary(serializeState()) + ' и ' +
           ac + ' ' + pluralRu(ac,'вложение','вложения','вложений') + '. Действие необратимо.</p>' +
         '<p class="confirm-note">Сами файлы вложений в подключённой папке останутся на диске.</p>' +
         '<label class="field-label confirm-input" for="reset-confirm-input">Чтобы подтвердить, введите слово «' + RESET_CONFIRM_WORD + '»</label>' +
@@ -4959,7 +5437,7 @@ function attachHandlers(){
         {label:'Сначала сделать экспорт', onClick:function(){ exportData(); return false; }},
         {label:'Удалить всё', variant:'danger', onClick:function(root){
           if (!confirmed(root)) return false;
-          state.objects = {}; state.mechanisms = {}; nodeById.clear();
+          emptyState(); nodeById.clear();
           persist(); syncGraphModel(); renderSidebar(); updateStats(); clearSelection();
         }}
       ]
