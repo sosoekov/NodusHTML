@@ -4,17 +4,17 @@
 
 function showPanel(kind){
   document.getElementById('panel-empty').hidden = !!kind;
-  ['object','mechanism','edge','role'].forEach(function(k){
+  ['object','mechanism','edge','role','control'].forEach(function(k){
     document.getElementById('panel-'+k).hidden = (k!==kind);
   });
-  if (kind !== 'role') pinnedRoleId = null;
+  if (pinnedAux && AUX_KINDS[pinnedAux.kind].panel !== kind) pinnedAux = null;
   updateDetailPanelVisibility();
 }
 
 /* Правая панель одна на оба режима. В «Графе» видна всегда; в «Списке» — только
    с открытой карточкой объекта или механизма (список при этом сужается). */
 function updateDetailPanelVisibility(){
-  var hasCard = ['object','mechanism','role'].some(function(k){ return !document.getElementById('panel-' + k).hidden; });
+  var hasCard = ['object','mechanism','role','control'].some(function(k){ return !document.getElementById('panel-' + k).hidden; });
   var show = currentView === 'graph' || hasCard;
   document.getElementById('detail-panel').hidden = !show;
   document.getElementById('resize-right').hidden = !show;
@@ -409,6 +409,7 @@ function objectPanelTemplate(obj){
       '<div id="obj-mech-list"></div>' +
     '</div>' +
     attributesSectionHTML() +
+    '<div id="obj-tool-controls"></div>' +
     viewFieldHTML('description', 'Описание') +
     '<div class="vfield" data-key="subtags"><div class="vfield-label">Подсистема · Теги</div><div class="vfield-value" tabindex="0"></div></div>' +
     '<div class="panel-section is-tight">' +
@@ -526,6 +527,7 @@ function renderObjectPanel(obj, panel){
   bindAddToMechanism(panel, obj);
   renderAttributesBlock(obj, panel);
   bindAddAttribute(panel, obj);
+  renderControlBackLinks(panel.querySelector('#obj-tool-controls'), 'Инструмент для контролей', controlsByTool(obj.id));
   renderAttachmentsList(panel, '#obj-attachments-list', 'obj', obj.id);
 }
 
@@ -632,35 +634,29 @@ function renderObjectMechList(obj, panel){
 
 /* «+ Добавить в механизм»: выбор механизма → роль → необязательное описание → участник добавлен. */
 function buildMechanismPicker(container, onPick){
-  container.innerHTML = '<div class="combo"><input type="text" class="field-input combo-input" autocomplete="off" placeholder="Начните вводить название механизма…"><div class="combo-dropdown" hidden></div></div>';
-  var input = container.querySelector('.combo-input'), dropdown = container.querySelector('.combo-dropdown');
-  var items = [], active = -1;
-  function render(){
-    var q = input.value.trim().toLowerCase();
-    items = Object.keys(state.mechanisms).map(function(id){ return state.mechanisms[id]; })
-      .filter(isShown)
-      .filter(function(m){ return !q || m.title.toLowerCase().indexOf(q) >= 0; })
-      .sort(function(a,b){ return a.title.localeCompare(b.title,'ru'); }).slice(0, 10);
-    active = items.length ? 0 : -1;
-    dropdown.innerHTML = items.length ? items.map(function(m, i){
-      return '<div class="combo-item' + (i === active ? ' is-active' : '') + '" data-i="' + i + '"><span class="om-diamond" style="--c:' + categoryAccent(m.category) + '"></span><span class="combo-item-text">' + escapeHtml(m.title) + '</span><span class="combo-item-type">' + escapeHtml(categoryTitle(m.category)) + '</span></div>';
-    }).join('') : '<div class="combo-empty">Механизмы не найдены</div>';
-    dropdown.hidden = false;
-    dropdown.querySelectorAll('.combo-item').forEach(function(el){
-      el.addEventListener('mousedown', function(e){ e.preventDefault(); choose(Number(el.getAttribute('data-i'))); });
-    });
-  }
-  function choose(i){ var m = items[i]; if (!m) return; dropdown.hidden = true; input.value = m.title; onPick(m); }
-  input.addEventListener('input', render);
-  input.addEventListener('focus', render);
-  input.addEventListener('blur', function(){ setTimeout(function(){ dropdown.hidden = true; }, 150); });
-  input.addEventListener('keydown', function(e){
-    if (e.key === 'ArrowDown' && items.length){ e.preventDefault(); active = (active + 1) % items.length; hl(); }
-    else if (e.key === 'ArrowUp' && items.length){ e.preventDefault(); active = (active - 1 + items.length) % items.length; hl(); }
-    else if (e.key === 'Enter'){ e.preventDefault(); choose(active); }
+  var input = buildCombobox(container, {
+    placeholder:'Начните вводить название механизма…', autoActive:true, emptyText:'Механизмы не найдены',
+    source:function(q){ return mechanismComboSource(q).slice(0, 10); },
+    onPick:function(it){ input.value = state.mechanisms[it.value].title; onPick(state.mechanisms[it.value]); }
   });
-  function hl(){ dropdown.querySelectorAll('.combo-item').forEach(function(el, i){ el.classList.toggle('is-active', i === active); }); }
   return input;
+}
+
+/* Источники пунктов для buildCombobox. */
+function objectComboSource(q){
+  var k = q.toLowerCase();
+  return Object.keys(state.objects).map(function(id){ return state.objects[id]; })
+    .filter(function(o){ return !k || o.name.toLowerCase().indexOf(k) >= 0; })
+    .sort(function(a,b){ return a.name.localeCompare(b.name,'ru'); })
+    .map(function(o){ return {value:o.id, label:o.name, sub:typeTitle(o.type), iconHTML:'<span class="dot" style="background:' + typeColor(o.type) + '"></span>'}; });
+}
+function mechanismComboSource(q){
+  var k = q.toLowerCase();
+  return Object.keys(state.mechanisms).map(function(id){ return state.mechanisms[id]; })
+    .filter(isShown)
+    .filter(function(m){ return !k || m.title.toLowerCase().indexOf(k) >= 0; })
+    .sort(function(a,b){ return a.title.localeCompare(b.title,'ru'); })
+    .map(function(m){ return {value:m.id, label:m.title, sub:categoryTitle(m.category), iconHTML:'<span class="om-diamond" style="--c:' + categoryAccent(m.category) + '"></span>'}; });
 }
 
 function bindAddToMechanism(panel, obj){
@@ -775,7 +771,8 @@ function buildObjectCombobox(container, selectedId, onChange, reopenAfterCreate)
          createLabel(q) → строка пункта «+ Создать „…“» или null,
          onPick(item) — выбран пункт (item.create — выбран пункт создания, item.value = текст)}
    ↑/↓ выбирают пункт, Enter применяет выбранный. Пока пункт не выбран стрелками, Enter
-   не перехватывается — форма вокруг может сохранить введённый текст. Esc закрывает список. */
+   не перехватывается — форма вокруг может сохранить введённый текст. Esc закрывает список.
+   autoActive — первый пункт выбран сразу (Enter берёт его); emptyText — текст пустого списка. */
 function buildCombobox(container, opt){
   container.innerHTML = '<div class="combo"><input type="text" class="field-input combo-input" autocomplete="off"><div class="combo-dropdown" hidden></div></div>';
   var input = container.querySelector('.combo-input'), dropdown = container.querySelector('.combo-dropdown');
@@ -788,14 +785,19 @@ function buildCombobox(container, opt){
     items = opt.source(q).slice();
     var cl = opt.createLabel ? opt.createLabel(q) : null;
     if (cl) items.push({value:q, label:cl, create:true});
-    active = -1;
-    if (!items.length){ dropdown.hidden = true; return; }
+    active = opt.autoActive && items.length ? 0 : -1;
+    if (!items.length){
+      if (opt.emptyText){ dropdown.innerHTML = '<div class="combo-empty">' + escapeHtml(opt.emptyText) + '</div>'; dropdown.hidden = false; }
+      else dropdown.hidden = true;
+      return;
+    }
     dropdown.innerHTML = items.map(function(it, i){
       return '<div class="combo-item' + (it.create ? ' combo-item-create' : '') + '" data-i="' + i + '">' + (it.iconHTML || '') +
         '<span class="combo-item-text">' + escapeHtml(it.label) + '</span>' +
         (it.sub ? '<span class="combo-item-type">' + escapeHtml(it.sub) + '</span>' : '') + '</div>';
     }).join('');
     dropdown.hidden = false;
+    hl();
     dropdown.querySelectorAll('.combo-item').forEach(function(el){
       el.addEventListener('mousedown', function(e){ e.preventDefault(); choose(Number(el.getAttribute('data-i'))); });
     });
@@ -821,6 +823,55 @@ function buildCombobox(container, opt){
     }
   });
   return input;
+}
+
+/* Поле-ссылка карточки: в просмотре — ссылка на сущность (клик открывает её карточку),
+   «⚠ Удалено: …» для удалённой или «+ …» для пустой; клик по полю вне ссылки или по
+   карандашу — выбор в комбобоксе. Esc или уход фокуса — без изменений.
+   opt: {label, addText, get() → id, set(id), resolve(id) → {label, iconHTML} | null,
+         open(id), source(q), createLabel(q)?, create(text) → id} */
+function refFieldHTML(key, label){ return viewFieldHTML(key, label); }
+function bindRefField(panel, key, opt){
+  var wrap = panel.querySelector('.vfield[data-key="' + key + '"]');
+  var view = wrap.querySelector('.vfield-value');
+  function renderView(){
+    var id = opt.get(), r = id ? opt.resolve(id) : null;
+    view.classList.toggle('is-empty', !id);
+    view.title = id ? 'Нажмите, чтобы изменить' : '';
+    view.innerHTML = !id ? '+ ' + escapeHtml(opt.addText) :
+      (r ? '<button type="button" class="ref-link" title="Открыть карточку">' + (r.iconHTML || '') + '<span>' + escapeHtml(r.label) + '</span></button>' : brokenRefHTML(id)) + PENCIL_SVG;
+  }
+  function edit(){
+    if (wrap.querySelector('.ref-edit')) return;
+    var box = document.createElement('div'); box.className = 'ref-edit';
+    wrap.appendChild(box); view.hidden = true;
+    var closed = false;
+    function close(){ if (closed) return; closed = true; box.remove(); view.hidden = false; renderView(); }
+    var input = buildCombobox(box, {
+      placeholder:'Начните вводить…', ariaLabel:opt.label, autoActive:true, emptyText:'Ничего не найдено',
+      source:function(q){
+        var list = opt.source(q);
+        if (!q && opt.get()) list.unshift({value:'', label:'Не указан', sub:'очистить'});
+        return list;
+      },
+      createLabel:opt.createLabel,
+      onPick:function(it){
+        var id = it.create ? opt.create(it.value) : it.value;
+        if (id !== opt.get()) opt.set(id);
+        close(); view.focus();
+      }
+    });
+    /* Первый Esc закрывает выпадающий список (комбобокс помечает событие defaultPrevented), второй — редактирование. */
+    input.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !e.defaultPrevented){ e.preventDefault(); e.stopPropagation(); close(); view.focus(); } });
+    box.addEventListener('focusout', function(){ setTimeout(function(){ if (!box.contains(document.activeElement)) close(); }, 0); });
+    input.focus();
+  }
+  view.addEventListener('click', function(e){
+    if (e.target.closest('.ref-link')){ opt.open(opt.get()); return; }
+    edit();
+  });
+  view.addEventListener('keydown', function(e){ if (e.key === 'Enter' && !e.target.closest('.ref-link')){ e.preventDefault(); edit(); } });
+  renderView();
 }
 
 
@@ -849,6 +900,7 @@ function mechanismPanelTemplate(mech){
       '<p class="panel-section-title">Участники</p>' +
       '<div id="participants-list"></div>' +
     '</div>' +
+    '<div id="mech-replaces-controls"></div>' +
     '<div class="panel-section">' +
       '<div class="panel-section-header"><p class="panel-section-title">Вложения</p>' +
         '<button class="btn btn-sm" id="btn-attach-mechanism" type="button">Прикрепить файл</button></div>' +
@@ -896,6 +948,7 @@ function renderMechanismPanel(mech, panel){
     attachFilesToEntity('mech', mech.id, function(){ renderAttachmentsList(panel, '#mech-attachments-list', 'mech', mech.id); });
   });
   renderParticipantsList(mech, panel);
+  renderControlBackLinks(panel.querySelector('#mech-replaces-controls'), 'Заменит ручные контроли', controlsReplacedBy(mech.id));
   renderAttachmentsList(panel, '#mech-attachments-list', 'mech', mech.id);
 }
 

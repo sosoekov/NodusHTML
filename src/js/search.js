@@ -27,16 +27,25 @@ function globalSearchMatches(query){
   return res.slice(0, GLOBAL_SEARCH_LIMIT);
 }
 
+/* Карточки сущностей вне графа (открываются из «Списка» и по ссылкам из других карточек).
+   kind — вид для selectEntity; panel — суффикс контейнера #panel-…; render — функция карточки. */
+var pinnedAux = null; /* {kind, id} — открытая карточка роли или контроля */
+var AUX_KINDS = {
+  role: {collection:'roles',    panel:'role',    render:function(e){ renderRolePanel(e); }},
+  ctrl: {collection:'controls', panel:'control', render:function(e){ renderControlPanel(e); }}
+};
+
 function selectEntity(kind, id){
   if (kind === 'obj'){
     if (!state.objects[id]) return;
     pinnedNodeId = 'obj:'+id; pinnedMechanismId = null; pinnedEdgeKey = null;
     renderObjectPanel(state.objects[id]);
-  } else if (kind === 'role'){
-    /* Роль — не узел графа: карточка открывается, граф не центрируется. */
-    if (!state.roles[id]) return;
+  } else if (AUX_KINDS[kind]){
+    /* Роль, контроль — не узлы графа: карточка открывается, граф не центрируется. */
+    var aux = AUX_KINDS[kind], ent = state[aux.collection][id];
+    if (!ent) return;
     pinnedNodeId = null; pinnedMechanismId = null; pinnedEdgeKey = null;
-    renderRolePanel(state.roles[id]); pinnedRoleId = id;
+    aux.render(ent); pinnedAux = {kind:kind, id:id};
     syncSidebarActive(); requestRender();
     if (currentView === 'list') scrollActiveListRowIntoView();
     return;
@@ -139,7 +148,7 @@ function syncSidebarActive(){
     var id = row.getAttribute('data-id');
     var on = (row.getAttribute('data-kind')==='object' && pinnedNodeId==='obj:'+id) ||
              (row.getAttribute('data-kind')==='mechanism' && pinnedMechanismId===id) ||
-             (row.getAttribute('data-kind')==='role' && pinnedRoleId===id);
+             (!!pinnedAux && LIST_ROW_ENTITY[row.getAttribute('data-kind')] === pinnedAux.kind && pinnedAux.id === id);
     row.classList.toggle('active', on);
   });
 }

@@ -70,6 +70,11 @@ function attachHandlers(){
       renderListView();
       selectEntity('obj', obj.id);
       startInlineTitleEdit(document.getElementById('panel-object'));
+    } else if (listTab === 'controls'){
+      var ctrl = createControl({name:'Новый контроль'});
+      renderListView();
+      selectEntity('ctrl', ctrl.id);
+      startInlineTitleEdit(document.getElementById('panel-control'));
     } else if (listTab === 'roles'){
       var role = createRole({name:'Новая роль'});
       renderListView();
