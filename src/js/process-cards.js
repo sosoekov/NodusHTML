@@ -143,7 +143,8 @@ function stepPanelTemplate(p, s){
         '<button class="btn btn-sm" id="btn-add-participant" type="button" title="Добавить механизм, объект или реквизит">+ Участник</button></div>' +
       '<div id="step-add-participant"></div>' +
       '<div id="step-parts-list"></div>' +
-    '</div>'
+    '</div>' +
+    stepControlsSectionHTML()
   );
 }
 
@@ -175,6 +176,8 @@ function renderStepPanel(p, s){
     get:function(){ return s.description || ''; }, set:function(v){ s.description = v; persist(); }});
   renderStepParticipants(p, s, panel);
   bindAddParticipant(p, s, panel);
+  renderStepControls(p, s, panel);
+  bindAddStepControl(p, s, panel);
 }
 
 /* Участники шага, сгруппированные: Механизмы / Объекты / Реквизиты. */

@@ -80,6 +80,9 @@
   /* Лента процесса: ширина карточки шага и стрелки между шагами */
   --step-card-w:240px;
   --step-link-w:56px;
+  /* Готовность: штриховка «в разработке» и приглушение в режиме «Только в проме» */
+  --dev-hatch:repeating-linear-gradient(135deg, transparent 0 4px, rgba(229,192,123,0.16) 4px 6px);
+  --alpha-dev-dim:0.35;
 
   /* Граф: рёбра, сетка, обводка заглушки, бейдж числа механизмов, логотип */
   --graph-edge:rgba(90,105,130,0.55);
@@ -701,13 +704,40 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .sp-row{ display:flex; align-items:center; gap:6px; min-width:0; }
 .sp-name{ flex:1; min-width:0; }
 .sp-name.ref-broken{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--fs-base); }
-.sp-role{ flex:none; }
+.sp-role{ flex:none; max-width:45%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; }
 .sp-menu{ width:24px; height:22px; flex:none; }
 .sp-note{ margin:1px 0 0 14px; font-size:var(--fs-caption); color:var(--text-muted); cursor:text; border-radius:var(--radius); padding:0 4px; }
 .sp-note.is-empty{ color:var(--text-faint); }
 .sp-note:hover, .sp-note:focus-visible{ background:var(--bg-elevated); outline:none; }
 .sp-note-input{ margin:2px 0 0 14px; width:calc(100% - 14px); padding:3px 6px; font-size:var(--fs-caption); }
 .sp-add-roles[hidden], .sp-add-object[hidden], .sp-add-step1[hidden]{ display:none; }
+
+/* ===== Контроли в шагах и готовность (фаза 4) ===== */
+.proc-head{ align-items:center; }
+.proc-head-info{ flex:1; min-width:0; display:flex; align-items:baseline; gap:10px; }
+.proc-only-prod{ flex:none; font-size:var(--fs-caption); }
+#proc-main.is-empty .proc-only-prod{ display:none; }
+.step-chip.is-dev{ background:var(--dev-hatch); border-style:dashed; }
+.only-prod .step-chip.is-dev{ opacity:var(--alpha-dev-dim); }
+.ctrl-chip .shield-icon{ width:12px; height:12px; color:var(--control); flex:none; }
+.ctrl-chip .step-chip-letter{ order:3; }
+.chip-temp{ flex:none; font-size:var(--fs-caption); color:var(--warning); white-space:nowrap; }
+.step-ready{ flex:none; font-size:var(--fs-md); line-height:20px; cursor:help; }
+.step-ready.is-full{ color:var(--success); }
+.step-ready.is-part{ color:var(--warning); }
+.step-ready.is-none{ color:var(--text-faint); }
+.step-manual-badge{ align-self:flex-start; font-size:var(--fs-caption); line-height:1.4; padding:0 6px; border-radius:3px; color:var(--warning); background:var(--accent-soft); }
+.sc-add .om-add-role .shield-icon{ width:12px; height:12px; vertical-align:-2px; color:var(--control); }
+.sc-item .shield-icon{ width:13px; height:13px; color:var(--control); }
+.sc-temp{ margin:1px 0 0 14px; font-size:var(--fs-caption); color:var(--warning); }
+.sc-targets{ margin:1px 0 0 14px; font-size:var(--fs-caption); color:var(--text-muted); cursor:pointer; border-radius:var(--radius); padding:0 4px; }
+.sc-targets.is-empty{ color:var(--text-faint); }
+.sc-targets:hover, .sc-targets:focus-visible{ background:var(--bg-elevated); outline:none; }
+.sc-targets-edit{ margin:4px 0 4px 14px; }
+.sc-target-list{ display:flex; flex-direction:column; gap:0; margin-bottom:6px; }
+.sc-target{ padding:3px 2px; }
+.sc-target .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+.ctrl-use .step-num{ margin-right:2px; }
 </style>
 </head>
 <body>
@@ -851,7 +881,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       </div>
     </aside>
     <main id="proc-main">
-      <div class="proc-head" id="proc-head"></div>
+      <div class="proc-head" id="proc-head">
+        <div class="proc-head-info" id="proc-head-info"></div>
+        <label class="switch proc-only-prod" title="Приглушить всё «в разработке» и показать шаги, которые останутся ручной работой">
+          <input type="checkbox" id="proc-only-prod">
+          <span class="switch-track" aria-hidden="true"></span>
+          <span class="switch-label">Только в проме</span>
+        </label>
+      </div>
       <div class="proc-scroll" id="proc-scroll"><div class="proc-stage" id="proc-stage"></div></div>
       <div class="empty-state proc-empty" id="proc-empty" hidden>
         <p class="empty-title" id="proc-empty-title">Процессов пока нет</p>
@@ -5495,20 +5532,20 @@ function createControl(partial){
   persist();
   return c;
 }
-/* Процессов пока нет (фаза 4) — контроль нигде не используется. */
-function controlProcessUses(ctrlId){ return []; }
-
 function deleteControl(id){
   var c = state.controls[id];
   if (!c) return;
+  var procRefs = processRefsTo('control', id);
   openModal({
     title:'Удалить контроль?',
-    bodyHTML:'<p>Контроль «' + escapeHtml(c.name) + '» будет удалён без возможности восстановления.</p>',
+    bodyHTML:'<p>Контроль «' + escapeHtml(c.name) + '» будет удалён без возможности восстановления.</p>' + processRefsWarningHTML(procRefs),
     footerButtons:[
       {label:'Отмена', onClick:function(){ return true; }},
       {label:'Удалить', variant:'danger', onClick:function(){
+        if (procRefs.length) rememberDeleted('ctrl', id, c.name);
         delete state.controls[id];
         persist(); clearSelection();
+        if (currentView === 'process') renderProcessView();
         if (currentView === 'list') renderListView();
       }}
     ]
@@ -5548,9 +5585,23 @@ function controlPanelTemplate(c){
     refFieldHTML('replacedBy', 'Заменится механизмом') +
     '<div class="panel-section is-tight">' +
       '<div class="panel-section-header"><p class="panel-section-title">Используется в процессах · ' + controlProcessUses(c.id).length + '</p></div>' +
-      '<p class="ref-empty">Пока не используется.</p>' +
+      '<div class="ctrl-uses"></div>' +
     '</div>'
   );
+}
+/* «Используется в процессах»: процесс · шаг · реакция; клик — переход к шагу в «Процессах». */
+function renderControlUses(panel, c){
+  var box = panel.querySelector('.ctrl-uses'), uses = controlProcessUses(c.id);
+  if (!uses.length){ box.innerHTML = '<p class="ref-empty">Пока не используется.</p>'; return; }
+  box.innerHTML = uses.map(function(u, i){
+    return '<button type="button" class="om-link ctrl-use" data-i="' + i + '">' +
+      '<span class="om-mech-title"><span class="step-num">' + u.num + '</span><span class="ref-item-title">' + escapeHtml(u.step.name) + '</span></span>' +
+      '<span class="om-note">' + escapeHtml(u.proc.name) + ' · ' + escapeHtml(controlReaction(u.reaction).title.toLowerCase()) + '</span></button>';
+  }).join('');
+  box.querySelectorAll('.ctrl-use').forEach(function(b){
+    var u = uses[Number(b.getAttribute('data-i'))];
+    b.addEventListener('click', function(){ goToProcessStep(u.proc.id, u.step.id); });
+  });
 }
 
 function renderControlPanel(c){
@@ -5558,7 +5609,7 @@ function renderControlPanel(c){
   var panel = document.getElementById('panel-control');
   showPanel('control');
   panel.innerHTML = controlPanelTemplate(c);
-  function changed(){ persist(); if (currentView === 'list') renderListView(); }
+  function changed(){ persist(); if (currentView === 'list') renderListView(); if (currentView === 'process') renderRibbon(); }
   bindInlineTitle(panel, function(){ return c.name; }, function(v){ c.name = normalizeLabel(v); changed(); }, 'Название контроля');
   bindStatusBadge(panel, c, false);
   var menuBtn = panel.querySelector('.card-menu-btn');
@@ -5590,6 +5641,7 @@ function renderControlPanel(c){
   });
   bindViewField(panel, 'momentNote', {label:'Уточнение момента', addText:'Уточнить: «ежедневно», «при закрытии месяца»…',
     get:function(){ return c.momentNote || ''; }, set:function(v){ c.momentNote = normalizeLabel(v); changed(); }});
+  renderControlUses(panel, c);
   bindRefField(panel, 'replacedBy', {label:'Заменится механизмом', addText:'Выбрать механизм, который заменит этот контроль',
     get:function(){ return c.replacedByMechanismId; }, set:function(id){ c.replacedByMechanismId = id; changed(); },
     resolve:function(id){ var m = state.mechanisms[id]; return m ? {label:m.title, iconHTML:'<span class="om-diamond" style="--c:' + categoryAccent(m.category) + '"></span>'} : null; },
@@ -5750,16 +5802,97 @@ function participantInfo(p){
   return {label:'⚠ Удалено: ' + deletedName(p.entityId), iconHTML:'', broken:true};
 }
 
+/* ----- Контроли шага -----
+   step.controls: [{source:'mechanism'|'manual', sourceId, targets:[{entityType:'object'|'attribute', entityId}],
+   reaction, note}]. Автоматический контроль — ссылка на механизм, ручной — на state.controls. */
+var CONTROL_REACTIONS = [
+  {code:'block',  title:'Блокирует',     letter:'Б'},
+  {code:'warn',   title:'Предупреждает', letter:'П'},
+  {code:'inform', title:'Информирует',   letter:'И'}
+];
+function controlReaction(code){ return CONTROL_REACTIONS.filter(function(r){ return r.code === code; })[0] || CONTROL_REACTIONS[2]; }
+function stepControls(s){ return s.controls || (s.controls = []); }
+function controlRefType(c){ return c.source === 'mechanism' ? 'mechanism' : 'control'; }
+/* {label, iconHTML, broken, temp} для контроля шага; temp — механизм, который заменит ручной контроль. */
+function stepControlInfo(c){
+  var auto = c.source === 'mechanism', e = auto ? state.mechanisms[c.sourceId] : state.controls[c.sourceId];
+  var info = {label:e ? (auto ? e.title : e.name) : '⚠ Удалено: ' + deletedName(c.sourceId), iconHTML:shieldIconSVG(auto), broken:!e, auto:auto};
+  if (!auto && e && e.replacedByMechanismId) info.temp = controlRefText(e.replacedByMechanismId, 'mechanisms', 'title');
+  return info;
+}
+function targetsText(c){
+  return c.targets.map(function(t){ return participantInfo(t).label; }).join(', ');
+}
+/* Где используется ручной контроль: [{proc, step, num, reaction}]. */
+function controlProcessUses(ctrlId){
+  var out = [];
+  allProcesses().forEach(function(proc){
+    var nums = stepNumbers(proc);
+    orderedSteps(proc).forEach(function(s){
+      stepControls(s).forEach(function(c){
+        if (c.source === 'manual' && c.sourceId === ctrlId) out.push({proc:proc, step:s, num:nums[s.id], reaction:c.reaction});
+      });
+    });
+  });
+  return out;
+}
+
+/* ----- Готовность -----
+   «В проме» — статусы из READY_STATUSES (по фазе 0: active — «В продуктиве» и у объектов, и у
+   механизмов, и у ручных контролей). Всё прочее, кроме «устаревшего», — «в разработке». */
+var READY_STATUSES = ['active'];
+function isReadyStatus(st){ return READY_STATUSES.indexOf(st) >= 0; }
+function isDevStatus(st){ return st !== null && !isReadyStatus(st) && st !== 'deprecated'; }
+/* Статус по ссылке; у реквизита — статус его объекта; удалённая сущность — null. */
+function refStatus(entityType, id){
+  var e = null;
+  if (entityType === 'mechanism') e = state.mechanisms[id];
+  else if (entityType === 'object') e = state.objects[id];
+  else if (entityType === 'attribute'){ var a = state.attributes[id]; e = a ? state.objects[a.objectId] : null; }
+  else if (entityType === 'control') e = state.controls[id];
+  return e ? (e.status || '') : null;
+}
+/* Индикатор шага: по механизмам-участникам и автоматическим контролям.
+   level: 'full' ● — все в проме; 'part' ◐ — часть в разработке; 'none' ○ — все в разработке; null — их нет. */
+function stepReadiness(s){
+  var seen = {}, total = 0, dev = 0;
+  function add(id){
+    if (seen[id]) return; seen[id] = true;
+    var st = refStatus('mechanism', id); if (st === null) return;
+    total++; if (isDevStatus(st)) dev++;
+  }
+  s.participants.forEach(function(p){ if (p.entityType === 'mechanism') add(p.entityId); });
+  stepControls(s).forEach(function(c){ if (c.source === 'mechanism') add(c.sourceId); });
+  return {total:total, dev:dev, level:!total ? null : (!dev ? 'full' : (dev === total ? 'none' : 'part'))};
+}
+/* Шаг готов, если ни один его механизм и автоконтроль не в разработке (шаг без них — ручной, тоже готов). */
+function isStepReady(s){ var l = stepReadiness(s).level; return l === null || l === 'full'; }
+function processReadiness(proc){ return {ready:proc.steps.filter(isStepReady).length, total:proc.steps.length}; }
+/* «Только в проме»: у шага были механизмы или контроли, но в проме не осталось ни одного. */
+function isManualWorkStep(s){
+  var had = 0, left = 0;
+  function count(type, id){ var st = refStatus(type, id); if (st === null) return; had++; if (isReadyStatus(st)) left++; }
+  s.participants.forEach(function(p){ if (p.entityType === 'mechanism') count('mechanism', p.entityId); });
+  stepControls(s).forEach(function(c){ count(controlRefType(c), c.sourceId); });
+  return had > 0 && left === 0;
+}
+
 /* ----- Ссылочная целостность -----
-   Где в процессах используется сущность: [{proc, step|null, what}] (step = null — владелец процесса). */
+   Где в процессах используется сущность: [{proc, step|null}] (step = null — владелец процесса).
+   Учитываются участники, роль шага, источники и цели контролей шага. */
+function stepRefersTo(s, entityType, id){
+  if (entityType === 'role') return s.roleId === id;
+  if (s.participants.some(function(p){ return p.entityType === entityType && p.entityId === id; })) return true;
+  return stepControls(s).some(function(c){
+    if (c.sourceId === id && controlRefType(c) === entityType) return true;
+    return c.targets.some(function(t){ return t.entityType === entityType && t.entityId === id; });
+  });
+}
 function processRefsTo(entityType, id){
   var out = [];
   allProcesses().forEach(function(proc){
-    if (entityType === 'role' && proc.ownerRoleId === id) out.push({proc:proc, step:null, what:'владелец'});
-    orderedSteps(proc).forEach(function(s){
-      if (entityType === 'role' ? s.roleId === id : s.participants.some(function(p){ return p.entityType === entityType && p.entityId === id; }))
-        out.push({proc:proc, step:s});
-    });
+    if (entityType === 'role' && proc.ownerRoleId === id) out.push({proc:proc, step:null});
+    orderedSteps(proc).forEach(function(s){ if (stepRefersTo(s, entityType, id)) out.push({proc:proc, step:s}); });
   });
   return out;
 }
@@ -5801,6 +5934,14 @@ var procZoom = 1;
 var PROC_ZOOM_MIN = 0.25, PROC_ZOOM_MAX = 1.5, PROC_ZOOM_STEP = 1.2;
 /* Шаг, к которому ведёт кнопка «← К шагу», пока открыта карточка участника. */
 var procReturn = null;
+/* «Только в проме»: приглушить всё «в разработке» и пометить шаги «ручная работа». */
+var PROC_ONLY_PROD_KEY = 'nodusProcOnlyProd';
+var procOnlyProd = (function(){ try{ return localStorage.getItem(PROC_ONLY_PROD_KEY) === '1'; }catch(e){ return false; } })();
+var READINESS_MARKS = {
+  full:{glyph:'●', title:'Все механизмы и автоматические контроли шага — в проме'},
+  part:{glyph:'◐', title:'Часть механизмов и автоматических контролей шага — в разработке'},
+  none:{glyph:'○', title:'Все механизмы и автоматические контроли шага — в разработке'}
+};
 
 var STEP_KIND_ICONS = {
   user_action:'<svg class="type-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5" r="2.5"/><path d="M3 14c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/></svg>',
@@ -5904,14 +6045,29 @@ function returnToStep(){
   if (procSel.processId !== r.processId){ procSel.processId = r.processId; renderProcessSidebar(); renderRibbon(); }
   selectStep(r.stepId);
 }
-/* Клик по участнику шага: его карточка в правой панели с возвратом к шагу. */
+/* Клик по участнику или контролю шага: его карточка в правой панели с возвратом к шагу. */
 function openParticipant(p){
   var kind = p.entityType === 'mechanism' ? 'mech' : 'obj';
   var id = p.entityId;
   if (p.entityType === 'attribute'){ var a = state.attributes[id]; if (!a) return; id = a.objectId; }
   if (kind === 'obj' ? !state.objects[id] : !state.mechanisms[id]) return;
+  openFromStep(kind, id);
+}
+function openFromStep(kind, id){
   procReturn = {processId:procSel.processId, stepId:procSel.stepId};
   selectEntity(kind, id);
+}
+/* Переход к шагу процесса из любого режима (например, из карточки ручного контроля). */
+function goToProcessStep(procId, stepId){
+  if (!state.processes[procId]) return;
+  procSel = {processId:procId, stepId:stepId}; saveProcSel();
+  procReturn = null;
+  if (currentView !== 'process'){
+    document.querySelectorAll('.view-toggle .mode-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-view') === 'process'); });
+    switchView('process');
+  } else { renderProcessSidebar(); renderRibbon(); selectStep(stepId); }
+  var card = document.querySelector('#proc-stage .step-card[data-step="' + stepId + '"]');
+  if (card) card.scrollIntoView({block:'nearest', inline:'nearest'});
 }
 
 /* ----- Левая панель ----- */
@@ -5925,10 +6081,10 @@ function renderProcessSidebar(){
   var list = filteredProcesses();
   var box = document.getElementById('proc-list');
   box.innerHTML = list.length ? list.map(function(p){
-    var n = p.steps.length, subs = processSubsystems(p);
+    var n = p.steps.length, subs = processSubsystems(p), rd = processReadiness(p);
     return '<button type="button" class="list-row' + (p.id === procSel.processId ? ' active' : '') + '" data-proc="' + p.id + '">' +
       '<span class="list-row-main"><span class="list-row-title">' + escapeHtml(p.name) + '</span>' +
-        (subs.length ? '<span class="list-row-sub">' + escapeHtml(subs.join(', ')) + '</span>' : '') + '</span>' +
+        '<span class="list-row-sub">' + readinessText(rd) + (subs.length ? ' · ' + escapeHtml(subs.join(', ')) : '') + '</span></span>' +
       '<span class="list-row-meta"><span class="list-row-count" title="' + n + ' ' + pluralRu(n,'шаг','шага','шагов') + '">' + n + '</span></span>' +
     '</button>';
   }).join('') : '<p class="ref-empty">' + (allProcesses().length ? 'Ничего не найдено.' : 'Процессов пока нет.') + '</p>';
@@ -5947,23 +6103,41 @@ function stepRoleLineHTML(s){
   else text = '<span class="is-faint">Роль не указана</span>';
   return '<div class="step-card-role" title="' + escapeHtml(stepKindTitle(s.kind)) + '">' + icon + '<span>' + text + '</span></div>';
 }
+function readinessText(rd){ return 'Готово ' + rd.ready + ' из ' + rd.total + ' ' + pluralRu(rd.total,'шага','шагов','шагов'); }
+var DEV_TITLE = ' · В разработке';
 function stepChipHTML(p){
-  var info = participantInfo(p), role = participationRole(p.entityType, p.role);
-  return '<span class="step-chip' + (info.broken ? ' is-broken' : '') + '" title="' + escapeHtml(role.title + ': ' + (info.title || info.label)) + '">' +
+  var info = participantInfo(p), role = participationRole(p.entityType, p.role), dev = isDevStatus(refStatus(p.entityType, p.entityId));
+  return '<span class="step-chip' + (info.broken ? ' is-broken' : '') + (dev ? ' is-dev' : '') + '" title="' + escapeHtml(role.title + ': ' + (info.title || info.label) + (dev ? DEV_TITLE : '')) + '">' +
     (role.letter ? '<span class="step-chip-letter">' + role.letter + '</span>' : '') + info.iconHTML +
     '<span class="step-chip-text">' + escapeHtml(info.label) + '</span></span>';
 }
+/* Чип контроля: щит (сплошной — автоматический, контурный — ручной), название, буква реакции. */
+function stepControlChipHTML(c){
+  var info = stepControlInfo(c), r = controlReaction(c.reaction), dev = isDevStatus(refStatus(controlRefType(c), c.sourceId));
+  var title = (info.auto ? 'Автоматический контроль: ' : 'Ручной контроль: ') + info.label + ' · ' + r.title +
+    (c.targets.length ? ' · цели: ' + targetsText(c) : '') + (info.temp ? ' · временный → ' + info.temp : '') + (dev ? DEV_TITLE : '');
+  return '<span class="step-chip ctrl-chip' + (info.broken ? ' is-broken' : '') + (dev ? ' is-dev' : '') + '" title="' + escapeHtml(title) + '">' +
+    info.iconHTML + '<span class="step-chip-text">' + escapeHtml(info.label) + '</span>' +
+    (info.temp ? '<span class="chip-temp">временный → ' + escapeHtml(info.temp) + '</span>' : '') +
+    '<span class="step-chip-letter" title="' + escapeHtml(r.title) + '">' + r.letter + '</span></span>';
+}
 function stepCardHTML(s, num){
+  var rd = stepReadiness(s), mark = rd.level && READINESS_MARKS[rd.level];
+  var manual = procOnlyProd && isManualWorkStep(s);
+  var ctrls = stepControls(s);
   return '<div class="step-card' + (s.id === procSel.stepId ? ' is-active' : '') + '" data-step="' + s.id + '" tabindex="0">' +
     '<div class="step-card-head"><span class="step-num">' + num + '</span>' +
+      (mark ? '<span class="step-ready is-' + rd.level + '" title="' + escapeHtml(mark.title) + '">' + mark.glyph + '</span>' : '') +
       '<span class="step-card-name" title="' + escapeHtml(s.name) + '">' + escapeHtml(s.name) + '</span>' +
       '<button type="button" class="card-menu-btn step-menu-btn" aria-haspopup="menu" aria-expanded="false" aria-label="Действия с шагом" title="Действия">⋯</button></div>' +
     stepRoleLineHTML(s) +
+    (manual ? '<span class="step-manual-badge" title="В проме у шага не осталось ни механизмов, ни контролей">ручная работа</span>' : '') +
     PARTICIPANT_TYPES.map(function(t){
       var parts = s.participants.filter(function(p){ return p.entityType === t.code; });
       if (!parts.length) return '';
       return '<div class="step-chips" data-type="' + t.code + '">' + parts.map(stepChipHTML).join('') + '<span class="step-chip-more" hidden></span></div>';
     }).join('') +
+    (ctrls.length ? '<div class="step-chips" data-type="control">' + ctrls.map(stepControlChipHTML).join('') + '<span class="step-chip-more" hidden></span></div>' : '') +
   '</div>';
 }
 function stepLinkHTML(afterId){
@@ -5973,7 +6147,7 @@ function stepLinkHTML(afterId){
 
 function renderRibbon(){
   var p = currentProcess();
-  var head = document.getElementById('proc-head'), stage = document.getElementById('proc-stage'), empty = document.getElementById('proc-empty');
+  var head = document.getElementById('proc-head-info'), stage = document.getElementById('proc-stage'), empty = document.getElementById('proc-empty');
   empty.hidden = !!p;
   document.getElementById('proc-main').classList.toggle('is-empty', !p);
   if (!p){
@@ -5983,7 +6157,8 @@ function renderRibbon(){
   }
   var list = orderedSteps(p);
   head.innerHTML = '<h2 class="proc-title">' + escapeHtml(p.name) + '</h2>' +
-    '<span class="proc-meta">' + list.length + ' ' + pluralRu(list.length,'шаг','шага','шагов') + '</span>';
+    '<span class="proc-meta">' + list.length + ' ' + pluralRu(list.length,'шаг','шага','шагов') + ' · ' + readinessText(processReadiness(p)) + '</span>';
+  stage.classList.toggle('only-prod', procOnlyProd);
   stage.innerHTML = list.length ?
     list.map(function(s, i){ return (i ? stepLinkHTML(list[i - 1].id) : '') + stepCardHTML(s, i + 1); }).join('') +
       '<div class="step-link is-tail"><button type="button" class="step-add" data-after="' + list[list.length - 1].id + '" title="Добавить шаг в конец" aria-label="Добавить шаг в конец">+</button></div>'
@@ -6023,11 +6198,13 @@ function addStepAfter(afterId){
 }
 function deleteStepUI(stepId){
   var p = currentProcess(), s = p && stepById(p, stepId); if (!s) return;
-  var n = s.participants.length;
+  var n = s.participants.length, k = stepControls(s).length, with_ = [];
+  if (n) with_.push(n + ' ' + pluralRu(n,'участником','участниками','участниками'));
+  if (k) with_.push(k + ' ' + pluralRu(k,'контролем','контролями','контролями'));
   openModal({
     title:'Удалить шаг?',
     bodyHTML:'<p>Шаг ' + stepNumbers(p)[s.id] + ' «' + escapeHtml(s.name) + '» будет удалён' +
-      (n ? ' вместе с ' + n + ' ' + pluralRu(n,'участником','участниками','участниками') : '') + '. Соседние шаги соединятся.</p>',
+      (with_.length ? ' вместе с ' + with_.join(' и ') : '') + '. Соседние шаги соединятся.</p>',
     footerButtons:[
       {label:'Отмена', onClick:function(){ return true; }},
       {label:'Удалить', variant:'danger', onClick:function(){
@@ -6127,6 +6304,13 @@ function bindProcessView(){
   document.getElementById('btn-proc-zoom-in').addEventListener('click', function(){ setProcZoom(procZoom * PROC_ZOOM_STEP); });
   document.getElementById('btn-proc-zoom-out').addEventListener('click', function(){ setProcZoom(procZoom / PROC_ZOOM_STEP); });
   document.getElementById('btn-proc-fit').addEventListener('click', fitProcessRibbon);
+  var onlyProd = document.getElementById('proc-only-prod');
+  onlyProd.checked = procOnlyProd;
+  onlyProd.addEventListener('change', function(){
+    procOnlyProd = onlyProd.checked;
+    try{ localStorage.setItem(PROC_ONLY_PROD_KEY, procOnlyProd ? '1' : '0'); }catch(e){}
+    renderRibbon();
+  });
   if (window.ResizeObserver) new ResizeObserver(function(){ if (currentView === 'process') fitChipLines(); }).observe(sc);
 }
 /* ===================== Процессы: карточки в правой панели =====================
@@ -6272,7 +6456,8 @@ function stepPanelTemplate(p, s){
         '<button class="btn btn-sm" id="btn-add-participant" type="button" title="Добавить механизм, объект или реквизит">+ Участник</button></div>' +
       '<div id="step-add-participant"></div>' +
       '<div id="step-parts-list"></div>' +
-    '</div>'
+    '</div>' +
+    stepControlsSectionHTML()
   );
 }
 
@@ -6304,6 +6489,8 @@ function renderStepPanel(p, s){
     get:function(){ return s.description || ''; }, set:function(v){ s.description = v; persist(); }});
   renderStepParticipants(p, s, panel);
   bindAddParticipant(p, s, panel);
+  renderStepControls(p, s, panel);
+  bindAddStepControl(p, s, panel);
 }
 
 /* Участники шага, сгруппированные: Механизмы / Объекты / Реквизиты. */
@@ -6497,6 +6684,226 @@ function bindAddParticipant(p, s, panel){
       if (e.key === 'Escape' && !e.defaultPrevented){ e.preventDefault(); e.stopPropagation(); close(); btn.focus(); }
     });
     input.focus();
+  });
+}
+/* ===================== Контроли в карточке шага =====================
+   «+ Контроль» → источник (механизм / ручной) → выбор → цели (по умолчанию — объекты и реквизиты
+   шага) → реакция → примечание. Автоматический контроль — ссылка на механизм (категория
+   «Проверка» — первой в списке), ручной — на справочник контролей, с созданием нового. */
+
+function stepControlsSectionHTML(){
+  return '<div class="panel-section is-tight">' +
+    '<div class="panel-section-header"><p class="panel-section-title" id="step-ctrls-title">Контроли</p>' +
+      '<button class="btn btn-sm" id="btn-add-step-control" type="button" title="Привязать автоматический или ручной контроль">+ Контроль</button></div>' +
+    '<div id="step-add-control"></div>' +
+    '<div id="step-ctrls-list"></div>' +
+  '</div>';
+}
+
+/* Механизмы для автоконтроля: сначала категория «Проверка». */
+function controlMechanismSource(q){
+  return mechanismComboSource(q).sort(function(a, b){
+    var ca = state.mechanisms[a.value].category === 'check' ? 0 : 1, cb = state.mechanisms[b.value].category === 'check' ? 0 : 1;
+    return ca - cb || a.label.localeCompare(b.label, 'ru');
+  });
+}
+function manualControlSource(q){
+  var k = q.toLowerCase();
+  return allControls().filter(isShown)
+    .filter(function(c){ return !k || c.name.toLowerCase().indexOf(k) >= 0; })
+    .sort(function(a,b){ return a.name.localeCompare(b.name,'ru'); })
+    .map(function(c){ return {value:c.id, label:c.name, sub:controlMomentTitle(c.moment), iconHTML:shieldIconSVG(false)}; });
+}
+/* Кандидаты в цели: объекты и реквизиты шага + уже выбранные цели. */
+function targetCandidates(s, targets){
+  var out = [], seen = {};
+  function add(t){ var k = t.entityType + ':' + t.entityId; if (!seen[k]){ seen[k] = true; out.push({entityType:t.entityType, entityId:t.entityId}); } }
+  s.participants.forEach(function(p){ if (p.entityType !== 'mechanism') add(p); });
+  targets.forEach(add);
+  return out;
+}
+function hasTarget(targets, t){ return targets.some(function(x){ return x.entityType === t.entityType && x.entityId === t.entityId; }); }
+
+/* Редактор целей: флажки по кандидатам + поиск другого объекта или реквизита. targets меняется на месте. */
+function buildTargetsEditor(container, s, targets, onChange){
+  function render(){
+    var cands = targetCandidates(s, targets);
+    container.innerHTML = '<div class="sc-target-list">' + (cands.length ? cands.map(function(t, i){
+      var info = participantInfo(t);
+      return '<label class="multi-select-item sc-target"><input type="checkbox" data-i="' + i + '"' + (hasTarget(targets, t) ? ' checked' : '') + '>' +
+        info.iconHTML + '<span class="multi-select-item-text">' + escapeHtml(info.label) + '</span></label>';
+    }).join('') : '<p class="ref-empty">У шага нет объектов и реквизитов — найдите цель ниже.</p>') + '</div>' +
+      '<div class="sc-target-add"></div>';
+    container.querySelectorAll('input[type=checkbox]').forEach(function(cb){
+      cb.addEventListener('change', function(){
+        var t = cands[Number(cb.getAttribute('data-i'))];
+        if (cb.checked){ if (!hasTarget(targets, t)) targets.push(t); }
+        else { var i = targets.findIndex(function(x){ return x.entityType === t.entityType && x.entityId === t.entityId; }); if (i >= 0) targets.splice(i, 1); }
+        onChange();
+      });
+    });
+    var input = buildCombobox(container.querySelector('.sc-target-add'), {
+      placeholder:'Другой объект или реквизит…', ariaLabel:'Добавить цель контроля', autoActive:true, emptyText:'Ничего не найдено',
+      source:function(q){ return participantComboSource(q).filter(function(it){ return it.value.indexOf('mechanism:') !== 0; }); },
+      onPick:function(it){
+        var d = it.value.indexOf(':'), t = {entityType:it.value.slice(0, d), entityId:it.value.slice(d + 1)};
+        if (!hasTarget(targets, t)) targets.push(t);
+        onChange(); render();
+        container.querySelector('.sc-target-add .combo-input').focus();
+      }
+    });
+    return input;
+  }
+  render();
+}
+
+function renderStepControls(p, s, panel){
+  var box = panel.querySelector('#step-ctrls-list'), list = stepControls(s);
+  panel.querySelector('#step-ctrls-title').textContent = 'Контроли · ' + list.length;
+  if (!list.length){ box.innerHTML = '<p class="ref-empty">Контролей нет.</p>'; return; }
+  box.innerHTML = list.map(function(c, i){
+    var info = stepControlInfo(c), r = controlReaction(c.reaction);
+    return '<div class="sp-item sc-item" data-i="' + i + '">' +
+      '<div class="sp-row">' +
+        (info.broken ? '<span class="sp-name ref-broken">' + escapeHtml(info.label) + '</span>'
+                     : '<button type="button" class="sp-name ref-link" title="' + (info.auto ? 'Автоматический контроль (механизм)' : 'Ручной контроль') + '">' + info.iconHTML + '<span>' + escapeHtml(info.label) + '</span></button>') +
+        '<button type="button" class="badge-btn status-badge is-default sc-reaction-btn" aria-haspopup="menu" aria-expanded="false" title="Реакция — нажмите, чтобы изменить">' + r.letter + ' · ' + escapeHtml(r.title.toLowerCase()) + '</button>' +
+        '<button type="button" class="card-menu-btn sp-menu" aria-haspopup="menu" aria-expanded="false" aria-label="Действия с контролем" title="Действия">⋯</button>' +
+      '</div>' +
+      (info.temp ? '<div class="sc-temp">временный → ' + escapeHtml(info.temp) + '</div>' : '') +
+      '<div class="sc-targets' + (c.targets.length ? '' : ' is-empty') + '" tabindex="0" title="Цели — нажмите, чтобы изменить">' +
+        (c.targets.length ? 'Цели: ' + escapeHtml(targetsText(c)) : '+ цели') + '</div>' +
+      '<div class="sp-note' + (c.note ? '' : ' is-empty') + '" tabindex="0" title="Примечание — нажмите, чтобы изменить">' + (c.note ? escapeHtml(c.note) : '+ примечание') + '</div>' +
+    '</div>';
+  }).join('');
+
+  function changed(){ persist(); renderRibbon(); renderStepControls(p, s, panel); }
+  box.querySelectorAll('.sc-item').forEach(function(item){
+    var c = list[Number(item.getAttribute('data-i'))];
+    var name = item.querySelector('button.sp-name');
+    if (name) name.addEventListener('click', function(){ openFromStep(c.source === 'mechanism' ? 'mech' : 'ctrl', c.sourceId); });
+    var rBtn = item.querySelector('.sc-reaction-btn');
+    rBtn.addEventListener('click', function(){
+      openPopoverMenu(rBtn, CONTROL_REACTIONS.map(function(r){ return {value:r.code, label:r.letter + ' · ' + r.title, current:r.code === c.reaction}; }),
+        function(code){ if (code !== c.reaction){ c.reaction = code; changed(); } });
+    });
+    var menu = item.querySelector('.sp-menu');
+    menu.addEventListener('click', function(){
+      openPopoverMenu(menu, [{value:'remove', label:'Убрать из шага', danger:true}], function(){ list.splice(list.indexOf(c), 1); changed(); });
+    });
+    var tgt = item.querySelector('.sc-targets');
+    function editTargets(){
+      var ed = document.createElement('div'); ed.className = 'om-add sc-targets-edit';
+      tgt.replaceWith(ed);
+      var inner = document.createElement('div'); ed.appendChild(inner);
+      var actions = document.createElement('div'); actions.className = 'om-add-actions';
+      actions.innerHTML = '<button type="button" class="btn btn-sm btn-accent">Готово</button>';
+      ed.appendChild(actions);
+      buildTargetsEditor(inner, s, c.targets, function(){ persist(); renderRibbon(); });
+      actions.querySelector('button').addEventListener('click', function(){ renderStepControls(p, s, panel); });
+      ed.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !e.defaultPrevented){ e.preventDefault(); e.stopPropagation(); renderStepControls(p, s, panel); } });
+    }
+    tgt.addEventListener('click', editTargets);
+    tgt.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); editTargets(); } });
+    var note = item.querySelector('.sp-note');
+    function editNote(){
+      var input = document.createElement('input');
+      input.type = 'text'; input.className = 'field-input sp-note-input'; input.value = c.note || '';
+      input.placeholder = 'Примечание'; input.setAttribute('aria-label', 'Примечание');
+      note.replaceWith(input); input.focus();
+      var done = false;
+      function finish(save){
+        if (done) return; done = true;
+        var v = normalizeLabel(input.value);
+        if (save && v !== (c.note || '')){ c.note = v; persist(); }
+        renderStepControls(p, s, panel);
+      }
+      input.addEventListener('keydown', function(e){
+        if (e.key === 'Enter'){ e.preventDefault(); finish(true); }
+        else if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); finish(false); }
+      });
+      input.addEventListener('blur', function(){ finish(true); });
+    }
+    note.addEventListener('click', editNote);
+    note.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); editNote(); } });
+  });
+}
+
+var DEFAULT_REACTION = { mechanism:'block', manual:'inform' };
+
+function bindAddStepControl(p, s, panel){
+  var btn = panel.querySelector('#btn-add-step-control'), host = panel.querySelector('#step-add-control');
+  function close(){ host.innerHTML = ''; }
+  btn.addEventListener('click', function(){
+    if (host.firstChild){ close(); return; }
+    var source = 'mechanism', chosen = null, reaction = DEFAULT_REACTION.mechanism, reactionTouched = false;
+    var targets = targetCandidates(s, []);
+    host.innerHTML = '<div class="om-add sc-add">' +
+      '<div><div class="om-add-label">Источник</div><div class="om-add-roles sc-src">' +
+        '<button type="button" class="om-add-role is-on" data-src="mechanism">' + shieldIconSVG(true) + ' Механизм</button>' +
+        '<button type="button" class="om-add-role" data-src="manual">' + shieldIconSVG(false) + ' Ручной</button></div></div>' +
+      '<div><div class="om-add-label sc-pick-label"></div><div class="sc-pick"></div></div>' +
+      '<div><div class="om-add-label">Цели — объекты и реквизиты</div><div class="sc-targets-box"></div></div>' +
+      '<div><div class="om-add-label">Реакция</div><div class="om-add-roles sc-reactions">' +
+        CONTROL_REACTIONS.map(function(r){ return '<button type="button" class="om-add-role" data-reaction="' + r.code + '">' + r.letter + ' · ' + escapeHtml(r.title) + '</button>'; }).join('') +
+      '</div></div>' +
+      '<div><div class="om-add-label">Примечание (необязательно)</div><input type="text" class="field-input sc-note" autocomplete="off"></div>' +
+      '<div class="om-add-actions"><button type="button" class="btn btn-sm sc-cancel">Отмена</button><button type="button" class="btn btn-sm btn-accent sc-ok" disabled>Добавить</button></div>' +
+    '</div>';
+    var ok = host.querySelector('.sc-ok');
+    function syncReaction(){
+      host.querySelectorAll('.sc-reactions .om-add-role').forEach(function(b){ b.classList.toggle('is-on', b.getAttribute('data-reaction') === reaction); });
+    }
+    function buildPicker(){
+      chosen = null; ok.disabled = true;
+      host.querySelector('.sc-pick-label').textContent = source === 'mechanism' ? 'Механизм (категория «Проверка» — первой)' : 'Ручной контроль из справочника';
+      var input = buildCombobox(host.querySelector('.sc-pick'), {
+        placeholder:source === 'mechanism' ? 'Начните вводить название механизма…' : 'Начните вводить название контроля…',
+        ariaLabel:source === 'mechanism' ? 'Механизм-контроль' : 'Ручной контроль', autoActive:true,
+        emptyText:source === 'mechanism' ? 'Механизмы не найдены' : 'Контролей пока нет — введите название, чтобы создать',
+        source:source === 'mechanism' ? controlMechanismSource : manualControlSource,
+        createLabel:source === 'manual' ? function(q){
+          if (!q) return null;
+          var k = normalizeLabel(q).toLowerCase();
+          return allControls().some(function(c){ return c.name.toLowerCase() === k; }) ? null : '+ Создать контроль «' + normalizeLabel(q) + '»';
+        } : null,
+        onPick:function(it){
+          chosen = it.create ? {createName:normalizeLabel(it.value)} : {id:it.value};
+          input.value = it.create ? normalizeLabel(it.value) : it.label;
+          ok.disabled = false;
+        }
+      });
+      input.addEventListener('input', function(){ chosen = null; ok.disabled = true; });
+      return input;
+    }
+    host.querySelectorAll('.sc-src .om-add-role').forEach(function(b){
+      b.addEventListener('click', function(){
+        source = b.getAttribute('data-src');
+        host.querySelectorAll('.sc-src .om-add-role').forEach(function(x){ x.classList.toggle('is-on', x === b); });
+        if (!reactionTouched){ reaction = DEFAULT_REACTION[source]; syncReaction(); }
+        buildPicker().focus();
+      });
+    });
+    host.querySelectorAll('.sc-reactions .om-add-role').forEach(function(b){
+      b.addEventListener('click', function(){ reaction = b.getAttribute('data-reaction'); reactionTouched = true; syncReaction(); });
+    });
+    buildTargetsEditor(host.querySelector('.sc-targets-box'), s, targets, function(){});
+    syncReaction();
+    host.querySelector('.sc-cancel').addEventListener('click', function(){ close(); btn.focus(); });
+    host.querySelector('.sc-add').addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && !e.defaultPrevented){ e.preventDefault(); e.stopPropagation(); close(); btn.focus(); }
+    });
+    ok.addEventListener('click', function(){
+      if (!chosen) return;
+      var created = null, id = chosen.id;
+      if (chosen.createName){ created = createControl({name:chosen.createName}); id = created.id; }
+      stepControls(s).push({source:source, sourceId:id, targets:targets.slice(), reaction:reaction, note:normalizeLabel(host.querySelector('.sc-note').value)});
+      persist(); renderRibbon(); renderStepControls(p, s, panel); close();
+      /* Новый ручной контроль — сразу открыть для заполнения (с возвратом к шагу). */
+      if (created) openFromStep('ctrl', created.id);
+      else btn.focus();
+    });
+    buildPicker().focus();
   });
 }
 function resizeCanvas(){

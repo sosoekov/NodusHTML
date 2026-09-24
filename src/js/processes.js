@@ -134,16 +134,97 @@ function participantInfo(p){
   return {label:'⚠ Удалено: ' + deletedName(p.entityId), iconHTML:'', broken:true};
 }
 
+/* ----- Контроли шага -----
+   step.controls: [{source:'mechanism'|'manual', sourceId, targets:[{entityType:'object'|'attribute', entityId}],
+   reaction, note}]. Автоматический контроль — ссылка на механизм, ручной — на state.controls. */
+var CONTROL_REACTIONS = [
+  {code:'block',  title:'Блокирует',     letter:'Б'},
+  {code:'warn',   title:'Предупреждает', letter:'П'},
+  {code:'inform', title:'Информирует',   letter:'И'}
+];
+function controlReaction(code){ return CONTROL_REACTIONS.filter(function(r){ return r.code === code; })[0] || CONTROL_REACTIONS[2]; }
+function stepControls(s){ return s.controls || (s.controls = []); }
+function controlRefType(c){ return c.source === 'mechanism' ? 'mechanism' : 'control'; }
+/* {label, iconHTML, broken, temp} для контроля шага; temp — механизм, который заменит ручной контроль. */
+function stepControlInfo(c){
+  var auto = c.source === 'mechanism', e = auto ? state.mechanisms[c.sourceId] : state.controls[c.sourceId];
+  var info = {label:e ? (auto ? e.title : e.name) : '⚠ Удалено: ' + deletedName(c.sourceId), iconHTML:shieldIconSVG(auto), broken:!e, auto:auto};
+  if (!auto && e && e.replacedByMechanismId) info.temp = controlRefText(e.replacedByMechanismId, 'mechanisms', 'title');
+  return info;
+}
+function targetsText(c){
+  return c.targets.map(function(t){ return participantInfo(t).label; }).join(', ');
+}
+/* Где используется ручной контроль: [{proc, step, num, reaction}]. */
+function controlProcessUses(ctrlId){
+  var out = [];
+  allProcesses().forEach(function(proc){
+    var nums = stepNumbers(proc);
+    orderedSteps(proc).forEach(function(s){
+      stepControls(s).forEach(function(c){
+        if (c.source === 'manual' && c.sourceId === ctrlId) out.push({proc:proc, step:s, num:nums[s.id], reaction:c.reaction});
+      });
+    });
+  });
+  return out;
+}
+
+/* ----- Готовность -----
+   «В проме» — статусы из READY_STATUSES (по фазе 0: active — «В продуктиве» и у объектов, и у
+   механизмов, и у ручных контролей). Всё прочее, кроме «устаревшего», — «в разработке». */
+var READY_STATUSES = ['active'];
+function isReadyStatus(st){ return READY_STATUSES.indexOf(st) >= 0; }
+function isDevStatus(st){ return st !== null && !isReadyStatus(st) && st !== 'deprecated'; }
+/* Статус по ссылке; у реквизита — статус его объекта; удалённая сущность — null. */
+function refStatus(entityType, id){
+  var e = null;
+  if (entityType === 'mechanism') e = state.mechanisms[id];
+  else if (entityType === 'object') e = state.objects[id];
+  else if (entityType === 'attribute'){ var a = state.attributes[id]; e = a ? state.objects[a.objectId] : null; }
+  else if (entityType === 'control') e = state.controls[id];
+  return e ? (e.status || '') : null;
+}
+/* Индикатор шага: по механизмам-участникам и автоматическим контролям.
+   level: 'full' ● — все в проме; 'part' ◐ — часть в разработке; 'none' ○ — все в разработке; null — их нет. */
+function stepReadiness(s){
+  var seen = {}, total = 0, dev = 0;
+  function add(id){
+    if (seen[id]) return; seen[id] = true;
+    var st = refStatus('mechanism', id); if (st === null) return;
+    total++; if (isDevStatus(st)) dev++;
+  }
+  s.participants.forEach(function(p){ if (p.entityType === 'mechanism') add(p.entityId); });
+  stepControls(s).forEach(function(c){ if (c.source === 'mechanism') add(c.sourceId); });
+  return {total:total, dev:dev, level:!total ? null : (!dev ? 'full' : (dev === total ? 'none' : 'part'))};
+}
+/* Шаг готов, если ни один его механизм и автоконтроль не в разработке (шаг без них — ручной, тоже готов). */
+function isStepReady(s){ var l = stepReadiness(s).level; return l === null || l === 'full'; }
+function processReadiness(proc){ return {ready:proc.steps.filter(isStepReady).length, total:proc.steps.length}; }
+/* «Только в проме»: у шага были механизмы или контроли, но в проме не осталось ни одного. */
+function isManualWorkStep(s){
+  var had = 0, left = 0;
+  function count(type, id){ var st = refStatus(type, id); if (st === null) return; had++; if (isReadyStatus(st)) left++; }
+  s.participants.forEach(function(p){ if (p.entityType === 'mechanism') count('mechanism', p.entityId); });
+  stepControls(s).forEach(function(c){ count(controlRefType(c), c.sourceId); });
+  return had > 0 && left === 0;
+}
+
 /* ----- Ссылочная целостность -----
-   Где в процессах используется сущность: [{proc, step|null, what}] (step = null — владелец процесса). */
+   Где в процессах используется сущность: [{proc, step|null}] (step = null — владелец процесса).
+   Учитываются участники, роль шага, источники и цели контролей шага. */
+function stepRefersTo(s, entityType, id){
+  if (entityType === 'role') return s.roleId === id;
+  if (s.participants.some(function(p){ return p.entityType === entityType && p.entityId === id; })) return true;
+  return stepControls(s).some(function(c){
+    if (c.sourceId === id && controlRefType(c) === entityType) return true;
+    return c.targets.some(function(t){ return t.entityType === entityType && t.entityId === id; });
+  });
+}
 function processRefsTo(entityType, id){
   var out = [];
   allProcesses().forEach(function(proc){
-    if (entityType === 'role' && proc.ownerRoleId === id) out.push({proc:proc, step:null, what:'владелец'});
-    orderedSteps(proc).forEach(function(s){
-      if (entityType === 'role' ? s.roleId === id : s.participants.some(function(p){ return p.entityType === entityType && p.entityId === id; }))
-        out.push({proc:proc, step:s});
-    });
+    if (entityType === 'role' && proc.ownerRoleId === id) out.push({proc:proc, step:null});
+    orderedSteps(proc).forEach(function(s){ if (stepRefersTo(s, entityType, id)) out.push({proc:proc, step:s}); });
   });
   return out;
 }
