@@ -24,9 +24,11 @@ var procReturn = null;
 /* «Только в проме»: приглушить всё «в разработке» и пометить шаги «ручная работа». */
 var PROC_ONLY_PROD_KEY = 'nodusProcOnlyProd';
 var procOnlyProd = (function(){ try{ return localStorage.getItem(PROC_ONLY_PROD_KEY) === '1'; }catch(e){ return false; } })();
-/* Вид центра: «Лента» или «Матрица»; запоминается в браузере. */
+/* Вид центра: «Лента», «Дорожки» или «Матрица»; запоминается в браузере. */
 var PROC_VIEW_KEY = 'nodusProcView';
-var procViewMode = (function(){ try{ return localStorage.getItem(PROC_VIEW_KEY) === 'matrix' ? 'matrix' : 'ribbon'; }catch(e){ return 'ribbon'; } })();
+var PROC_VIEWS = ['ribbon', 'lanes', 'matrix'];
+var procViewMode = (function(){ try{ var v = localStorage.getItem(PROC_VIEW_KEY); return PROC_VIEWS.indexOf(v) >= 0 ? v : 'ribbon'; }catch(e){ return 'ribbon'; } })();
+var laneBands = null; /* геометрия дорожек последней отрисовки (для закреплённых заголовков) */
 /* Проверки текущего процесса — пересчитываются при каждой отрисовке центра. */
 var currentChecks = null;
 var READINESS_MARKS = {
@@ -159,7 +161,8 @@ function goToProcessStep(procId, stepId){
   if (currentView !== 'process'){
     document.querySelectorAll('.view-toggle .mode-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-view') === 'process'); });
     switchView('process');
-  } else { renderProcessSidebar(); renderRibbon(); selectStep(stepId); }
+  } else if (stepId){ renderProcessSidebar(); renderRibbon(); selectStep(stepId); }
+  else selectProcess(procId);
   var card = document.querySelector('#proc-stage .step-card[data-step="' + stepId + '"]');
   if (card) card.scrollIntoView({block:'nearest', inline:'nearest'});
 }
@@ -259,14 +262,39 @@ function renderRibbon(){
   var btn = head.querySelector('.proc-problems-btn');
   btn.addEventListener('click', function(){ toggleProblemsPanel(); });
   if (!document.getElementById('proc-problems').hidden) renderProblemsPanel();
-  var matrix = procViewMode === 'matrix';
+  var matrix = procViewMode === 'matrix', lanesMode = procViewMode === 'lanes';
   document.getElementById('proc-main').classList.toggle('is-matrix', matrix);
+  document.getElementById('proc-main').classList.toggle('is-lanes', lanesMode);
+  laneBands = null;
   document.getElementById('proc-scroll').hidden = matrix;
   document.getElementById('proc-matrix').hidden = !matrix;
   document.querySelectorAll('.proc-view-btn').forEach(function(b){ b.setAttribute('aria-checked', b.getAttribute('data-pview') === procViewMode ? 'true' : 'false'); });
   if (matrix){ renderMatrix(document.getElementById('proc-matrix'), p, currentChecks); return; }
   stage.classList.toggle('only-prod', procOnlyProd);
-  renderRibbonLayout(stage, p, currentChecks.layout);
+  var L = currentChecks.layout;
+  var bands = renderRibbonLayout(stage, p, L, lanesMode ? laneLayout(p, L) : null);
+  if (lanesMode){ laneBands = bands; renderLaneHeaders(); }
+}
+
+/* Заголовки дорожек — отдельная колонка слева от ленты: не прокручиваются по горизонтали,
+   по вертикали и масштабу следуют за лентой. */
+function renderLaneHeaders(){
+  var box = document.getElementById('proc-lanes');
+  if (!laneBands){ box.innerHTML = ''; return; }
+  box.innerHTML = laneBands.map(function(b, i){
+    return '<div class="lane-head' + (i % 2 ? ' is-odd' : '') + '" data-i="' + i + '" title="' + escapeHtml(b.title) + '"><span>' + escapeHtml(b.title) + '</span></div>';
+  }).join('');
+  syncLaneHeaders();
+}
+function syncLaneHeaders(){
+  if (!laneBands) return;
+  var sc = document.getElementById('proc-scroll'), box = document.getElementById('proc-lanes');
+  box.style.top = sc.offsetTop + 'px';
+  box.querySelectorAll('.lane-head').forEach(function(el){
+    var b = laneBands[Number(el.getAttribute('data-i'))];
+    el.style.top = (b.top * procZoom - sc.scrollTop) + 'px';
+    el.style.height = (b.height * procZoom) + 'px';
+  });
 }
 
 /* ----- «Проблем: N»: список с переходом к шагу ----- */
@@ -389,6 +417,7 @@ function setProcZoom(z, anchorX, anchorY){
   stage.style.zoom = z;
   sc.scrollLeft = cx * z - anchorX;
   sc.scrollTop = cy * z - anchorY;
+  syncLaneHeaders();
 }
 /* «Вписать»: вся лента помещается в видимую область (не крупнее 100%). */
 function fitProcessRibbon(){
@@ -398,6 +427,7 @@ function fitProcessRibbon(){
   procZoom = Math.min(PROC_ZOOM_MAX, Math.max(PROC_ZOOM_MIN, Math.min(1, sc.clientWidth / w, sc.clientHeight / h)));
   stage.style.zoom = procZoom;
   sc.scrollLeft = 0; sc.scrollTop = 0;
+  syncLaneHeaders();
 }
 
 /* ----- Обработчики (один раз при старте) ----- */
@@ -465,5 +495,6 @@ function bindProcessView(){
     try{ localStorage.setItem(PROC_ONLY_PROD_KEY, procOnlyProd ? '1' : '0'); }catch(e){}
     renderRibbon();
   });
-  if (window.ResizeObserver) new ResizeObserver(function(){ if (currentView === 'process') fitChipLines(); }).observe(sc);
+  if (window.ResizeObserver) new ResizeObserver(function(){ if (currentView === 'process'){ fitChipLines(); syncLaneHeaders(); } }).observe(sc);
+  sc.addEventListener('scroll', syncLaneHeaders);
 }

@@ -677,3 +677,22 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .pp-item.is-warn .pp-icon{ color:var(--warning); }
 .pp-item.is-info .pp-icon{ color:var(--text-muted); }
 .pp-step{ display:flex; align-items:center; gap:5px; font-size:var(--fs-caption); color:var(--text-muted); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ===== Дорожки, наложение на граф, обратные связи (фаза 7) ===== */
+.proc-lanes{ display:none; position:absolute; left:0; bottom:0; width:var(--lane-head-w); overflow:hidden; border-right:1px solid var(--border); background:var(--bg-panel); z-index:3; }
+#proc-main.is-lanes .proc-lanes{ display:block; }
+#proc-main.is-lanes .proc-scroll{ margin-left:var(--lane-head-w); }
+.lane-head{ position:absolute; left:0; right:0; padding:10px 12px; border-bottom:1px solid var(--border-soft); font-size:var(--fs-base); font-weight:500; color:var(--text); overflow:hidden; }
+.lane-head span{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lane-head.is-odd{ background:var(--bg-elevated); }
+.lane-band{ fill:transparent; stroke:var(--border-soft); stroke-width:1; }
+.lane-band.is-odd{ fill:var(--bg-panel); fill-opacity:.55; }
+.proc-overlay-row{ margin-top:8px; align-items:center; }
+.proc-overlay-row[hidden]{ display:none; }
+.proc-overlay-label{ font-size:var(--fs-caption); color:var(--text-muted); flex:none; }
+.proc-overlay-row .select-sm{ flex:1; min-width:0; }
+.pu-group + .pu-group{ margin-top:6px; }
+.pu-proc .type-icon{ width:13px; height:13px; color:var(--type-bproc); }
+.pu-step{ display:flex; align-items:center; gap:8px; padding:2px 4px 2px 18px; }
+.pu-step .ref-item-title{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--fs-base); }
+.pu-roles{ flex:none; font-size:var(--fs-caption); color:var(--text-muted); font-weight:600; }

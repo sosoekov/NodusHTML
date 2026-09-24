@@ -35,7 +35,7 @@
       </div>
     </div>
     <div class="global-search" id="global-search">
-      <input type="text" id="global-search-input" class="global-search-input" placeholder="Поиск объектов и механизмов" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="global-search-dropdown">
+      <input type="text" id="global-search-input" class="global-search-input" placeholder="Поиск объектов, механизмов, процессов" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="global-search-dropdown">
       <span class="global-search-kbd" id="global-search-kbd">Ctrl+K</span>
       <div class="global-search-dropdown" id="global-search-dropdown" role="listbox" hidden></div>
     </div>
@@ -80,6 +80,10 @@
           <span class="switch-track" aria-hidden="true"></span>
           <span class="switch-label">Показывать устаревшие</span>
         </label>
+        <div class="filters-row proc-overlay-row" hidden>
+          <label class="proc-overlay-label" for="proc-overlay-select">Процесс:</label>
+          <select id="proc-overlay-select" class="select-sm" title="Наложить процесс на граф: остальное приглушается, у участников — номера шагов"><option value="">нет</option></select>
+        </div>
       </div>
       <div class="sidebar-section list-wrap">
         <div id="object-list"></div>
@@ -163,6 +167,7 @@
         <div class="proc-head-info" id="proc-head-info"></div>
         <div class="mech-mode proc-view-seg" role="radiogroup" aria-label="Вид процесса">
           <button type="button" class="seg-btn proc-view-btn" data-pview="ribbon" role="radio" aria-checked="true">Лента</button>
+          <button type="button" class="seg-btn proc-view-btn" data-pview="lanes" role="radio" aria-checked="false">Дорожки</button>
           <button type="button" class="seg-btn proc-view-btn" data-pview="matrix" role="radio" aria-checked="false">Матрица</button>
         </div>
         <label class="switch proc-only-prod" title="Приглушить всё «в разработке» и показать шаги, которые останутся ручной работой">
@@ -172,6 +177,7 @@
         </label>
       </div>
       <div class="proc-problems" id="proc-problems" hidden></div>
+      <div class="proc-lanes" id="proc-lanes" aria-hidden="true"></div>
       <div class="proc-scroll" id="proc-scroll"><div class="proc-stage" id="proc-stage"></div></div>
       <div class="proc-matrix" id="proc-matrix" hidden></div>
       <div class="empty-state proc-empty" id="proc-empty" hidden>
@@ -222,6 +228,7 @@
 <script src="js/step-controls.js"></script>
 <script src="js/process-checks.js"></script>
 <script src="js/process-matrix.js"></script>
+<script src="js/process-links.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

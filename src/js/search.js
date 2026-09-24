@@ -22,6 +22,7 @@ function globalSearchMatches(query){
     var i = m.title.toLowerCase().indexOf(q);
     if (i >= 0) res.push({kind:'mech', id:id, title:m.title, sub:'Механизм · ' + categoryTitle(m.category), color:categoryAccent(m.category), pos:i});
   });
+  processSearchMatches(q).forEach(function(r){ res.push(r); });
   /* Совпадение с начала названия — выше. */
   res.sort(function(a,b){ return (a.pos===0?0:1) - (b.pos===0?0:1) || a.title.localeCompare(b.title,'ru'); });
   return res.slice(0, GLOBAL_SEARCH_LIMIT);
@@ -82,7 +83,9 @@ function bindGlobalSearch(){
     if (!r) return;
     setOpen(false);
     input.blur();
-    selectEntity(r.kind, r.id);
+    if (r.kind === 'step') goToProcessStep(r.procId, r.id);
+    else if (r.kind === 'proc') goToProcessStep(r.id, null);
+    else selectEntity(r.kind, r.id);
   }
   function update(){
     results = globalSearchMatches(input.value);
