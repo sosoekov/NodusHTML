@@ -301,5 +301,6 @@ function renderSidebar(){
   });
   syncSidebarActive();
   if (currentView === 'list') renderListView();
+  if (currentView === 'process') renderProcessView();
 }
 

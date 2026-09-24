@@ -320,6 +320,7 @@ function attachHandlers(){
   });
 
   bindGlobalSearch();
+  bindProcessView();
 
   window.addEventListener('keydown', function(e){
     if (currentView === 'list' && (e.key === 'ArrowDown' || e.key === 'ArrowUp') && !e.altKey && !e.ctrlKey && !e.metaKey &&
@@ -338,6 +339,7 @@ function attachHandlers(){
       if (!document.getElementById('more-menu').hidden){ document.getElementById('more-menu').hidden = true; document.getElementById('btn-more').setAttribute('aria-expanded','false'); document.getElementById('btn-more').focus(); }
       else if (closeListDropdowns()){}
       else if (document.getElementById('modal-root').innerHTML) closeModal();
+      else if (currentView === 'process' && processEscape()){}
       else if (focusMode) exitFocus();
       else clearSelection();
     }

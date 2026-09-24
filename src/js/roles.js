@@ -29,17 +29,18 @@ function roleProcessCount(roleId){ return 0; }
 function deleteRole(id){
   var r = state.roles[id];
   if (!r) return;
-  var ctrls = controlsByResponsible(id);
+  var ctrls = controlsByResponsible(id), procRefs = processRefsTo('role', id);
   openModal({
     title:'Удалить роль?',
     bodyHTML:'<p>Роль «' + escapeHtml(r.name) + '» будет удалена без возможности восстановления.</p>' +
-      controlRefsWarningHTML(ctrls, 'Роль — ответственный'),
+      controlRefsWarningHTML(ctrls, 'Роль — ответственный') + processRefsWarningHTML(procRefs),
     footerButtons:[
       {label:'Отмена', onClick:function(){ return true; }},
       {label:'Удалить', variant:'danger', onClick:function(){
-        if (ctrls.length) rememberDeleted('role', id, r.name);
+        if (ctrls.length || procRefs.length) rememberDeleted('role', id, r.name);
         delete state.roles[id];
         persist(); clearSelection();
+        if (currentView === 'process') renderProcessView();
         if (currentView === 'list') renderListView();
       }}
     ]

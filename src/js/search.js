@@ -56,7 +56,7 @@ function selectEntity(kind, id){
   }
   syncSidebarActive(); requestRender();
   if (currentView === 'list') scrollActiveListRowIntoView();
-  else centerOnEntity(kind, id);
+  else if (currentView === 'graph') centerOnEntity(kind, id);
 }
 
 function bindGlobalSearch(){
