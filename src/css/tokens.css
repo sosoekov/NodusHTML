@@ -1,0 +1,99 @@
+:root{
+  /* ===== Токены темы. Все цвета, размеры шрифтов и прозрачности — только отсюда.
+     Холст (canvas) читает эти же переменные при старте — см. readTheme() в скрипте. ===== */
+
+  /* Фоны: холст → панель → поле ввода; выбранный сегмент/вкладка */
+  --bg:#0E1520;
+  --bg-panel:#131C2A;
+  --bg-elevated:#182234;
+  --bg-selected:#243148;
+  --border:#253248;
+  --border-soft:#1C2739;
+  --overlay:rgba(6,9,14,0.6);
+
+  /* Текст: основной / вторичный / приглушённый (WCAG AA на всех трёх фонах) */
+  --text:#DCE4F0;
+  --text-muted:#9AA6BA;
+  --text-faint:#7F8CA2;
+
+  /* Акцент — выделение и связи на графе; опасное действие; успех */
+  --accent:#E0A73E;
+  --accent-soft:rgba(224,167,62,0.14);
+  --on-accent:#1A1206;
+  --danger:#D96C6C;
+  --danger-soft:rgba(217,108,108,0.12);
+  --on-danger:#2A0D0D;
+  --success:#6FBF8B;
+  --success-soft:rgba(111,191,139,0.15);
+  --warning:#E5C07B;
+  --badge-bg-mix:15%;  /* доля цвета категории в фоне бейджа */
+  --chip-bg-mix:20%;   /* доля цвета типа в фоне чипа-ссылки */
+
+  /* Цвета категорий механизмов */
+  --cat-calc:hsl(25,55%,64%);
+  --cat-fill:hsl(325,55%,66%);
+  --cat-check:hsl(145,55%,64%);
+  --cat-exchange:hsl(205,55%,64%);
+  --cat-access:hsl(265,55%,64%);
+  --cat-unknown:hsl(40,55%,64%);
+
+  /* Цвета типов объектов */
+  --type-const:hsl(0,58%,62%);
+  --type-catalog:hsl(30,58%,62%);
+  --type-document:hsl(60,58%,62%);
+  --type-infreg:hsl(180,58%,62%);   /* РС — бирюзовый: оттенок РН (120°) отличается на 60° */
+  --type-accumreg:hsl(120,58%,62%);
+  --type-enumt:hsl(150,58%,62%);
+  --type-process:hsl(90,58%,62%);
+  --type-report:hsl(210,58%,62%);
+  --type-charchart:hsl(240,58%,62%);
+  --type-role:hsl(270,58%,62%);
+  --type-subsystem:hsl(300,58%,62%);
+  --type-commonmod:hsl(330,58%,62%);
+  --type-doclog:hsl(45,55%,52%);
+  --type-bproc:hsl(210,25%,82%);
+  --type-task:hsl(195,70%,72%);
+  --type-extsrc:hsl(165,40%,52%);
+  --type-unknown:hsl(215,12%,56%);  /* тип не указан — нейтральный */
+
+  /* Граф: рёбра, сетка, обводка заглушки, бейдж числа механизмов, логотип */
+  --graph-edge:rgba(90,105,130,0.55);
+  --graph-arrow:rgba(140,155,180,0.75);
+  --graph-grid:rgba(255,255,255,0.05);
+  --graph-stub-stroke:rgba(255,255,255,0.55);
+  --graph-badge-stroke:rgba(224,167,62,0.7);
+  --graph-node-text:#0E1520;         /* метка типа внутри круга */
+  --logo-1:#D9D05A;
+  --logo-2:#5AD0D9;
+  --logo-3:#D96A5A;
+  --logo-4:#7DD95A;
+
+  /* Прозрачности на графе */
+  --alpha-node-active:1;        /* выделенный узел */
+  --alpha-node-neighbor:1;      /* его прямые участники */
+  --alpha-node-second:0.55;     /* соседи второго порядка */
+  --alpha-node-background:0.35; /* остальное при выделении */
+  --alpha-node-filtered:0.2;    /* не прошедшие отбор левой панели */
+  --alpha-edge-filtered:0.08;
+  --alpha-label-second:0.7;     /* подпись соседа второго порядка */
+  --alpha-label-background:0.45;/* подпись фонового узла при выделении */
+  --alpha-label-plate:0.85;     /* подложка подписи */
+  --alpha-deprecated:0.5;
+  --alpha-focus-other:0.2;      /* узлы вне механизма в фокус-режиме */
+
+  /* Размеры шрифтов */
+  --fs-caption:12px;   /* вторичный текст: подписи полей, категории, подсказки */
+  --fs-base:13px;      /* базовый текст интерфейса */
+  --fs-md:14px;
+  --fs-lg:15px;
+  --fs-title:16px;
+  --fs-heading:17px;
+  --fs-icon:16px;
+  --fs-icon-lg:18px;
+  --fs-graph-label:12px;
+  --fs-graph-badge:12px;
+
+  --radius:4px;
+  --sans:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
