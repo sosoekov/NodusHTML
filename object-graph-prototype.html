@@ -205,7 +205,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .btn-danger-ghost{ background:transparent; border-color:var(--danger); color:var(--danger); }
 .btn-danger-ghost:hover{ background:var(--danger-soft); }
 
-#main{ flex:1; display:flex; min-height:0; }
+#workspace{ flex:1; display:flex; min-height:0; }
+#main{ flex:1; display:flex; min-height:0; min-width:0; }
 #main[hidden]{ display:none; }
 
 #sidebar-left{ width:280px; flex:none; border-right:1px solid var(--border); background:var(--bg-panel); display:flex; flex-direction:column; min-height:0; }
@@ -257,7 +258,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .side-group-items[hidden]{ display:none; }
 .side-group-items .list-row{ padding-left:27px; }
 .deprecated-tag{ display:inline-block; margin-left:6px; padding:0 5px; border-radius:3px; font-size:var(--fs-caption); line-height:1.5; font-style:normal; font-weight:400; color:var(--danger); background:var(--danger-soft); vertical-align:1px; }
-.is-deprecated .pcard-name, .is-deprecated > .ref-item-main .ref-item-title{ text-decoration:line-through; text-decoration-color:var(--text-faint); }
+.is-deprecated .pcard-name, .is-deprecated > .ref-item-main .ref-item-title, .om-link.is-deprecated .ref-item-title, .om-mech.is-deprecated .om-mech-title .ref-item-title{ text-decoration:line-through; text-decoration-color:var(--text-faint); }
 .cat-badge{ font-size:var(--fs-caption); line-height:1.4; padding:0 6px; border-radius:3px; color:var(--cat); background:color-mix(in srgb, var(--cat) var(--badge-bg-mix), transparent); }
 .no-summary{ font-size:var(--fs-caption); color:var(--text-faint); font-style:italic; }
 .ref-empty{ font-size:var(--fs-caption); color:var(--text-faint); padding:8px 14px; margin:0; }
@@ -291,6 +292,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .focus-banner-title{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .focus-banner-title b{ font-weight:600; }
 .card-actions{ margin-top:8px; display:flex; gap:6px; }
+.view-list .card-actions{ display:none; } /* фокус-режим есть только на графе */
 .canvas-tooltip{ position:absolute; z-index:5; max-width:320px; padding:6px 8px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); font-size:var(--fs-caption); color:var(--text); pointer-events:none; white-space:normal; }
 .canvas-tooltip[hidden]{ display:none; }
 
@@ -309,6 +311,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .canvas-ctl + .canvas-ctl{ border-top:1px solid var(--border-soft); }
 .canvas-ctl:hover{ background:var(--bg-selected); color:var(--text); }
 
+#detail-panel[hidden], .resize-handle[hidden]{ display:none; }
 #detail-panel{ width:340px; flex:none; border-left:1px solid var(--border); background:var(--bg-panel); overflow-y:auto; padding:18px; }
 .panel-content[hidden]{ display:none; }
 .panel-empty{ color:var(--text-muted); font-size:var(--fs-base); padding-top:36px; }
@@ -316,8 +319,77 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .panel-header{ margin-bottom:16px; }
 .panel-eyebrow{ font-size:var(--fs-caption); color:var(--text-faint); margin:0 0 4px; }
 .panel-header h2{ font-size:var(--fs-heading); margin:0; font-weight:600; word-break:break-word; }
-.panel-eyebrow-row{ display:flex; align-items:center; gap:8px; margin:0 0 4px; }
-.panel-eyebrow-row .panel-eyebrow{ margin:0; }
+/* Шапка карточки: иконка + заголовок + сохранение + «⋯»; бейджи; имя в конфигураторе */
+.card-head{ margin-bottom:14px; }
+.card-head h2{ font-size:var(--fs-heading); margin:0; font-weight:600; word-break:break-word; }
+.card-head-row{ display:flex; align-items:center; gap:8px; }
+.card-head-row .inline-title, .card-head-row .inline-title-input{ flex:1; min-width:0; }
+.card-head-row .save-indicator{ margin-left:0; }
+.card-icon{ flex:none; display:flex; color:var(--c); }
+.card-icon .type-icon{ width:20px; height:20px; }
+.card-icon-mech{ width:12px; height:12px; margin:0 4px; border:2px solid var(--c); border-radius:2px; transform:rotate(45deg); }
+.card-menu-btn{ flex:none; width:28px; height:26px; padding:0; background:transparent; border:1px solid transparent; border-radius:var(--radius); color:var(--text-muted); font-size:var(--fs-icon); line-height:1; cursor:pointer; }
+.card-menu-btn:hover, .card-menu-btn[aria-expanded="true"]{ border-color:var(--border); color:var(--text); }
+.card-head-badges{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.badge-btn{ border:1px solid transparent; font:inherit; cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
+.badge-btn::after{ content:''; width:4px; height:4px; border-right:1.2px solid currentColor; border-bottom:1.2px solid currentColor; transform:rotate(45deg); margin:-2px 1px 0 2px; opacity:.7; }
+.badge-btn:hover{ filter:brightness(1.15); }
+.status-badge{ font-size:var(--fs-caption); line-height:1.4; padding:0 6px; border-radius:3px; }
+.status-badge.status-prod{ color:var(--success); background:var(--success-soft); }
+.status-badge.status-dev{ color:var(--accent); background:var(--accent-soft); }
+.status-badge.status-deprecated{ color:var(--danger); background:var(--danger-soft); }
+.status-badge.is-default{ color:var(--text-muted); background:transparent; border-color:var(--text-faint); }
+.name1c{ display:flex; align-items:center; gap:2px; margin-top:8px; font-family:var(--mono); font-size:var(--fs-caption); min-width:0; }
+.name1c-prefix{ color:var(--text-faint); flex:none; }
+.name1c-id{ color:var(--text-muted); cursor:text; border-radius:3px; padding:0 2px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.name1c-id:hover, .name1c-id:focus-visible{ background:var(--bg-elevated); outline:none; }
+.name1c-id.is-empty{ font-family:var(--sans); color:var(--text-faint); font-style:italic; }
+.name1c-input{ font-family:var(--mono); font-size:var(--fs-caption); padding:2px 5px; flex:1; min-width:0; }
+.copy-btn{ flex:none; margin-left:6px; padding:0 6px; height:20px; background:transparent; border:1px solid var(--border); border-radius:var(--radius); color:var(--text-muted); font-size:var(--fs-caption); cursor:pointer; font-family:var(--sans); }
+.copy-btn:hover{ color:var(--text); border-color:var(--text-faint); }
+.copy-ok{ margin-left:6px; font-family:var(--sans); color:var(--success); }
+.field-error{ margin:4px 0 0; font-size:var(--fs-caption); color:var(--danger); }
+.field-error[hidden], .copy-ok[hidden]{ display:none; }
+.popover-menu{ position:fixed; right:auto; margin-top:0; z-index:60; min-width:180px; max-height:60vh; overflow-y:auto; }
+.popover-menu .menu-item{ display:flex; align-items:center; gap:8px; }
+.popover-menu .menu-item.is-current{ color:var(--accent); }
+.popover-menu .menu-item .type-icon{ color:var(--c); }
+.cat-dot{ display:inline-block; width:9px; height:9px; margin:0 3px; border:2px solid var(--c); border-radius:2px; transform:rotate(45deg); }
+
+/* Поля в режиме просмотра: текст, по клику — редактирование */
+.vfield{ margin-top:12px; min-width:0; }
+.vfield-label{ font-size:var(--fs-caption); color:var(--text-muted); margin-bottom:2px; }
+.vfield-value{ position:relative; font-size:var(--fs-base); color:var(--text); white-space:pre-wrap; word-break:break-word; border-radius:var(--radius); margin:0 -4px; padding:2px 22px 2px 4px; cursor:text; min-height:22px; }
+.vfield-value:hover, .vfield-value:focus-visible{ background:var(--bg-elevated); outline:none; }
+.vfield-value.is-empty{ color:var(--text-faint); cursor:pointer; }
+.vfield-value.is-empty:hover{ color:var(--text-muted); }
+.vfield-pencil{ position:absolute; right:4px; top:4px; width:13px; height:13px; fill:none; stroke:var(--text-faint); stroke-width:1.4; stroke-linecap:round; stroke-linejoin:round; opacity:0; }
+.vfield-value:hover .vfield-pencil, .vfield-value:focus-visible .vfield-pencil{ opacity:1; }
+.vfield-value[hidden]{ display:none; }
+.vfield-row{ display:flex; gap:14px; }
+.vfield-row .vfield{ flex:1; }
+.vfield-input{ font-size:var(--fs-base); }
+.vfield-textarea{ resize:none; overflow:hidden; min-height:60px; line-height:1.5; }
+/* Подсистемы и теги: строка чипов в просмотре, редактор чипов с подсказками */
+.chips-view{ display:flex; flex-wrap:wrap; gap:4px; }
+.sub-chip{ display:inline-flex; align-items:center; gap:4px; padding:0 6px; border-radius:3px; font-size:var(--fs-caption); line-height:1.6; color:var(--text); border:1px solid var(--border); }
+.sub-chip .type-icon{ width:12px; height:12px; color:var(--text-muted); }
+.chip-edit-group + .chip-edit-group{ margin-top:8px; }
+.chip-edit-label{ font-size:var(--fs-caption); color:var(--text-faint); margin-bottom:3px; }
+.chip-editor{ position:relative; display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding:4px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); cursor:text; }
+.chip-editor:focus-within{ border-color:var(--accent); }
+.chip-editor .tag-chip, .chip-editor .sub-chip{ margin:0; }
+.chip-x{ margin-left:2px; padding:0 2px; background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:var(--fs-caption); line-height:1; }
+.chip-x:hover{ color:var(--danger); }
+.chip-input{ flex:1; min-width:90px; padding:2px 4px; background:transparent; border:none; font-size:var(--fs-base); color:var(--text); }
+.chip-input:focus{ outline:none; }
+.chip-editor .combo-dropdown{ top:calc(100% + 2px); }
+.combo-item.is-active{ background:var(--bg-panel); }
+.tag-chip{ display:inline-block; margin:0 4px 2px 0; padding:0 6px; border-radius:3px; font-size:var(--fs-caption); line-height:1.6; color:var(--text); background:var(--bg-selected); }
+.panel-section.is-tight{ margin-top:12px; padding-top:10px; }
+.panel-section.is-tight .panel-section-title{ margin-bottom:4px; }
+.panel-section.is-tight .panel-section-header{ margin-bottom:2px; }
+.panel-section.is-tight .ref-empty{ padding:2px 0; }
 .inline-title{ cursor:text; border-radius:var(--radius); margin:-2px -4px; padding:2px 4px; }
 .inline-title:hover, .inline-title:focus-visible{ background:var(--bg-elevated); outline:none; }
 .inline-title-input{ font-size:var(--fs-heading); font-weight:600; padding:2px 4px; margin:-3px -5px; width:calc(100% + 10px); }
@@ -365,7 +437,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .field-label{ display:block; font-size:var(--fs-caption); color:var(--text-muted); margin-bottom:4px; }
 .field-input{ width:100%; padding:7px 9px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); }
 .field-input.mono{ font-family:var(--mono); font-size:var(--fs-caption); }
-.field-textarea{ min-height:70px; resize:vertical; }
+.field-textarea{ min-height:70px; resize:none; overflow:hidden; }
 .field-textarea-lg{ min-height:120px; }
 .panel-section{ margin-top:18px; padding-top:14px; border-top:1px solid var(--border-soft); }
 .panel-section-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; gap:8px; }
@@ -374,6 +446,36 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .panel-hint{ font-size:var(--fs-base); color:var(--text-muted); }
 
 .ref-list{ display:flex; flex-direction:column; gap:4px; }
+/* «Участвует в механизмах»: группы по роли объекта, механизмы без рамок, участники — с одной линией-отступом */
+.panel-section-header .panel-section-title{ margin:0; }
+#obj-mech-title{ white-space:nowrap; }
+#btn-add-to-mech{ white-space:nowrap; padding-left:8px; padding-right:8px; }
+.om-group + .om-group{ margin-top:10px; }
+.om-group-title{ margin:0 0 4px; font-size:var(--fs-caption); color:var(--text-faint); text-transform:none; }
+.om-mech + .om-mech{ margin-top:6px; }
+.om-mech-row{ display:flex; align-items:flex-start; gap:6px; }
+.om-toggle{ flex:none; width:16px; height:20px; padding:0; margin-top:1px; background:transparent; border:none; color:var(--text-muted); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.om-toggle::before{ content:''; width:6px; height:6px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(45deg); margin-top:-3px; }
+.om-toggle[aria-expanded="false"]::before{ transform:rotate(-45deg); margin-top:0; margin-left:-2px; }
+.om-toggle:hover{ color:var(--text); }
+.om-link{ flex:1; min-width:0; display:block; padding:1px 4px; margin:0 -4px; background:transparent; border:none; border-radius:var(--radius); text-align:left; cursor:pointer; color:var(--text); font:inherit; }
+.om-link:hover{ background:var(--bg-elevated); }
+.om-mech-title{ display:flex; align-items:center; gap:7px; font-size:var(--fs-base); font-weight:500; }
+.om-diamond{ width:8px; height:8px; flex:none; border:2px solid var(--c); border-radius:2px; transform:rotate(45deg); }
+.om-note{ display:block; font-size:var(--fs-caption); color:var(--text-muted); margin-top:1px; padding-left:15px; }
+.om-parts{ margin:4px 0 0 7px; padding-left:14px; border-left:1px solid var(--border); display:flex; flex-direction:column; gap:3px; }
+.om-parts[hidden]{ display:none; }
+.om-part-title{ display:flex; align-items:center; gap:7px; font-size:var(--fs-base); }
+.om-part-title .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+.om-part-meta{ display:block; font-size:var(--fs-caption); color:var(--text-faint); padding-left:15px; }
+.om-part-note{ display:block; font-size:var(--fs-caption); color:var(--text-muted); padding-left:15px; }
+.om-empty-parts{ font-size:var(--fs-caption); color:var(--text-faint); margin:0; }
+.om-add{ margin:6px 0 10px; padding:8px; background:var(--bg-elevated); border:1px dashed var(--border); border-radius:var(--radius); display:flex; flex-direction:column; gap:8px; }
+.om-add-label{ font-size:var(--fs-caption); color:var(--text-muted); }
+.om-add-roles{ display:flex; flex-wrap:wrap; gap:4px; }
+.om-add-role{ padding:3px 8px; border:1px solid var(--border); border-radius:var(--radius); background:transparent; color:var(--text); font-size:var(--fs-caption); cursor:pointer; }
+.om-add-role.is-on{ border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+.om-add-actions{ display:flex; gap:6px; justify-content:flex-end; }
 .ref-item{ display:flex; align-items:center; gap:8px; padding:6px 8px; background:var(--bg-elevated); border:1px solid var(--border-soft); border-radius:var(--radius); cursor:pointer; text-align:left; width:100%; }
 .ref-item:hover{ border-color:var(--text-faint); }
 .ref-item .dot{ width:8px; height:8px; border-radius:2px; transform:rotate(45deg); flex:none; }
@@ -412,7 +514,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .combo-empty{ padding:8px; font-size:var(--fs-caption); color:var(--text-faint); }
 
 #modal-root:empty{ display:none; }
-.list-view{ flex:1; display:flex; flex-direction:column; min-height:0; background:var(--bg); }
+.list-view{ flex:1; display:flex; flex-direction:column; min-height:0; min-width:0; background:var(--bg); }
 .list-view[hidden]{ display:none; }
 .list-view-toolbar{ display:flex; align-items:center; gap:10px; padding:14px 20px; border-bottom:1px solid var(--border); background:var(--bg-panel); flex-wrap:wrap; flex:none; }
 .list-view-toolbar .search-input{ flex:1; min-width:220px; }
@@ -436,6 +538,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .list-view-group-title{ font-size:var(--fs-caption); color:var(--text-faint); margin:14px 0 4px; padding-left:2px; }
 .list-view-row{ width:100%; display:flex; align-items:center; gap:14px; padding:9px 10px; background:transparent; border:none; border-bottom:1px solid var(--border-soft); text-align:left; cursor:pointer; border-radius:var(--radius); }
 .list-view-row:hover{ background:var(--bg-elevated); }
+.list-view-row.active{ background:var(--accent-soft); }
 .lvr-type{ display:flex; align-items:center; gap:6px; font-size:var(--fs-base); width:160px; flex:none; }
 .lvr-type .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
 .lvr-type .dot-diamond{ border-radius:2px; transform:rotate(45deg); }
@@ -447,8 +550,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .modal-backdrop{ position:fixed; inset:0; background:var(--overlay); display:flex; align-items:center; justify-content:center; z-index:50; }
 .modal-box{ width:360px; max-width:92vw; background:var(--bg-panel); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
 .modal-box-md{ width:470px; }
-.modal-box-lg{ width:600px; max-height:88vh; display:flex; flex-direction:column; }
-.modal-box-lg .modal-body{ overflow-y:auto; flex:1; }
 .modal-header{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--border-soft); }
 .modal-header h2{ font-size:var(--fs-lg); margin:0; }
 .modal-close{ background:none; border:none; color:var(--text-muted); font-size:var(--fs-icon-lg); cursor:pointer; line-height:1; }
@@ -504,6 +605,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       <input type="file" id="file-import" accept="application/json" hidden>
     </div>
   </header>
+  <div id="workspace">
   <div id="main">
     <aside id="sidebar-left">
       <div class="side-tabs" role="tablist">
@@ -561,16 +663,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <button class="canvas-ctl" id="btn-relayout" type="button" title="Разложить заново" aria-label="Разложить заново">↻</button>
       </div>
     </main>
-    <div class="resize-handle" id="resize-right" aria-hidden="true"></div>
-    <aside id="detail-panel">
-      <div id="panel-empty" class="panel-empty">
-        <p>Ничего не выбрано.</p>
-        <p>Выберите объект или механизм на графе или в списке слева, чтобы увидеть и отредактировать детали.</p>
-      </div>
-      <div id="panel-object" class="panel-content" hidden></div>
-      <div id="panel-mechanism" class="panel-content" hidden></div>
-      <div id="panel-edge" class="panel-content" hidden></div>
-    </aside>
   </div>
   <div id="list-view" class="list-view" hidden>
     <div class="list-view-toolbar">
@@ -583,6 +675,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     </div>
     <div class="list-view-body" id="list-view-body"></div>
   </div>
+    <div class="resize-handle" id="resize-right" aria-hidden="true"></div>
+    <aside id="detail-panel">
+      <div id="panel-empty" class="panel-empty">
+        <p>Ничего не выбрано.</p>
+        <p>Выберите объект или механизм на графе или в списке слева, чтобы увидеть и отредактировать детали.</p>
+      </div>
+      <div id="panel-object" class="panel-content" hidden></div>
+      <div id="panel-mechanism" class="panel-content" hidden></div>
+      <div id="panel-edge" class="panel-content" hidden></div>
+    </aside>
+  </div>
 </div>
 <div id="modal-root"></div>
 
@@ -591,25 +694,29 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
 /* ===================== Справочники ===================== */
 
-/* Порядок — как в дереве конфигуратора 1С («Общие» сначала).
-   short — метка типа внутри круга на графе; plural — заголовок группы в списке слева. */
+/* Словарь типов — единственное место, где задаются их подписи.
+   Порядок — как в дереве конфигуратора 1С («Общие» сначала).
+   title  — подпись в единственном числе (бейджи, крошки, легенда, поле «Тип»);
+   plural — подпись во множественном числе (группы дерева и списка, фильтр типов);
+   name1c — имя вида метаданных в конфигураторе (префикс «Имени в конфигураторе»);
+   short  — метка типа внутри круга на графе. */
 var OBJECT_TYPES = [
-  {code:'subsystem', title:'Подсистема', short:'Под', plural:'Подсистемы'},
-  {code:'commonmod', title:'ОбщийМодуль', short:'ОМ', plural:'Общие модули'},
-  {code:'role', title:'Роль', short:'Роль', plural:'Роли'},
-  {code:'const', title:'Константа', short:'Кон', plural:'Константы'},
-  {code:'catalog', title:'Справочник', short:'Спр', plural:'Справочники'},
-  {code:'document', title:'Документ', short:'Док', plural:'Документы'},
-  {code:'doclog', title:'ЖурналДокументов', short:'ЖД', plural:'Журналы документов'},
-  {code:'enumt', title:'Перечисление', short:'Пер', plural:'Перечисления'},
-  {code:'report', title:'Отчёт', short:'Отч', plural:'Отчеты'},
-  {code:'process', title:'Обработка', short:'Обр', plural:'Обработки'},
-  {code:'charchart', title:'ПланВидовХарактеристик', short:'ПВХ', plural:'Планы видов характеристик'},
-  {code:'infreg', title:'РегистрСведений', short:'РС', plural:'Регистры сведений'},
-  {code:'accumreg', title:'РегистрНакопления', short:'РН', plural:'Регистры накопления'},
-  {code:'bproc', title:'БизнесПроцесс', short:'БП', plural:'Бизнес-процессы'},
-  {code:'task', title:'Задача', short:'Зад', plural:'Задачи'},
-  {code:'extsrc', title:'ВнешнийИсточникДанных', short:'ВИД', plural:'Внешние источники данных'}
+  {code:'subsystem', title:'Подсистема',              plural:'Подсистемы',               name1c:'Подсистема',             short:'Под'},
+  {code:'commonmod', title:'Общий модуль',            plural:'Общие модули',             name1c:'ОбщийМодуль',            short:'ОМ'},
+  {code:'role',      title:'Роль',                    plural:'Роли',                     name1c:'Роль',                   short:'Роль'},
+  {code:'const',     title:'Константа',               plural:'Константы',                name1c:'Константа',              short:'Кон'},
+  {code:'catalog',   title:'Справочник',              plural:'Справочники',              name1c:'Справочник',             short:'Спр'},
+  {code:'document',  title:'Документ',                plural:'Документы',                name1c:'Документ',               short:'Док'},
+  {code:'doclog',    title:'Журнал документов',       plural:'Журналы документов',       name1c:'ЖурналДокументов',       short:'ЖД'},
+  {code:'enumt',     title:'Перечисление',            plural:'Перечисления',             name1c:'Перечисление',           short:'Пер'},
+  {code:'report',    title:'Отчёт',                   plural:'Отчёты',                   name1c:'Отчет',                  short:'Отч'},
+  {code:'process',   title:'Обработка',               plural:'Обработки',                name1c:'Обработка',              short:'Обр'},
+  {code:'charchart', title:'План видов характеристик',plural:'Планы видов характеристик',name1c:'ПланВидовХарактеристик', short:'ПВХ'},
+  {code:'infreg',    title:'Регистр сведений',        plural:'Регистры сведений',        name1c:'РегистрСведений',        short:'РС'},
+  {code:'accumreg',  title:'Регистр накопления',      plural:'Регистры накопления',      name1c:'РегистрНакопления',      short:'РН'},
+  {code:'bproc',     title:'Бизнес-процесс',          plural:'Бизнес-процессы',          name1c:'БизнесПроцесс',          short:'БП'},
+  {code:'task',      title:'Задача',                  plural:'Задачи',                   name1c:'Задача',                 short:'Зад'},
+  {code:'extsrc',    title:'Внешний источник данных', plural:'Внешние источники данных', name1c:'ВнешнийИсточникДанных',  short:'ВИД'}
 ];
 var DEFAULT_OBJECT_TYPE = 'const';
 
@@ -644,7 +751,7 @@ var MECH_CATEGORIES = [
   {code:'fill', title:'Заполнение'},
   {code:'check', title:'Проверка'},
   {code:'exchange', title:'Обмен'},
-  {code:'access', title:'ПраваДоступа'}
+  {code:'access', title:'Права доступа'}
 ];
 var UNKNOWN_CATEGORY_TITLE = 'Без категории';
 
@@ -761,7 +868,12 @@ function categoryInfo(code){ return MECH_CATEGORIES.filter(function(x){return x.
 function categoryTitle(code){ var c = categoryInfo(code); return c ? c.title : UNKNOWN_CATEGORY_TITLE; }
 function roleInfo(code){ return PARTICIPANT_ROLES.filter(function(x){return x.code===code;})[0] || {code:code, title:code, direction:'neutral'}; }
 /* Коды статусов в данных прежние (stub/draft, active, deprecated) — меняются только названия. */
-var STATUS_TITLES = { dev:'В разработке', prod:'В проме', deprecated:'Устарел' };
+var STATUS_TITLES = { dev:'В разработке', prod:'В продуктиве', deprecated:'Устарел' };
+/* Статус по умолчанию: его бейдж нейтральный (серый контур), остальные — цветные. */
+var DEFAULT_OBJECT_STATUS = 'stub', DEFAULT_MECH_STATUS = 'draft';
+var OBJECT_STATUSES = [{code:'stub', kind:'dev'}, {code:'active', kind:'prod'}, {code:'deprecated', kind:'deprecated'}];
+var MECH_STATUSES = [{code:'draft', kind:'dev'}, {code:'active', kind:'prod'}, {code:'deprecated', kind:'deprecated'}];
+function statusKind(code){ return code === 'deprecated' ? 'deprecated' : (code === 'active' ? 'prod' : 'dev'); }
 /* «Показывать устаревшие» — одна опция для списков, «Списка» и графа; хранится в браузере. */
 var SHOW_DEPRECATED_KEY = 'nodusShowDeprecated';
 var showDeprecated = (function(){ try{ return localStorage.getItem(SHOW_DEPRECATED_KEY) !== '0'; }catch(e){ return true; } })();
@@ -1073,7 +1185,7 @@ function createObject(partial){
     id:id,
     type: (partial && partial.type) || DEFAULT_OBJECT_TYPE,
     name: (partial && partial.name) || 'Новый объект',
-    fullName:'', subsystem:'', tags:[], description:'', status:'stub',
+    fullName:'', subsystem:'', tags:[], description:'', status:DEFAULT_OBJECT_STATUS,
     attachments:[], fx:null, fy:null
   };
   state.objects[id] = obj;
@@ -1087,7 +1199,7 @@ function createMechanism(partial){
     id:id,
     title:(partial && partial.title) || 'Новый механизм',
     category:(partial && partial.category) || MECH_CATEGORIES[0].code,
-    summary:'', body:'', status:'draft', participants:[],
+    summary:'', body:'', status:DEFAULT_MECH_STATUS, participants:[],
     attachments:[], fx:null, fy:null
   };
   state.mechanisms[id] = m;
@@ -1452,6 +1564,11 @@ function getFocus(){
     if (!f) f = objectFocus(graphHint.objId);
     f.hint = 'obj:' + graphHint.objId;
     if (graphHint.mechId) f.hintMech = graphHint.mechId;
+  } else if (graphHint && graphHint.mechOnly && state.mechanisms[graphHint.mechOnly]){
+    /* Наведение на механизм в карточке объекта: подсвечиваются рёбра механизма. */
+    if (!f) f = mechanismFocus(graphHint.mechOnly);
+    f.hintMechAll = graphHint.mechOnly;
+    if (currentMode === 'full') f.hint = 'mech:' + graphHint.mechOnly;
   }
   /* Наведение поверх закреплённого выделения: подсветку не меняет, но подпись
      узла под курсором показывается (см. layoutLabels). */
@@ -1470,6 +1587,10 @@ function nodeAlpha(id, focus){
 
 function isEdgeHighlighted(e, focus){
   if (!focus) return false;
+  if (focus.hintMechAll){
+    if (currentMode === 'full'){ var hmid = 'mech:'+focus.hintMechAll; return e.a === hmid || e.b === hmid; }
+    return e.mechanismIds.has(focus.hintMechAll);
+  }
   if (focus.hintMech){
     /* Ребро участника: объект ↔ механизм (или рёбра этого механизма у объекта без режима механизмов). */
     var touches = e.a === focus.hint || e.b === focus.hint;
@@ -2036,6 +2157,7 @@ function clearSelection(){
 function switchView(view){
   if (focusMode) exitFocus(true);
   currentView = view;
+  document.body.classList.toggle('view-list', view === 'list');
   var main = document.getElementById('main');
   var listView = document.getElementById('list-view');
   var graphModeToggle = document.getElementById('graph-mode-toggle');
@@ -2043,11 +2165,16 @@ function switchView(view){
     main.hidden = true;
     listView.hidden = false;
     graphModeToggle.classList.add('is-hidden');
+    /* Ребро в «Списке» не показывается — его карточку закрываем, выбор объекта/механизма сохраняется. */
+    if (pinnedEdgeKey) clearSelection();
     renderListView();
+    updateDetailPanelVisibility();
+    scrollActiveListRowIntoView();
   } else {
     listView.hidden = true;
     main.hidden = false;
     graphModeToggle.classList.remove('is-hidden');
+    updateDetailPanelVisibility();
     resizeCanvas();
   }
 }
@@ -2059,6 +2186,16 @@ function showPanel(kind){
   ['object','mechanism','edge'].forEach(function(k){
     document.getElementById('panel-'+k).hidden = (k!==kind);
   });
+  updateDetailPanelVisibility();
+}
+
+/* Правая панель одна на оба режима. В «Графе» видна всегда; в «Списке» — только
+   с открытой карточкой объекта или механизма (список при этом сужается). */
+function updateDetailPanelVisibility(){
+  var hasCard = !document.getElementById('panel-object').hidden || !document.getElementById('panel-mechanism').hidden;
+  var show = currentView === 'graph' || hasCard;
+  document.getElementById('detail-panel').hidden = !show;
+  document.getElementById('resize-right').hidden = !show;
 }
 function bindField(panel, sel, evt, handler){
   var el = panel.querySelector(sel);
@@ -2068,17 +2205,9 @@ function bindField(panel, sel, evt, handler){
 
 /* ===================== Общие части карточек ===================== */
 
-function cardHeaderHTML(eyebrow, title){
-  return '<div class="panel-header">' +
-    '<div class="panel-eyebrow-row"><p class="panel-eyebrow">' + escapeHtml(eyebrow) + '</p><span class="save-indicator" aria-live="polite"></span></div>' +
-    '<h2 class="inline-title" tabindex="0" title="Нажмите, чтобы переименовать">' + escapeHtml(title) + '</h2>' +
-    '<p class="inline-msg" hidden></p>' +
-  '</div>';
-}
-
 /* Заголовок карточки редактируется по клику: Enter / уход фокуса — сохранить,
    Esc — отменить. Пустое название не сохраняется. */
-function bindInlineTitle(panel, getValue, setValue){
+function bindInlineTitle(panel, getValue, setValue, fieldLabel){
   var h = panel.querySelector('.inline-title');
   var msg = panel.querySelector('.inline-msg');
   var msgTimer = null;
@@ -2092,7 +2221,9 @@ function bindInlineTitle(panel, getValue, setValue){
     var input = document.createElement('input');
     input.type = 'text'; input.className = 'field-input inline-title-input';
     input.value = getValue();
-    input.setAttribute('aria-label', 'Название');
+    input.setAttribute('aria-label', fieldLabel || 'Название');
+    input.placeholder = fieldLabel || 'Название';
+    input.title = fieldLabel || 'Название';
     h.hidden = true;
     h.parentNode.insertBefore(input, h.nextSibling);
     input.focus(); input.select();
@@ -2100,7 +2231,7 @@ function bindInlineTitle(panel, getValue, setValue){
     function finish(save){
       if (finished) return; finished = true;
       var v = input.value.trim();
-      if (save && !v) showMsg('Название не может быть пустым — оставлено прежнее.');
+      if (save && !v) showMsg((fieldLabel || 'Название') + ' не может быть пустым — оставлено прежнее.');
       else if (save && v !== getValue()) setValue(v);
       h.textContent = getValue();
       input.remove(); h.hidden = false;
@@ -2114,6 +2245,219 @@ function bindInlineTitle(panel, getValue, setValue){
   h.addEventListener('click', start);
   h.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); start(); } });
   panel.querySelectorAll('.save-indicator').forEach(renderSaveIndicator);
+}
+
+/* Всплывающее меню у кнопки/бейджа. items: [{value, label, icon?, color?, current?, danger?, sep?}] */
+var popoverMenu = null;
+function closePopoverMenu(){
+  if (!popoverMenu) return;
+  popoverMenu.anchor.setAttribute('aria-expanded', 'false');
+  popoverMenu.el.remove();
+  document.removeEventListener('mousedown', popoverMenu.outside, true);
+  popoverMenu = null;
+}
+function openPopoverMenu(anchor, items, onPick){
+  var reopen = popoverMenu && popoverMenu.anchor === anchor;
+  closePopoverMenu();
+  if (reopen) return;
+  var el = document.createElement('div');
+  el.className = 'menu popover-menu';
+  el.setAttribute('role', 'menu');
+  el.innerHTML = items.map(function(it, i){
+    if (it.sep) return '<div class="menu-sep" role="separator"></div>';
+    return '<button type="button" role="menuitem" class="menu-item' + (it.danger ? ' menu-item-danger' : '') + (it.current ? ' is-current' : '') + '" data-i="' + i + '"' +
+      (it.color ? ' style="--c:' + it.color + '"' : '') + '>' + (it.icon || '') + '<span>' + escapeHtml(it.label) + '</span></button>';
+  }).join('');
+  document.body.appendChild(el);
+  var r = anchor.getBoundingClientRect();
+  var left = Math.min(r.left, window.innerWidth - el.offsetWidth - 8);
+  var top = r.bottom + 4;
+  if (top + el.offsetHeight > window.innerHeight - 8) top = Math.max(8, r.top - el.offsetHeight - 4);
+  el.style.left = Math.max(8, left) + 'px'; el.style.top = top + 'px';
+  anchor.setAttribute('aria-expanded', 'true');
+  var outside = function(ev){ if (!el.contains(ev.target) && !anchor.contains(ev.target)) closePopoverMenu(); };
+  popoverMenu = {el:el, anchor:anchor, outside:outside};
+  document.addEventListener('mousedown', outside, true);
+  el.addEventListener('keydown', function(e){
+    if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); closePopoverMenu(); anchor.focus(); }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+      e.preventDefault(); e.stopPropagation();
+      var btns = Array.prototype.slice.call(el.querySelectorAll('.menu-item'));
+      var i = btns.indexOf(document.activeElement);
+      btns[(i + (e.key === 'ArrowDown' ? 1 : -1) + btns.length) % btns.length].focus();
+    }
+  });
+  el.querySelectorAll('.menu-item').forEach(function(b){
+    b.addEventListener('click', function(){ var it = items[Number(b.getAttribute('data-i'))]; closePopoverMenu(); onPick(it.value); });
+  });
+  var first = el.querySelector('.is-current') || el.querySelector('.menu-item');
+  if (first) first.focus();
+}
+
+var PENCIL_SVG = '<svg class="vfield-pencil" viewBox="0 0 16 16" aria-hidden="true"><path d="M11 2.5l2.5 2.5L6 12.5H3.5V10z"/></svg>';
+
+/* Поле карточки в режиме просмотра: значение текстом; клик — редактирование;
+   Enter (в многострочном — Ctrl+Enter) или уход фокуса — сохранить, Esc — отменить. */
+function viewFieldHTML(key, label){
+  return '<div class="vfield" data-key="' + key + '"><div class="vfield-label">' + escapeHtml(label) + '</div>' +
+    '<div class="vfield-value" tabindex="0"></div></div>';
+}
+function bindViewField(panel, key, opt){
+  var wrap = panel.querySelector('.vfield[data-key="' + key + '"]');
+  var view = wrap.querySelector('.vfield-value');
+  function renderView(){
+    var v = opt.get();
+    var empty = opt.isEmpty ? opt.isEmpty(v) : !(v || '').trim();
+    view.classList.toggle('is-empty', empty);
+    view.innerHTML = empty ? '+ ' + escapeHtml(opt.addText) : (opt.format ? opt.format(v) : escapeHtml(v)) + PENCIL_SVG;
+    view.title = empty ? '' : 'Нажмите, чтобы изменить';
+  }
+  function edit(){
+    var input = document.createElement(opt.multiline ? 'textarea' : 'input');
+    if (!opt.multiline) input.type = 'text';
+    input.className = 'field-input vfield-input' + (opt.multiline ? ' vfield-textarea' : '');
+    input.value = opt.toText ? opt.toText(opt.get()) : (opt.get() || '');
+    if (opt.placeholder) input.placeholder = opt.placeholder;
+    input.setAttribute('aria-label', opt.label);
+    view.hidden = true;
+    wrap.appendChild(input);
+    function fit(){
+      if (!opt.multiline) return;
+      var scroller = panel.closest('#detail-panel') || panel;
+      var cap = Math.max(120, scroller.clientHeight * 0.6);
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight + 2, cap) + 'px';
+      input.style.overflowY = input.scrollHeight + 2 > cap ? 'auto' : 'hidden';
+    }
+    input.addEventListener('input', fit);
+    fit(); input.focus();
+    var done = false;
+    function finish(save){
+      if (done) return; done = true;
+      if (save){
+        var nv = opt.fromText ? opt.fromText(input.value) : input.value;
+        if (JSON.stringify(nv) !== JSON.stringify(opt.get())) opt.set(nv);
+      }
+      input.remove(); view.hidden = false; renderView();
+    }
+    input.addEventListener('keydown', function(e){
+      if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); finish(false); view.focus(); }
+      else if (e.key === 'Enter' && (!opt.multiline || e.ctrlKey || e.metaKey)){ e.preventDefault(); finish(true); view.focus(); }
+    });
+    input.addEventListener('blur', function(){ finish(true); });
+  }
+  view.addEventListener('click', edit);
+  view.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); edit(); } });
+  renderView();
+}
+
+function statusBadgeButtonHTML(code, isMech){
+  var def = isMech ? DEFAULT_MECH_STATUS : DEFAULT_OBJECT_STATUS;
+  var title = isMech ? mechanismStatusTitle(code) : objectStatusTitle(code);
+  return '<button type="button" class="badge-btn status-badge status-' + statusKind(code) + (code === def ? ' is-default' : '') +
+    '" aria-haspopup="menu" aria-expanded="false" title="Статус — нажмите, чтобы изменить">' + escapeHtml(title) + '</button>';
+}
+function bindStatusBadge(panel, entity, isMech){
+  var btn = panel.querySelector('.status-badge');
+  btn.addEventListener('click', function(){
+    var list = isMech ? MECH_STATUSES : OBJECT_STATUSES;
+    openPopoverMenu(btn, list.map(function(s){
+      return {value:s.code, label:STATUS_TITLES[s.kind], current:s.code === entity.status};
+    }), function(code){
+      if (code === entity.status) return;
+      entity.status = code; persist(); syncGraphModel(); renderSidebar();
+      if (currentView === 'list') renderListView();
+      var holder = document.createElement('div'); holder.innerHTML = statusBadgeButtonHTML(code, isMech);
+      btn.replaceWith(holder.firstChild);
+      bindStatusBadge(panel, entity, isMech);
+    });
+  });
+}
+
+function cardMenuButtonHTML(){
+  return '<button type="button" class="card-menu-btn" aria-haspopup="menu" aria-expanded="false" aria-label="Действия" title="Действия">⋯</button>';
+}
+
+/* ----- Имя в конфигураторе: префикс вида метаданных + идентификатор.
+   Хранится по-прежнему одной строкой fullName («Документ.ЗаявкаНаПодборПерсонала»). ----- */
+function splitFullName(fullName){
+  var s = fullName || '', d = s.indexOf('.');
+  return d < 0 ? {prefix:'', id:s} : {prefix:s.slice(0, d), id:s.slice(d + 1)};
+}
+function fullNamePrefix(obj){
+  var t = typeInfo(obj.type);
+  return t ? t.name1c : splitFullName(obj.fullName).prefix;
+}
+function validIdentifier(v){ return !v || (!/[\s.]/.test(v) && !/^\d/.test(v)); }
+var IDENTIFIER_RULE = 'Идентификатор — без пробелов и точек и не начинается с цифры.';
+
+function name1cHTML(obj){
+  var id = splitFullName(obj.fullName).id, prefix = fullNamePrefix(obj);
+  return '<div class="name1c" title="Имя в конфигураторе' + (obj.fullName ? ': ' + escapeHtml(obj.fullName) : '') + '">' +
+    (prefix ? '<span class="name1c-prefix">' + escapeHtml(prefix) + '.</span>' : '') +
+    '<span class="name1c-id' + (id ? '' : ' is-empty') + '" tabindex="0">' + (id ? escapeHtml(id) : '+ Добавить имя в конфигураторе') + '</span>' +
+    (id ? '<button type="button" class="copy-btn" title="Скопировать имя в конфигураторе">Копировать</button><span class="copy-ok" hidden>Скопировано</span>' : '') +
+  '</div><p class="field-error" hidden></p>';
+}
+function copyText(text, done){
+  function fallback(){
+    var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); }catch(e){}
+    ta.remove(); done();
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+  else fallback();
+}
+function bindName1c(panel, obj){
+  var box = panel.querySelector('.name1c'), err = panel.querySelector('.field-error');
+  var idEl = box.querySelector('.name1c-id');
+  var copy = box.querySelector('.copy-btn');
+  if (copy) copy.addEventListener('click', function(){
+    copyText(obj.fullName, function(){
+      var ok = box.querySelector('.copy-ok'); ok.hidden = false;
+      setTimeout(function(){ ok.hidden = true; }, 1200);
+    });
+  });
+  function rerender(errText){
+    var holder = document.createElement('div'); holder.innerHTML = name1cHTML(obj);
+    box.replaceWith(holder.firstChild); err.replaceWith(holder.firstChild);
+    bindName1c(panel, obj);
+    if (errText){ var e2 = panel.querySelector('.field-error'); e2.textContent = errText; e2.hidden = false; }
+  }
+  function edit(){
+    var input = document.createElement('input');
+    input.type = 'text'; input.className = 'field-input name1c-input';
+    input.value = splitFullName(obj.fullName).id;
+    input.placeholder = 'Идентификатор'; input.setAttribute('aria-label', 'Имя в конфигураторе: идентификатор');
+    idEl.replaceWith(input);
+    if (copy){ copy.remove(); var ok = box.querySelector('.copy-ok'); if (ok) ok.remove(); }
+    input.focus(); input.select();
+    var done = false;
+    function commit(){
+      var v = input.value.trim();
+      if (!validIdentifier(v)){ err.textContent = IDENTIFIER_RULE; err.hidden = false; return false; }
+      done = true;
+      var prefix = fullNamePrefix(obj);
+      var next = v ? (prefix ? prefix + '.' + v : v) : '';
+      if (next !== (obj.fullName || '')){ obj.fullName = next; persist(); if (currentView === 'list') renderListView(); }
+      rerender();
+      return true;
+    }
+    input.addEventListener('keydown', function(e){
+      if (e.key === 'Enter'){ e.preventDefault(); commit(); }
+      else if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); done = true; rerender(); }
+    });
+    input.addEventListener('input', function(){ if (validIdentifier(input.value.trim())) err.hidden = true; });
+    /* Уход фокуса с некорректным значением: значение не сохраняется, прежнее возвращается. */
+    input.addEventListener('blur', function(){
+      if (done) return;
+      if (!validIdentifier(input.value.trim())){ done = true; rerender(IDENTIFIER_RULE + ' Значение не сохранено.'); return; }
+      commit();
+    });
+  }
+  idEl.addEventListener('click', edit);
+  idEl.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); edit(); } });
 }
 
 function startInlineTitleEdit(panel){
@@ -2164,7 +2508,7 @@ function renderBodyHTML(text){
 }
 
 /* Подсветка объекта на графе при наведении на чип / участника (не меняет выделение). */
-var graphHint = null; /* {objId, mechId?} */
+var graphHint = null; /* {objId, mechId?} | {mechOnly} */
 function setGraphHint(hint){
   graphHint = hint;
   requestRender();
@@ -2173,8 +2517,7 @@ function setGraphHint(hint){
 function openObjectFromCard(panel, objId, isSidebar){
   if (!state.objects[objId]) return;
   setGraphHint(null);
-  if (isSidebar) selectEntity('obj', objId);
-  else openCardModal('obj', objId);
+  selectEntity('obj', objId);
 }
 
 function bindBodyEditor(panel, isSidebar, getValue, setValue, placeholder){
@@ -2220,72 +2563,147 @@ function bindBodyEditor(panel, isSidebar, getValue, setValue, placeholder){
 }
 
 function objectPanelTemplate(obj){
+  var color = typeInfo(obj.type) ? typeColor(obj.type) : THEME.typeUnknown;
   return (
-    cardHeaderHTML('Объект · ' + typeTitle(obj.type), obj.name) +
-    '<div class="field-row">' +
-      '<div class="field-group"><label class="field-label">Тип</label><select class="field-input" id="f-type">' +
-        (typeInfo(obj.type) ? '' : '<option value="" selected>' + UNKNOWN_TYPE_TITLE + '</option>') +
-        OBJECT_TYPES.map(function(t){ return '<option value="'+t.code+'"'+(t.code===obj.type?' selected':'')+'>'+escapeHtml(t.title)+'</option>'; }).join('') +
-      '</select></div>' +
-      '<div class="field-group"><label class="field-label">Статус</label><select class="field-input" id="f-status">' +
-        '<option value="stub"'+(obj.status==='stub'?' selected':'')+'>'+STATUS_TITLES.dev+'</option>' +
-        '<option value="active"'+(obj.status==='active'?' selected':'')+'>'+STATUS_TITLES.prod+'</option>' +
-        '<option value="deprecated"'+(obj.status==='deprecated'?' selected':'')+'>'+STATUS_TITLES.deprecated+'</option>' +
-      '</select></div>' +
+    '<div class="card-head">' +
+      '<div class="card-head-row">' +
+        '<span class="card-icon" style="--c:' + color + '">' + typeIconSVG(obj.type) + '</span>' +
+        '<h2 class="inline-title" tabindex="0" title="Синоним — нажмите, чтобы изменить">' + escapeHtml(obj.name) + '</h2>' +
+        '<span class="save-indicator" aria-live="polite"></span>' + cardMenuButtonHTML() +
+      '</div>' +
+      '<p class="inline-msg" hidden></p>' +
+      '<div class="card-head-badges">' +
+        '<button type="button" class="badge-btn cat-badge type-badge" style="--cat:' + color + '" aria-haspopup="menu" aria-expanded="false" title="Тип — нажмите, чтобы изменить">' + escapeHtml(typeTitle(obj.type)) + '</button>' +
+        statusBadgeButtonHTML(obj.status, false) +
+      '</div>' +
+      name1cHTML(obj) +
     '</div>' +
-    '<div class="field-group"><label class="field-label">Полное имя (как в конфигураторе)</label>' +
-      '<input type="text" class="field-input mono" id="f-fullname" value="' + escapeHtml(obj.fullName||'') + '" placeholder="Документ.ЗаявкаНаПодборПерсонала"></div>' +
-    '<div class="field-row">' +
-      '<div class="field-group"><label class="field-label">Подсистема</label>' +
-        '<input type="text" class="field-input" id="f-subsystem" value="' + escapeHtml(obj.subsystem||'') + '"></div>' +
-      '<div class="field-group"><label class="field-label">Теги</label>' +
-        '<input type="text" class="field-input" id="f-tags" value="' + escapeHtml((obj.tags||[]).join(', ')) + '" placeholder="через запятую"></div>' +
+    '<div class="panel-section is-tight">' +
+      '<div class="panel-section-header"><p class="panel-section-title" id="obj-mech-title">Участвует в механизмах</p>' +
+        '<button class="btn btn-sm" id="btn-add-to-mech" type="button" title="Добавить объект в механизм" aria-label="Добавить в механизм">+ Добавить</button></div>' +
+      '<div id="obj-add-to-mech"></div>' +
+      '<div id="obj-mech-list"></div>' +
     '</div>' +
-    '<div class="field-group"><label class="field-label">Описание</label>' +
-      '<textarea class="field-input field-textarea" id="f-description">' + escapeHtml(obj.description||'') + '</textarea></div>' +
-    '<div class="panel-section">' +
-      '<p class="panel-section-title">Участвует в механизмах</p>' +
-      '<div id="obj-mech-list" class="ref-list"></div>' +
-    '</div>' +
-    '<div class="panel-section">' +
+    viewFieldHTML('description', 'Описание') +
+    '<div class="vfield" data-key="subtags"><div class="vfield-label">Подсистема · Теги</div><div class="vfield-value" tabindex="0"></div></div>' +
+    '<div class="panel-section is-tight">' +
       '<div class="panel-section-header"><p class="panel-section-title">Вложения</p>' +
         '<button class="btn btn-sm" id="btn-attach-object" type="button">Прикрепить файл</button></div>' +
       '<div id="obj-attachments-list"></div>' +
-    '</div>' +
-    '<div class="panel-footer"><button class="btn btn-danger-ghost" id="btn-delete-object" type="button">Удалить объект</button></div>'
+    '</div>'
   );
+}
+
+/* Подсистема и теги: в просмотре — одна строка чипов; по клику — два редактора чипов.
+   Каждое добавление/удаление сохраняется сразу; из редактирования выходим, когда фокус
+   уходит из блока, или по Esc. */
+function bindSubsystemsTags(panel, obj){
+  var wrap = panel.querySelector('.vfield[data-key="subtags"]');
+  var view = wrap.querySelector('.vfield-value');
+  function renderView(){
+    var subs = objectSubsystems(obj), tags = obj.tags || [];
+    var empty = !subs.length && !tags.length;
+    view.classList.toggle('is-empty', empty);
+    view.title = empty ? '' : 'Нажмите, чтобы изменить';
+    view.innerHTML = empty ? '+ Добавить подсистему или теги' :
+      '<div class="chips-view">' +
+        subs.map(function(s){ return '<span class="sub-chip" title="Подсистема">' + typeIconSVG('subsystem') + escapeHtml(s) + '</span>'; }).join('') +
+        tags.map(function(t){ return '<span class="tag-chip" title="Тег">' + escapeHtml(t) + '</span>'; }).join('') +
+      '</div>' + PENCIL_SVG;
+  }
+  function edit(focusTags){
+    view.hidden = true;
+    var box = document.createElement('div');
+    box.className = 'subtags-edit';
+    box.innerHTML = '<div class="chip-edit-group"><div class="chip-edit-label">Подсистемы</div><div class="ce-subs"></div></div>' +
+                    '<div class="chip-edit-group"><div class="chip-edit-label">Теги</div><div class="ce-tags"></div></div>';
+    wrap.appendChild(box);
+    var subsEd = buildChipEditor(box.querySelector('.ce-subs'), {
+      label:'Подсистемы', placeholder:'Начните вводить подсистему…', chipClass:'sub-chip', createLabel:'Создать',
+      values:function(){ return objectSubsystems(obj); }, suggestions:allSubsystems,
+      onChange:function(list){ setObjectSubsystems(obj, list); persist(); renderSidebar(); if (currentView === 'list') renderListView(); }
+    });
+    var tagsEd = buildChipEditor(box.querySelector('.ce-tags'), {
+      label:'Теги', placeholder:'Тег, Enter или запятая', freeCreate:true, createLabel:'Добавить тег',
+      values:function(){ return obj.tags || []; }, suggestions:allTags,
+      onChange:function(list){ obj.tags = list; persist(); renderSidebar(); if (currentView === 'list') renderListView(); }
+    });
+    (focusTags ? tagsEd : subsEd).focus();
+    function close(){ box.remove(); view.hidden = false; renderView(); }
+    box.addEventListener('focusout', function(){
+      setTimeout(function(){ if (box.isConnected && !box.contains(document.activeElement)) close(); }, 0);
+    });
+    box.addEventListener('keydown', function(e){
+      if (e.key === 'Escape'){
+        var dd = box.querySelector('.combo-dropdown:not([hidden])');
+        if (dd) return;
+        e.preventDefault(); e.stopPropagation(); close(); view.focus();
+      }
+    });
+  }
+  view.addEventListener('click', function(e){ edit(!!(e.target.closest && e.target.closest('.tag-chip'))); });
+  view.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); edit(false); } });
+  renderView();
+}
+
+function changeObjectType(obj, code){
+  if (!code || code === obj.type) return;
+  function apply(){
+    var id = splitFullName(obj.fullName).id;
+    obj.type = code;
+    /* Префикс имени в конфигураторе следует за типом. */
+    if (id) obj.fullName = typeInfo(code).name1c + '.' + id;
+    persist(); syncGraphModel(); renderSidebar();
+    if (currentView === 'list') renderListView();
+    renderObjectPanel(obj);
+  }
+  var n = objectMechanismCounts()[obj.id] || 0;
+  if (!n){ apply(); return; }
+  openModal({
+    title:'Сменить тип объекта?',
+    bodyHTML:'<p>«' + escapeHtml(obj.name) + '» участвует в ' + n + ' ' + pluralRu(n,'механизме','механизмах','механизмах') +
+      '. Тип изменится с «' + escapeHtml(typeTitle(obj.type)) + '» на «' + escapeHtml(typeTitle(code)) + '».</p>',
+    footerButtons:[
+      {label:'Отмена', onClick:function(){ return true; }},
+      {label:'Сменить тип', variant:'primary', onClick:function(){ apply(); }}
+    ]
+  });
 }
 
 function renderObjectPanel(obj, panel){
   if (!obj) return;
   panel = panel || document.getElementById('panel-object');
-  var isSidebar = (panel.id === 'panel-object');
-  if (isSidebar) showPanel('object');
+  showPanel('object');
   panel.innerHTML = objectPanelTemplate(obj);
   bindInlineTitle(panel, function(){ return obj.name; }, function(v){
     obj.name=v; persist(); syncGraphModel(); renderSidebar(); updateStats();
+    if (currentView === 'list') renderListView();
+  }, 'Синоним');
+  var typeBtn = panel.querySelector('.type-badge');
+  typeBtn.addEventListener('click', function(){
+    openPopoverMenu(typeBtn, OBJECT_TYPES.map(function(t){
+      return {value:t.code, label:t.title, icon:typeIconSVG(t.code), color:typeColor(t.code), current:t.code === obj.type};
+    }), function(code){ changeObjectType(obj, code); });
   });
-  bindField(panel,'#f-type','change', function(v){
-    obj.type=v; persist(); syncGraphModel(); renderSidebar();
-    var eb = panel.querySelector('.panel-eyebrow'); if (eb) eb.textContent = 'Объект · ' + typeTitle(v);
+  bindStatusBadge(panel, obj, false);
+  bindName1c(panel, obj);
+  var menuBtn = panel.querySelector('.card-menu-btn');
+  menuBtn.addEventListener('click', function(){
+    openPopoverMenu(menuBtn, [{value:'delete', label:'Удалить объект', danger:true}], function(){ deleteObject(obj.id); });
   });
-  bindField(panel,'#f-status','change', function(v){ obj.status=v; persist(); syncGraphModel(); renderSidebar(); });
-  bindField(panel,'#f-fullname','input', function(v){ obj.fullName=v; persist(); });
-  bindField(panel,'#f-subsystem','input', function(v){ obj.subsystem=v; persist(); });
-  bindField(panel,'#f-tags','input', function(v){ obj.tags=v.split(',').map(function(s){return s.trim();}).filter(Boolean); persist(); });
-  bindField(panel,'#f-description','input', function(v){ obj.description=v; persist(); });
-  panel.querySelector('#btn-delete-object').addEventListener('click', function(){
-    deleteObject(obj.id, isSidebar ? undefined : function(){ openCardModal('obj', obj.id); });
-  });
+  bindViewField(panel, 'description', {label:'Описание', addText:'Добавить описание', multiline:true,
+    get:function(){ return obj.description || ''; }, set:function(v){ obj.description = v; persist(); }});
+  bindSubsystemsTags(panel, obj);
   panel.querySelector('#btn-attach-object').addEventListener('click', function(){
     attachFilesToEntity('obj', obj.id, function(){ renderAttachmentsList(panel, '#obj-attachments-list', 'obj', obj.id); });
   });
   renderObjectMechList(obj, panel);
+  bindAddToMechanism(panel, obj);
   renderAttachmentsList(panel, '#obj-attachments-list', 'obj', obj.id);
 }
 
-/* Механизмы, где участвует объект, и под каждым — остальные участники этого механизма.
-   Если объект входит в механизм несколькими ролями, роли перечисляются через запятую. */
+/* Роли объекта в механизме → группы блока «Участвует в механизмах». Объект с двумя ролями
+   в одном механизме попадает в обе группы. */
 function participantRolesByObject(mech){
   var order = [], roles = {};
   mech.participants.forEach(function(p){
@@ -2296,58 +2714,159 @@ function participantRolesByObject(mech){
   });
   return {order:order, roles:roles};
 }
+function objectRoleGroupKey(roleCode){
+  var r = roleInfo(roleCode);
+  if (r.direction === 'target') return {key:'in', title:'Получает данные из', order:0};
+  if (r.direction === 'source') return {key:'out', title:'Передаёт данные в', order:1};
+  return {key:'role:' + r.code, title:r.title, order:2};
+}
+var OM_AUTO_COLLAPSE_OVER = 3;
+var omCollapsed = {}; /* ключ «объект|группа|механизм» → true/false (выбор пользователя в этой сессии) */
 
 function renderObjectMechList(obj, panel){
   var container = panel.querySelector('#obj-mech-list');
   if (!container) return;
-  var isSidebar = (panel.id === 'panel-object');
-  var rows = Object.keys(state.mechanisms).map(function(k){return state.mechanisms[k];})
-    .filter(function(m){ return m.participants.some(function(p){return p.objectId===obj.id;}); });
-  if (rows.length===0){ container.innerHTML = '<p class="ref-empty">Пока не участвует ни в одном механизме.</p>'; return; }
-  container.innerHTML = rows.map(function(m){
-    var parts = participantRolesByObject(m);
-    var others = parts.order.filter(function(id){ return id !== obj.id; });
-    var sub = others.length
-      ? others.map(function(id){
-          var o = state.objects[id];
-          return '<button class="ref-item ref-item-obj' + (o.status === 'deprecated' ? ' is-deprecated' : '') + '" data-obj="'+id+'" type="button">' +
-            '<span class="dot" style="background:'+typeColor(o.type)+'"></span>' +
-            '<span class="ref-item-main"><span class="ref-item-title">'+escapeHtml(o.name)+deprecatedTagHTML(o)+'</span>' +
-            '<span class="ref-item-role">'+escapeHtml(typeTitle(o.type))+' · '+escapeHtml(parts.roles[id].join(', '))+'</span></span>' +
-          '</button>';
-        }).join('')
-      : '<p class="ref-sub-empty">Других участников нет</p>';
-    return '<div class="ref-group">' +
-      '<button class="ref-item' + (m.status === 'deprecated' ? ' is-deprecated' : '') + '" data-mech="'+m.id+'" type="button">' +
-        '<span class="dot" style="background:'+categoryAccent(m.category)+'"></span>' +
-        '<span class="ref-item-main"><span class="ref-item-title">'+escapeHtml(m.title)+deprecatedTagHTML(m)+'</span><span class="ref-item-role">'+escapeHtml((parts.roles[obj.id]||[]).join(', '))+'</span></span>' +
-      '</button>' +
-      '<div class="ref-sublist">'+sub+'</div>' +
-    '</div>';
-  }).join('');
-  container.querySelectorAll('.ref-item[data-mech]').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var mechId = btn.getAttribute('data-mech');
-      if (isSidebar){
-        pinnedMechanismId = mechId; pinnedNodeId=null; pinnedEdgeKey=null;
-        renderMechanismPanel(state.mechanisms[mechId]);
-        syncSidebarActive(); requestRender();
-      } else {
-        openCardModal('mech', mechId);
-      }
+  var groups = {}, mechIds = {};
+  Object.keys(state.mechanisms).forEach(function(mid){
+    var m = state.mechanisms[mid];
+    m.participants.forEach(function(p){
+      if (p.objectId !== obj.id) return;
+      var g = objectRoleGroupKey(p.role);
+      var grp = groups[g.key] || (groups[g.key] = {title:g.title, order:g.order, items:{} , list:[]});
+      if (!grp.items[mid]){ grp.items[mid] = {mech:m, notes:[]}; grp.list.push(mid); }
+      if (p.note && grp.items[mid].notes.indexOf(p.note) < 0) grp.items[mid].notes.push(p.note);
+      mechIds[mid] = true;
     });
   });
-  container.querySelectorAll('.ref-item[data-obj]').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var objId = btn.getAttribute('data-obj');
-      if (isSidebar){
-        pinnedNodeId = 'obj:'+objId; pinnedMechanismId=null; pinnedEdgeKey=null;
-        renderObjectPanel(state.objects[objId]);
-        syncSidebarActive(); requestRender();
-      } else {
-        openCardModal('obj', objId);
-      }
+  var total = Object.keys(mechIds).length;
+  var titleEl = panel.querySelector('#obj-mech-title');
+  if (titleEl) titleEl.textContent = 'Участвует в механизмах · ' + total;
+  if (!total){ container.innerHTML = '<p class="ref-empty">Пока не участвует ни в одном механизме.</p>'; return; }
+
+  var ordered = Object.keys(groups).map(function(k){ return {key:k, g:groups[k]}; })
+    .sort(function(a,b){ return a.g.order - b.g.order || a.g.title.localeCompare(b.g.title,'ru'); });
+  container.innerHTML = ordered.map(function(x){
+    var g = x.g, auto = g.list.length > OM_AUTO_COLLAPSE_OVER;
+    return '<div class="om-group"><p class="om-group-title">' + escapeHtml(g.title) + '</p>' +
+      g.list.map(function(mid){
+        var it = g.items[mid], m = it.mech;
+        var ck = obj.id + '|' + x.key + '|' + mid;
+        var collapsed = (ck in omCollapsed) ? omCollapsed[ck] : auto;
+        var parts = participantRolesByObject(m);
+        var notesByObj = {};
+        m.participants.forEach(function(p){ if (p.objectId && p.note) (notesByObj[p.objectId] = notesByObj[p.objectId] || []).push(p.note); });
+        var others = parts.order.filter(function(id){ return id !== obj.id; });
+        var sub = others.length ? others.map(function(id){
+          var o = state.objects[id];
+          return '<button type="button" class="om-link om-part' + (o.status === 'deprecated' ? ' is-deprecated' : '') + '" data-obj="' + id + '">' +
+            '<span class="om-part-title"><span class="dot" style="background:' + typeColor(o.type) + '"></span><span class="ref-item-title">' + escapeHtml(o.name) + deprecatedTagHTML(o) + '</span></span>' +
+            '<span class="om-part-meta">' + escapeHtml(typeTitle(o.type)) + ' · ' + escapeHtml(parts.roles[id].join(', ')) + '</span>' +
+            (notesByObj[id] ? '<span class="om-part-note">' + escapeHtml(notesByObj[id].join('; ')) + '</span>' : '') +
+          '</button>';
+        }).join('') : '<p class="om-empty-parts">Других участников нет</p>';
+        return '<div class="om-mech' + (m.status === 'deprecated' ? ' is-deprecated' : '') + '">' +
+          '<div class="om-mech-row">' +
+            '<button type="button" class="om-toggle" data-ck="' + escapeHtml(ck) + '" aria-expanded="' + (!collapsed) + '" aria-label="Свернуть или развернуть участников"></button>' +
+            '<button type="button" class="om-link om-mech-link" data-mech="' + mid + '">' +
+              '<span class="om-mech-title"><span class="om-diamond" style="--c:' + categoryAccent(m.category) + '"></span><span class="ref-item-title">' + escapeHtml(m.title) + deprecatedTagHTML(m) + '</span></span>' +
+              (it.notes.length ? '<span class="om-note">' + escapeHtml(it.notes.join('; ')) + '</span>' : '') +
+            '</button>' +
+          '</div>' +
+          '<div class="om-parts"' + (collapsed ? ' hidden' : '') + '>' + sub + '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+  }).join('');
+
+  container.querySelectorAll('.om-toggle').forEach(function(t){
+    t.addEventListener('click', function(){
+      var open = t.getAttribute('aria-expanded') !== 'true';
+      t.setAttribute('aria-expanded', open ? 'true' : 'false');
+      t.closest('.om-mech').querySelector('.om-parts').hidden = !open;
+      omCollapsed[t.getAttribute('data-ck')] = !open;
     });
+  });
+  container.querySelectorAll('.om-mech-link').forEach(function(btn){
+    var mid = btn.getAttribute('data-mech');
+    btn.addEventListener('click', function(){ setGraphHint(null); selectEntity('mech', mid); });
+    btn.addEventListener('mouseenter', function(){ setGraphHint({mechOnly:mid}); });
+    btn.addEventListener('mouseleave', function(){ setGraphHint(null); });
+  });
+  container.querySelectorAll('.om-part').forEach(function(btn){
+    var oid = btn.getAttribute('data-obj');
+    btn.addEventListener('click', function(){ setGraphHint(null); selectEntity('obj', oid); });
+    btn.addEventListener('mouseenter', function(){ setGraphHint({objId:oid}); });
+    btn.addEventListener('mouseleave', function(){ setGraphHint(null); });
+  });
+}
+
+/* «+ Добавить в механизм»: выбор механизма → роль → необязательное описание → участник добавлен. */
+function buildMechanismPicker(container, onPick){
+  container.innerHTML = '<div class="combo"><input type="text" class="field-input combo-input" autocomplete="off" placeholder="Начните вводить название механизма…"><div class="combo-dropdown" hidden></div></div>';
+  var input = container.querySelector('.combo-input'), dropdown = container.querySelector('.combo-dropdown');
+  var items = [], active = -1;
+  function render(){
+    var q = input.value.trim().toLowerCase();
+    items = Object.keys(state.mechanisms).map(function(id){ return state.mechanisms[id]; })
+      .filter(isShown)
+      .filter(function(m){ return !q || m.title.toLowerCase().indexOf(q) >= 0; })
+      .sort(function(a,b){ return a.title.localeCompare(b.title,'ru'); }).slice(0, 10);
+    active = items.length ? 0 : -1;
+    dropdown.innerHTML = items.length ? items.map(function(m, i){
+      return '<div class="combo-item' + (i === active ? ' is-active' : '') + '" data-i="' + i + '"><span class="om-diamond" style="--c:' + categoryAccent(m.category) + '"></span><span class="combo-item-text">' + escapeHtml(m.title) + '</span><span class="combo-item-type">' + escapeHtml(categoryTitle(m.category)) + '</span></div>';
+    }).join('') : '<div class="combo-empty">Механизмы не найдены</div>';
+    dropdown.hidden = false;
+    dropdown.querySelectorAll('.combo-item').forEach(function(el){
+      el.addEventListener('mousedown', function(e){ e.preventDefault(); choose(Number(el.getAttribute('data-i'))); });
+    });
+  }
+  function choose(i){ var m = items[i]; if (!m) return; dropdown.hidden = true; input.value = m.title; onPick(m); }
+  input.addEventListener('input', render);
+  input.addEventListener('focus', render);
+  input.addEventListener('blur', function(){ setTimeout(function(){ dropdown.hidden = true; }, 150); });
+  input.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowDown' && items.length){ e.preventDefault(); active = (active + 1) % items.length; hl(); }
+    else if (e.key === 'ArrowUp' && items.length){ e.preventDefault(); active = (active - 1 + items.length) % items.length; hl(); }
+    else if (e.key === 'Enter'){ e.preventDefault(); choose(active); }
+  });
+  function hl(){ dropdown.querySelectorAll('.combo-item').forEach(function(el, i){ el.classList.toggle('is-active', i === active); }); }
+  return input;
+}
+
+function bindAddToMechanism(panel, obj){
+  var btn = panel.querySelector('#btn-add-to-mech'), host = panel.querySelector('#obj-add-to-mech');
+  btn.addEventListener('click', function(){
+    if (host.firstChild){ host.innerHTML = ''; return; }
+    var chosen = null, role = 'target';
+    host.innerHTML = '<div class="om-add">' +
+      '<div><div class="om-add-label">Механизм</div><div class="om-add-picker"></div></div>' +
+      '<div><div class="om-add-label">Роль объекта</div><div class="om-add-roles">' +
+        PARTICIPANT_ROLES.map(function(r){ return '<button type="button" class="om-add-role' + (r.code === role ? ' is-on' : '') + '" data-role="' + r.code + '">' + escapeHtml(r.title) + '</button>'; }).join('') +
+      '</div></div>' +
+      '<div><div class="om-add-label">Что передаётся (необязательно)</div><input type="text" class="field-input om-add-note" placeholder="Например: «Забирает к-во дней»"></div>' +
+      '<div class="om-add-actions"><button type="button" class="btn btn-sm om-add-cancel">Отмена</button><button type="button" class="btn btn-sm btn-accent om-add-ok" disabled>Добавить</button></div>' +
+    '</div>';
+    var ok = host.querySelector('.om-add-ok');
+    var input = buildMechanismPicker(host.querySelector('.om-add-picker'), function(m){ chosen = m; ok.disabled = false; host.querySelector('.om-add-note').focus(); });
+    input.addEventListener('input', function(){ chosen = null; ok.disabled = true; });
+    host.querySelectorAll('.om-add-role').forEach(function(b){
+      b.addEventListener('click', function(){
+        role = b.getAttribute('data-role');
+        host.querySelectorAll('.om-add-role').forEach(function(x){ x.classList.toggle('is-on', x === b); });
+      });
+    });
+    host.querySelector('.om-add-cancel').addEventListener('click', function(){ host.innerHTML = ''; });
+    host.querySelector('.om-add-note').addEventListener('keydown', function(e){ if (e.key === 'Enter' && !ok.disabled){ e.preventDefault(); ok.click(); } });
+    ok.addEventListener('click', function(){
+      if (!chosen) return;
+      chosen.participants.push({objectId:obj.id, role:role, note:normalizeLabel(host.querySelector('.om-add-note').value)});
+      persist(); syncGraphModel(); renderSidebar(); updateStats();
+      if (currentView === 'list') renderListView();
+      host.innerHTML = '';
+      renderObjectMechList(obj, panel);
+    });
+    host.addEventListener('keydown', function(e){ if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); host.innerHTML = ''; btn.focus(); } });
+    input.focus();
   });
 }
 
@@ -2421,23 +2940,23 @@ function buildObjectCombobox(container, selectedId, onChange, reopenAfterCreate)
 
 
 function mechanismPanelTemplate(mech){
+  var color = categoryAccent(mech.category);
   return (
-    cardHeaderHTML('Механизм · ' + categoryTitle(mech.category), mech.title) +
-    '<div class="field-row">' +
-      '<div class="field-group"><label class="field-label">Категория</label><select class="field-input" id="f-category">' +
-        (categoryInfo(mech.category) ? '' : '<option value="" selected>' + UNKNOWN_CATEGORY_TITLE + '</option>') +
-        MECH_CATEGORIES.map(function(c){ return '<option value="'+c.code+'"'+(c.code===mech.category?' selected':'')+'>'+escapeHtml(c.title)+'</option>'; }).join('') +
-      '</select></div>' +
-      '<div class="field-group"><label class="field-label">Статус</label><select class="field-input" id="f-mstatus">' +
-        '<option value="draft"'+(mech.status==='draft'?' selected':'')+'>'+STATUS_TITLES.dev+'</option>' +
-        '<option value="active"'+(mech.status==='active'?' selected':'')+'>'+STATUS_TITLES.prod+'</option>' +
-        '<option value="deprecated"'+(mech.status==='deprecated'?' selected':'')+'>'+STATUS_TITLES.deprecated+'</option>' +
-      '</select></div>' +
+    '<div class="card-head">' +
+      '<div class="card-head-row">' +
+        '<span class="card-icon card-icon-mech" style="--c:' + color + '" aria-hidden="true"></span>' +
+        '<h2 class="inline-title" tabindex="0" title="Название — нажмите, чтобы изменить">' + escapeHtml(mech.title) + '</h2>' +
+        '<span class="save-indicator" aria-live="polite"></span>' + cardMenuButtonHTML() +
+      '</div>' +
+      '<p class="inline-msg" hidden></p>' +
+      '<div class="card-head-badges">' +
+        '<button type="button" class="badge-btn cat-badge category-badge" style="--cat:' + color + '" aria-haspopup="menu" aria-expanded="false" title="Категория — нажмите, чтобы изменить">' + escapeHtml(categoryTitle(mech.category)) + '</button>' +
+        statusBadgeButtonHTML(mech.status, true) +
+      '</div>' +
     '</div>' +
-    '<div class="field-group"><label class="field-label">Краткое описание (подсказка на графе)</label>' +
-      '<input type="text" class="field-input" id="f-summary" value="' + escapeHtml(mech.summary||'') + '" placeholder="Одна фраза: что делает механизм. Показывается при наведении на граф"></div>' +
-    '<div class="field-group">' +
-      '<div class="field-label-row"><span class="field-label">Подробное описание</span><button type="button" class="link-btn body-edit-btn">Редактировать</button></div>' +
+    viewFieldHTML('summary', 'Краткое описание (подсказка на графе)') +
+    '<div class="vfield">' +
+      '<div class="field-label-row"><span class="vfield-label">Подробное описание</span><button type="button" class="link-btn body-edit-btn">Редактировать</button></div>' +
       '<div class="body-view" tabindex="0"></div>' +
       '<textarea class="field-input body-edit" id="f-body" hidden aria-label="Подробное описание"></textarea>' +
     '</div>' +
@@ -2449,38 +2968,45 @@ function mechanismPanelTemplate(mech){
       '<div class="panel-section-header"><p class="panel-section-title">Вложения</p>' +
         '<button class="btn btn-sm" id="btn-attach-mechanism" type="button">Прикрепить файл</button></div>' +
       '<div id="mech-attachments-list"></div>' +
-    '</div>' +
-    '<div class="panel-footer"><button class="btn btn-danger-ghost" id="btn-delete-mechanism" type="button">Удалить механизм</button></div>'
+    '</div>'
   );
 }
 
 function renderMechanismPanel(mech, panel){
   if (!mech) return;
   panel = panel || document.getElementById('panel-mechanism');
-  var isSidebar = (panel.id === 'panel-mechanism');
-  if (isSidebar) showPanel('mechanism');
+  showPanel('mechanism');
   panel.innerHTML = mechanismPanelTemplate(mech);
-  if (isSidebar){
-    var actions = document.createElement('div');
-    actions.className = 'card-actions';
-    actions.innerHTML = '<button type="button" class="btn btn-sm card-focus-btn" data-mech="' + mech.id + '" title="Разложить участников: источники слева, приёмники справа">Фокус</button>';
-    panel.querySelector('.panel-header').appendChild(actions);
-    actions.querySelector('.card-focus-btn').addEventListener('click', function(){ enterFocus(mech.id); });
-    updateFocusUI();
-  }
+  var actions = document.createElement('div');
+  actions.className = 'card-actions';
+  actions.innerHTML = '<button type="button" class="btn btn-sm card-focus-btn" data-mech="' + mech.id + '" title="Разложить участников: источники слева, приёмники справа">Фокус</button>';
+  panel.querySelector('.card-head').appendChild(actions);
+  actions.querySelector('.card-focus-btn').addEventListener('click', function(){ enterFocus(mech.id); });
+  updateFocusUI();
   bindInlineTitle(panel, function(){ return mech.title; }, function(v){
     mech.title=v; persist(); syncGraphModel(); renderSidebar();
+    if (currentView === 'list') renderListView();
+  }, 'Название');
+  var catBtn = panel.querySelector('.category-badge');
+  catBtn.addEventListener('click', function(){
+    openPopoverMenu(catBtn, MECH_CATEGORIES.map(function(c){
+      return {value:c.code, label:c.title, icon:'<span class="cat-dot" style="--c:' + categoryAccent(c.code) + '"></span>', current:c.code === mech.category};
+    }), function(code){
+      if (code === mech.category) return;
+      mech.category = code; persist(); syncGraphModel(); renderSidebar();
+      if (currentView === 'list') renderListView();
+      renderMechanismPanel(mech);
+    });
   });
-  bindField(panel,'#f-category','change', function(v){
-    mech.category=v; persist(); syncGraphModel(); renderSidebar();
-    var eb = panel.querySelector('.panel-eyebrow'); if (eb) eb.textContent = 'Механизм · ' + categoryTitle(v);
+  bindStatusBadge(panel, mech, true);
+  var menuBtn = panel.querySelector('.card-menu-btn');
+  menuBtn.addEventListener('click', function(){
+    openPopoverMenu(menuBtn, [{value:'delete', label:'Удалить механизм', danger:true}], function(){ deleteMechanism(mech.id); });
   });
-  bindField(panel,'#f-mstatus','change', function(v){ mech.status=v; persist(); syncGraphModel(); });
-  bindField(panel,'#f-summary','input', function(v){ mech.summary=v; persist(); renderSidebar(); });
-  bindBodyEditor(panel, isSidebar, function(){ return mech.body; }, function(v){ mech.body=v; persist(); }, 'Нет описания. Нажмите, чтобы добавить.');
-  panel.querySelector('#btn-delete-mechanism').addEventListener('click', function(){
-    deleteMechanism(mech.id, isSidebar ? undefined : function(){ openCardModal('mech', mech.id); });
-  });
+  bindViewField(panel, 'summary', {label:'Краткое описание', addText:'Добавить краткое описание',
+    placeholder:'Одна фраза: что делает механизм. Показывается при наведении на граф',
+    get:function(){ return mech.summary || ''; }, set:function(v){ mech.summary = v.trim(); persist(); renderSidebar(); }});
+  bindBodyEditor(panel, true, function(){ return mech.body; }, function(v){ mech.body=v; persist(); }, 'Нет описания. Нажмите, чтобы добавить.');
   panel.querySelector('#btn-attach-mechanism').addEventListener('click', function(){
     attachFilesToEntity('mech', mech.id, function(){ renderAttachmentsList(panel, '#mech-attachments-list', 'mech', mech.id); });
   });
@@ -2553,7 +3079,7 @@ function renderParticipantsList(mech, panel){
       buildObjectCombobox(slot, '', function(newId){
         mech.participants.push({objectId:newId, role:role, note:''});
         changed(); rerender();
-      }, isSidebar ? null : function(){ openCardModal('mech', mech.id); });
+      }, null);
       var input = slot.querySelector('.combo-input');
       input.addEventListener('blur', function(){ setTimeout(function(){ if (slot.isConnected && !input.matches(':focus')) rerender(); }, 200); });
       input.focus();
@@ -2568,7 +3094,7 @@ function renderParticipantsList(mech, panel){
     if (nameBtn) nameBtn.addEventListener('click', function(){ openObjectFromCard(panel, p.objectId, isSidebar); });
     var comboSlot = card.querySelector('.pcard-combo');
     if (comboSlot) buildObjectCombobox(comboSlot, '', function(newId){ p.objectId = newId; changed(); rerender(); },
-      isSidebar ? null : function(){ openCardModal('mech', mech.id); });
+      null);
 
     /* Описание передачи — правка по клику. */
     var sub = card.querySelector('.pcard-sub');
@@ -2688,7 +3214,7 @@ function renderGroupedObjectRows(list){
     var items = byType[t.code];
     if (!items || !items.length) return;
     items.sort(function(a,b){ return a.name.localeCompare(b.name,'ru'); });
-    html += '<div class="list-view-group"><p class="list-view-group-title">'+escapeHtml(t.title)+' · '+items.length+'</p>';
+    html += '<div class="list-view-group"><p class="list-view-group-title">'+escapeHtml(t.plural)+' · '+items.length+'</p>';
     html += items.map(objectRowHTML).join('');
     html += '</div>';
   });
@@ -2741,7 +3267,7 @@ function renderListTypeFilter(found){
     '</label>';
   }
   var html = OBJECT_TYPES.map(function(t){
-    return itemHTML(t.code, t.title, '<span class="dot" style="background:'+typeColor(t.code)+'"></span>');
+    return itemHTML(t.code, t.plural, '<span class="dot" style="background:'+typeColor(t.code)+'"></span>');
   }).join('');
   html += '<div class="multi-select-sep"></div>';
   html += itemHTML(LIST_MECH_TYPE, 'МЕХАНИЗМ', '<span class="dot dot-diamond" style="background:var(--text-muted)"></span>');
@@ -2772,10 +3298,10 @@ function renderListTypeFilter(found){
   var btn = document.getElementById('list-filter-type-btn');
   var selected = Object.keys(listTypeFilter);
   var label = 'Все типы';
-  if (selected.length === 1) label = selected[0] === LIST_MECH_TYPE ? 'МЕХАНИЗМ' : typeTitle(selected[0]);
+  if (selected.length === 1) label = selected[0] === LIST_MECH_TYPE ? 'МЕХАНИЗМ' : typeInfo(selected[0]).plural;
   else if (selected.length > 1) label = 'Типов: ' + selected.length;
   btn.textContent = label;
-  btn.title = selected.map(function(c){ return c === LIST_MECH_TYPE ? 'МЕХАНИЗМ' : typeTitle(c); }).join(', ');
+  btn.title = selected.map(function(c){ return c === LIST_MECH_TYPE ? 'МЕХАНИЗМ' : typeInfo(c).plural; }).join(', ');
   btn.classList.toggle('has-value', selected.length > 0);
 }
 
@@ -2806,9 +3332,10 @@ function renderListView(){
 
   var body = document.getElementById('list-view-body');
   body.innerHTML = html;
+  syncSidebarActive();
   body.querySelectorAll('.list-view-row').forEach(function(row){
     row.addEventListener('click', function(){
-      openCardModal(row.getAttribute('data-kind')==='object' ? 'obj' : 'mech', row.getAttribute('data-id'));
+      selectEntity(row.getAttribute('data-kind')==='object' ? 'obj' : 'mech', row.getAttribute('data-id'));
     });
   });
 }
@@ -2940,6 +3467,121 @@ function saveSideGroupState(){
   try{ localStorage.setItem(SIDE_GROUPS_KEY, JSON.stringify(sideGroupCollapsed)); }catch(e){}
 }
 
+/* ===================== Подсистемы и теги =====================
+   Подсистем у объекта может быть несколько: опциональное поле subsystems[]; старое поле
+   subsystem (строка) сохраняется и равно первой подсистеме — старые данные читаются как [subsystem]. */
+function normalizeLabel(s){ return String(s || '').replace(/\s+/g, ' ').trim(); }
+function objectSubsystems(o){
+  if (Array.isArray(o.subsystems)) return o.subsystems.slice();
+  return o.subsystem ? [normalizeLabel(o.subsystem)].filter(Boolean) : [];
+}
+function setObjectSubsystems(o, list){
+  o.subsystems = list.slice();
+  o.subsystem = list[0] || '';
+}
+function allSubsystems(){
+  var seen = {}, out = [];
+  Object.keys(state.objects).forEach(function(id){
+    objectSubsystems(state.objects[id]).forEach(function(s){ var k = s.toLowerCase(); if (!seen[k]){ seen[k] = true; out.push(s); } });
+  });
+  return out.sort(function(a,b){ return a.localeCompare(b,'ru'); });
+}
+function allTags(){
+  var seen = {}, out = [];
+  Object.keys(state.objects).forEach(function(id){
+    (state.objects[id].tags || []).forEach(function(t){ var k = t.toLowerCase(); if (!seen[k]){ seen[k] = true; out.push(t); } });
+  });
+  return out.sort(function(a,b){ return a.localeCompare(b,'ru'); });
+}
+/* Если значение уже есть (без учёта регистра) — берём существующее написание. */
+function canonicalLabel(value, existing){
+  var v = normalizeLabel(value), k = v.toLowerCase();
+  for (var i = 0; i < existing.length; i++) if (existing[i].toLowerCase() === k) return existing[i];
+  return v;
+}
+
+/* Редактор чипов с автодополнением.
+   opt: {values(), suggestions(), onChange(list), freeCreate, placeholder, chipClass, createLabel}
+   freeCreate — Enter или «,» превращают текст в чип (теги); иначе новое значение добавляется
+   только явным пунктом «+ Создать „…“» (подсистемы). Backspace в пустом поле удаляет последний чип. */
+function buildChipEditor(container, opt){
+  var list = opt.values().slice();
+  container.innerHTML = '<div class="chip-editor"><input type="text" class="chip-input" autocomplete="off"><div class="combo-dropdown" hidden></div></div>';
+  var editor = container.querySelector('.chip-editor');
+  var input = editor.querySelector('.chip-input');
+  var dropdown = editor.querySelector('.combo-dropdown');
+  input.placeholder = opt.placeholder || '';
+  input.setAttribute('aria-label', opt.label || '');
+  var items = [], active = -1;
+
+  function has(v){ var k = v.toLowerCase(); return list.some(function(x){ return x.toLowerCase() === k; }); }
+  function commit(){ opt.onChange(list.slice()); }
+  function add(value){
+    var v = canonicalLabel(value, opt.suggestions());
+    if (!v || has(v)) return false;
+    list.push(v); commit(); renderChips(); return true;
+  }
+  function renderChips(){
+    editor.querySelectorAll('.chip-wrap').forEach(function(c){ c.remove(); });
+    list.forEach(function(v, i){
+      var chip = document.createElement('span');
+      chip.className = 'chip-wrap ' + (opt.chipClass || 'tag-chip');
+      chip.innerHTML = escapeHtml(v) + '<button type="button" class="chip-x" aria-label="Убрать «' + escapeHtml(v) + '»" tabindex="-1">×</button>';
+      chip.querySelector('.chip-x').addEventListener('mousedown', function(e){ e.preventDefault(); });
+      chip.querySelector('.chip-x').addEventListener('click', function(){ list.splice(i, 1); commit(); renderChips(); input.focus(); renderDropdown(); });
+      editor.insertBefore(chip, input);
+    });
+  }
+  function renderDropdown(){
+    var q = normalizeLabel(input.value).toLowerCase();
+    var sugg = opt.suggestions().filter(function(s){ return !has(s) && (!q || s.toLowerCase().indexOf(q) >= 0); }).slice(0, 8);
+    items = sugg.map(function(s){ return {value:s}; });
+    var exact = q && opt.suggestions().some(function(s){ return s.toLowerCase() === q; });
+    if (q && !exact && !has(input.value)) items.push({value:normalizeLabel(input.value), create:true});
+    active = items.length ? 0 : -1;
+    if (!items.length){ dropdown.hidden = true; return; }
+    dropdown.innerHTML = items.map(function(it, i){
+      return '<div class="combo-item' + (it.create ? ' combo-item-create' : '') + (i === active ? ' is-active' : '') + '" data-i="' + i + '">' +
+        (it.create ? '+ ' + (opt.createLabel || 'Создать') + ' „' + escapeHtml(it.value) + '“' : '<span class="combo-item-text">' + escapeHtml(it.value) + '</span>') + '</div>';
+    }).join('');
+    dropdown.hidden = false;
+    dropdown.querySelectorAll('.combo-item').forEach(function(el){
+      el.addEventListener('mousedown', function(e){ e.preventDefault(); pick(Number(el.getAttribute('data-i'))); });
+    });
+  }
+  function highlight(){ dropdown.querySelectorAll('.combo-item').forEach(function(el, i){ el.classList.toggle('is-active', i === active); }); }
+  function pick(i){ var it = items[i]; if (!it) return; add(it.value); input.value = ''; renderDropdown(); input.focus(); }
+
+  input.addEventListener('input', function(){
+    if (opt.freeCreate && input.value.indexOf(',') >= 0){
+      var parts = input.value.split(','), rest = parts.pop();
+      parts.forEach(function(p){ add(p); });
+      input.value = rest;
+    }
+    renderDropdown();
+  });
+  input.addEventListener('focus', renderDropdown);
+  input.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowDown' && items.length){ e.preventDefault(); active = (active + 1) % items.length; highlight(); }
+    else if (e.key === 'ArrowUp' && items.length){ e.preventDefault(); active = (active - 1 + items.length) % items.length; highlight(); }
+    else if (e.key === 'Enter'){
+      e.preventDefault();
+      /* Выделенная подсказка — всегда в приоритете (так «подбор персонала» выберет существующее). */
+      if (active >= 0 && items[active]) pick(active);
+      else if (opt.freeCreate && normalizeLabel(input.value)){ add(input.value); input.value = ''; renderDropdown(); }
+    }
+    else if (e.key === 'Backspace' && !input.value && list.length){ list.pop(); commit(); renderChips(); renderDropdown(); }
+    else if (e.key === 'Escape' && !dropdown.hidden){ e.preventDefault(); e.stopPropagation(); dropdown.hidden = true; }
+  });
+  input.addEventListener('blur', function(){
+    dropdown.hidden = true;
+    if (opt.freeCreate && normalizeLabel(input.value)){ add(input.value); input.value = ''; }
+  });
+  editor.addEventListener('mousedown', function(e){ if (e.target === editor){ e.preventDefault(); input.focus(); } });
+  renderChips();
+  return {focus:function(){ input.focus(); }};
+}
+
 function renderSidebar(){
   refreshTagFilterOptions();
   renderSideTypeFilter();
@@ -3054,7 +3696,6 @@ function globalSearchMatches(query){
 }
 
 function selectEntity(kind, id){
-  if (currentView === 'list'){ openCardModal(kind, id); return; }
   if (kind === 'obj'){
     if (!state.objects[id]) return;
     pinnedNodeId = 'obj:'+id; pinnedMechanismId = null; pinnedEdgeKey = null;
@@ -3065,7 +3706,8 @@ function selectEntity(kind, id){
     renderMechanismPanel(state.mechanisms[id]);
   }
   syncSidebarActive(); requestRender();
-  centerOnEntity(kind, id);
+  if (currentView === 'list') scrollActiveListRowIntoView();
+  else centerOnEntity(kind, id);
 }
 
 function bindGlobalSearch(){
@@ -3127,6 +3769,23 @@ function bindGlobalSearch(){
   });
 }
 
+function scrollActiveListRowIntoView(){
+  var row = document.querySelector('#list-view-body .list-view-row.active');
+  if (row) row.scrollIntoView({block:'nearest'});
+}
+
+/* «Список» с открытой карточкой: ↑/↓ — предыдущая/следующая строка (если фокус не в поле ввода). */
+function isTypingTarget(el){
+  return !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+}
+function moveListSelection(step){
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#list-view-body .list-view-row'));
+  if (!rows.length) return;
+  var i = rows.findIndex(function(r){ return r.classList.contains('active'); });
+  var next = rows[i < 0 ? 0 : Math.max(0, Math.min(rows.length - 1, i + step))];
+  selectEntity(next.getAttribute('data-kind')==='object' ? 'obj' : 'mech', next.getAttribute('data-id'));
+}
+
 function syncSidebarActive(){
   document.querySelectorAll('.list-row').forEach(function(btn){
     var isActive = (btn.getAttribute('data-kind')==='object' && pinnedNodeId==='obj:'+btn.getAttribute('data-id')) ||
@@ -3135,6 +3794,12 @@ function syncSidebarActive(){
     /* Выбранный объект в свёрнутой группе: раскрываем группу (без записи в сохранённое состояние). */
     var items = isActive && btn.closest('.side-group-items');
     if (items && items.hidden){ items.hidden = false; items.previousElementSibling.setAttribute('aria-expanded','true'); }
+  });
+  document.querySelectorAll('#list-view-body .list-view-row').forEach(function(row){
+    var id = row.getAttribute('data-id');
+    var on = (row.getAttribute('data-kind')==='object' && pinnedNodeId==='obj:'+id) ||
+             (row.getAttribute('data-kind')==='mechanism' && pinnedMechanismId===id);
+    row.classList.toggle('active', on);
   });
 }
 
@@ -3172,23 +3837,6 @@ function openModal(opts){
 }
 function closeModal(){ document.getElementById('modal-root').innerHTML=''; }
 
-function openCardModal(kind, id){
-  var entity = kind === 'obj' ? state.objects[id] : state.mechanisms[id];
-  if (!entity) return;
-  var root = document.getElementById('modal-root');
-  root.innerHTML =
-    '<div class="modal-backdrop"><div class="modal-box modal-box-lg" role="dialog" aria-modal="true">' +
-      '<div class="modal-header"><h2>Карточка</h2><button class="modal-close" type="button" aria-label="Закрыть">×</button></div>' +
-      '<div class="modal-body" id="card-modal-body"></div>' +
-    '</div></div>';
-  root.querySelector('.modal-close').addEventListener('click', closeModal);
-  root.querySelector('.modal-backdrop').addEventListener('click', function(e){
-    if (e.target.classList.contains('modal-backdrop')) closeModal();
-  });
-  var body = document.getElementById('card-modal-body');
-  if (kind === 'obj') renderObjectPanel(entity, body);
-  else renderMechanismPanel(entity, body);
-}
 
 function openQuickCreateObject(onCreated, prefillName){
   var typeOptions = OBJECT_TYPES.map(function(t){ return '<option value="'+t.code+'">'+escapeHtml(t.title)+'</option>'; }).join('');
@@ -3751,13 +4399,13 @@ function attachHandlers(){
         {label:'Механизм', onClick:function(){
           var m = createMechanism({title:'Новый механизм'});
           renderListView();
-          setTimeout(function(){ openCardModal('mech', m.id); }, 0);
+          setTimeout(function(){ selectEntity('mech', m.id); startInlineTitleEdit(document.getElementById('panel-mechanism')); }, 0);
         }},
         {label:'Объект', variant:'primary', onClick:function(){
           setTimeout(function(){
             openQuickCreateObject(function(obj){
               renderListView();
-              setTimeout(function(){ openCardModal('obj', obj.id); }, 0);
+              setTimeout(function(){ selectEntity('obj', obj.id); }, 0);
             });
           }, 0);
         }}
@@ -3996,6 +4644,12 @@ function attachHandlers(){
   bindGlobalSearch();
 
   window.addEventListener('keydown', function(e){
+    if (currentView === 'list' && (e.key === 'ArrowDown' || e.key === 'ArrowUp') && !e.altKey && !e.ctrlKey && !e.metaKey &&
+        !document.getElementById('detail-panel').hidden && !document.getElementById('modal-root').innerHTML && !isTypingTarget(document.activeElement)){
+      e.preventDefault();
+      moveListSelection(e.key === 'ArrowDown' ? 1 : -1);
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === 'k' || e.key === 'K' || e.code === 'KeyK')){
       e.preventDefault();
       var gs = document.getElementById('global-search-input');
