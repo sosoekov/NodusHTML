@@ -159,7 +159,14 @@
       </div>
     </aside>
     <main id="proc-main">
-      <div class="proc-head" id="proc-head"></div>
+      <div class="proc-head" id="proc-head">
+        <div class="proc-head-info" id="proc-head-info"></div>
+        <label class="switch proc-only-prod" title="Приглушить всё «в разработке» и показать шаги, которые останутся ручной работой">
+          <input type="checkbox" id="proc-only-prod">
+          <span class="switch-track" aria-hidden="true"></span>
+          <span class="switch-label">Только в проме</span>
+        </label>
+      </div>
       <div class="proc-scroll" id="proc-scroll"><div class="proc-stage" id="proc-stage"></div></div>
       <div class="empty-state proc-empty" id="proc-empty" hidden>
         <p class="empty-title" id="proc-empty-title">Процессов пока нет</p>
@@ -205,6 +212,7 @@
 <script src="js/processes.js"></script>
 <script src="js/process-view.js"></script>
 <script src="js/process-cards.js"></script>
+<script src="js/step-controls.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

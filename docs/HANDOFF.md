@@ -25,6 +25,7 @@
   src/js/processes.js   процессы: модель шагов, порядок по next, участники, ссылки для проверок удаления
   src/js/process-view.js режим «Процессы»: левая панель, лента шагов, масштаб, выбор процесса/шага
   src/js/process-cards.js карточки процесса и шага, участники шага, «+ Участник»
+  src/js/step-controls.js контроли в шаге: «+ Контроль», цели, реакция (готовность — READY_STATUSES в processes.js)
   src/js/main.js        resizeCanvas, обработчики, init
   build.js              node build.js → dist/nodus.html (один самодостаточный файл); --check — dist актуален
   tools/check.js        синтаксис JS, сверка id между JS и разметкой, актуальность dist

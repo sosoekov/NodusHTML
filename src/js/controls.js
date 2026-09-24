@@ -45,20 +45,20 @@ function createControl(partial){
   persist();
   return c;
 }
-/* Процессов пока нет (фаза 4) — контроль нигде не используется. */
-function controlProcessUses(ctrlId){ return []; }
-
 function deleteControl(id){
   var c = state.controls[id];
   if (!c) return;
+  var procRefs = processRefsTo('control', id);
   openModal({
     title:'Удалить контроль?',
-    bodyHTML:'<p>Контроль «' + escapeHtml(c.name) + '» будет удалён без возможности восстановления.</p>',
+    bodyHTML:'<p>Контроль «' + escapeHtml(c.name) + '» будет удалён без возможности восстановления.</p>' + processRefsWarningHTML(procRefs),
     footerButtons:[
       {label:'Отмена', onClick:function(){ return true; }},
       {label:'Удалить', variant:'danger', onClick:function(){
+        if (procRefs.length) rememberDeleted('ctrl', id, c.name);
         delete state.controls[id];
         persist(); clearSelection();
+        if (currentView === 'process') renderProcessView();
         if (currentView === 'list') renderListView();
       }}
     ]
@@ -98,9 +98,23 @@ function controlPanelTemplate(c){
     refFieldHTML('replacedBy', 'Заменится механизмом') +
     '<div class="panel-section is-tight">' +
       '<div class="panel-section-header"><p class="panel-section-title">Используется в процессах · ' + controlProcessUses(c.id).length + '</p></div>' +
-      '<p class="ref-empty">Пока не используется.</p>' +
+      '<div class="ctrl-uses"></div>' +
     '</div>'
   );
+}
+/* «Используется в процессах»: процесс · шаг · реакция; клик — переход к шагу в «Процессах». */
+function renderControlUses(panel, c){
+  var box = panel.querySelector('.ctrl-uses'), uses = controlProcessUses(c.id);
+  if (!uses.length){ box.innerHTML = '<p class="ref-empty">Пока не используется.</p>'; return; }
+  box.innerHTML = uses.map(function(u, i){
+    return '<button type="button" class="om-link ctrl-use" data-i="' + i + '">' +
+      '<span class="om-mech-title"><span class="step-num">' + u.num + '</span><span class="ref-item-title">' + escapeHtml(u.step.name) + '</span></span>' +
+      '<span class="om-note">' + escapeHtml(u.proc.name) + ' · ' + escapeHtml(controlReaction(u.reaction).title.toLowerCase()) + '</span></button>';
+  }).join('');
+  box.querySelectorAll('.ctrl-use').forEach(function(b){
+    var u = uses[Number(b.getAttribute('data-i'))];
+    b.addEventListener('click', function(){ goToProcessStep(u.proc.id, u.step.id); });
+  });
 }
 
 function renderControlPanel(c){
@@ -108,7 +122,7 @@ function renderControlPanel(c){
   var panel = document.getElementById('panel-control');
   showPanel('control');
   panel.innerHTML = controlPanelTemplate(c);
-  function changed(){ persist(); if (currentView === 'list') renderListView(); }
+  function changed(){ persist(); if (currentView === 'list') renderListView(); if (currentView === 'process') renderRibbon(); }
   bindInlineTitle(panel, function(){ return c.name; }, function(v){ c.name = normalizeLabel(v); changed(); }, 'Название контроля');
   bindStatusBadge(panel, c, false);
   var menuBtn = panel.querySelector('.card-menu-btn');
@@ -140,6 +154,7 @@ function renderControlPanel(c){
   });
   bindViewField(panel, 'momentNote', {label:'Уточнение момента', addText:'Уточнить: «ежедневно», «при закрытии месяца»…',
     get:function(){ return c.momentNote || ''; }, set:function(v){ c.momentNote = normalizeLabel(v); changed(); }});
+  renderControlUses(panel, c);
   bindRefField(panel, 'replacedBy', {label:'Заменится механизмом', addText:'Выбрать механизм, который заменит этот контроль',
     get:function(){ return c.replacedByMechanismId; }, set:function(id){ c.replacedByMechanismId = id; changed(); },
     resolve:function(id){ var m = state.mechanisms[id]; return m ? {label:m.title, iconHTML:'<span class="om-diamond" style="--c:' + categoryAccent(m.category) + '"></span>'} : null; },

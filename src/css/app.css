@@ -577,10 +577,37 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .sp-row{ display:flex; align-items:center; gap:6px; min-width:0; }
 .sp-name{ flex:1; min-width:0; }
 .sp-name.ref-broken{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--fs-base); }
-.sp-role{ flex:none; }
+.sp-role{ flex:none; max-width:45%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; }
 .sp-menu{ width:24px; height:22px; flex:none; }
 .sp-note{ margin:1px 0 0 14px; font-size:var(--fs-caption); color:var(--text-muted); cursor:text; border-radius:var(--radius); padding:0 4px; }
 .sp-note.is-empty{ color:var(--text-faint); }
 .sp-note:hover, .sp-note:focus-visible{ background:var(--bg-elevated); outline:none; }
 .sp-note-input{ margin:2px 0 0 14px; width:calc(100% - 14px); padding:3px 6px; font-size:var(--fs-caption); }
 .sp-add-roles[hidden], .sp-add-object[hidden], .sp-add-step1[hidden]{ display:none; }
+
+/* ===== Контроли в шагах и готовность (фаза 4) ===== */
+.proc-head{ align-items:center; }
+.proc-head-info{ flex:1; min-width:0; display:flex; align-items:baseline; gap:10px; }
+.proc-only-prod{ flex:none; font-size:var(--fs-caption); }
+#proc-main.is-empty .proc-only-prod{ display:none; }
+.step-chip.is-dev{ background:var(--dev-hatch); border-style:dashed; }
+.only-prod .step-chip.is-dev{ opacity:var(--alpha-dev-dim); }
+.ctrl-chip .shield-icon{ width:12px; height:12px; color:var(--control); flex:none; }
+.ctrl-chip .step-chip-letter{ order:3; }
+.chip-temp{ flex:none; font-size:var(--fs-caption); color:var(--warning); white-space:nowrap; }
+.step-ready{ flex:none; font-size:var(--fs-md); line-height:20px; cursor:help; }
+.step-ready.is-full{ color:var(--success); }
+.step-ready.is-part{ color:var(--warning); }
+.step-ready.is-none{ color:var(--text-faint); }
+.step-manual-badge{ align-self:flex-start; font-size:var(--fs-caption); line-height:1.4; padding:0 6px; border-radius:3px; color:var(--warning); background:var(--accent-soft); }
+.sc-add .om-add-role .shield-icon{ width:12px; height:12px; vertical-align:-2px; color:var(--control); }
+.sc-item .shield-icon{ width:13px; height:13px; color:var(--control); }
+.sc-temp{ margin:1px 0 0 14px; font-size:var(--fs-caption); color:var(--warning); }
+.sc-targets{ margin:1px 0 0 14px; font-size:var(--fs-caption); color:var(--text-muted); cursor:pointer; border-radius:var(--radius); padding:0 4px; }
+.sc-targets.is-empty{ color:var(--text-faint); }
+.sc-targets:hover, .sc-targets:focus-visible{ background:var(--bg-elevated); outline:none; }
+.sc-targets-edit{ margin:4px 0 4px 14px; }
+.sc-target-list{ display:flex; flex-direction:column; gap:0; margin-bottom:6px; }
+.sc-target{ padding:3px 2px; }
+.sc-target .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+.ctrl-use .step-num{ margin-right:2px; }

@@ -21,6 +21,14 @@ var procZoom = 1;
 var PROC_ZOOM_MIN = 0.25, PROC_ZOOM_MAX = 1.5, PROC_ZOOM_STEP = 1.2;
 /* Шаг, к которому ведёт кнопка «← К шагу», пока открыта карточка участника. */
 var procReturn = null;
+/* «Только в проме»: приглушить всё «в разработке» и пометить шаги «ручная работа». */
+var PROC_ONLY_PROD_KEY = 'nodusProcOnlyProd';
+var procOnlyProd = (function(){ try{ return localStorage.getItem(PROC_ONLY_PROD_KEY) === '1'; }catch(e){ return false; } })();
+var READINESS_MARKS = {
+  full:{glyph:'●', title:'Все механизмы и автоматические контроли шага — в проме'},
+  part:{glyph:'◐', title:'Часть механизмов и автоматических контролей шага — в разработке'},
+  none:{glyph:'○', title:'Все механизмы и автоматические контроли шага — в разработке'}
+};
 
 var STEP_KIND_ICONS = {
   user_action:'<svg class="type-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5" r="2.5"/><path d="M3 14c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/></svg>',
@@ -124,14 +132,29 @@ function returnToStep(){
   if (procSel.processId !== r.processId){ procSel.processId = r.processId; renderProcessSidebar(); renderRibbon(); }
   selectStep(r.stepId);
 }
-/* Клик по участнику шага: его карточка в правой панели с возвратом к шагу. */
+/* Клик по участнику или контролю шага: его карточка в правой панели с возвратом к шагу. */
 function openParticipant(p){
   var kind = p.entityType === 'mechanism' ? 'mech' : 'obj';
   var id = p.entityId;
   if (p.entityType === 'attribute'){ var a = state.attributes[id]; if (!a) return; id = a.objectId; }
   if (kind === 'obj' ? !state.objects[id] : !state.mechanisms[id]) return;
+  openFromStep(kind, id);
+}
+function openFromStep(kind, id){
   procReturn = {processId:procSel.processId, stepId:procSel.stepId};
   selectEntity(kind, id);
+}
+/* Переход к шагу процесса из любого режима (например, из карточки ручного контроля). */
+function goToProcessStep(procId, stepId){
+  if (!state.processes[procId]) return;
+  procSel = {processId:procId, stepId:stepId}; saveProcSel();
+  procReturn = null;
+  if (currentView !== 'process'){
+    document.querySelectorAll('.view-toggle .mode-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-view') === 'process'); });
+    switchView('process');
+  } else { renderProcessSidebar(); renderRibbon(); selectStep(stepId); }
+  var card = document.querySelector('#proc-stage .step-card[data-step="' + stepId + '"]');
+  if (card) card.scrollIntoView({block:'nearest', inline:'nearest'});
 }
 
 /* ----- Левая панель ----- */
@@ -145,10 +168,10 @@ function renderProcessSidebar(){
   var list = filteredProcesses();
   var box = document.getElementById('proc-list');
   box.innerHTML = list.length ? list.map(function(p){
-    var n = p.steps.length, subs = processSubsystems(p);
+    var n = p.steps.length, subs = processSubsystems(p), rd = processReadiness(p);
     return '<button type="button" class="list-row' + (p.id === procSel.processId ? ' active' : '') + '" data-proc="' + p.id + '">' +
       '<span class="list-row-main"><span class="list-row-title">' + escapeHtml(p.name) + '</span>' +
-        (subs.length ? '<span class="list-row-sub">' + escapeHtml(subs.join(', ')) + '</span>' : '') + '</span>' +
+        '<span class="list-row-sub">' + readinessText(rd) + (subs.length ? ' · ' + escapeHtml(subs.join(', ')) : '') + '</span></span>' +
       '<span class="list-row-meta"><span class="list-row-count" title="' + n + ' ' + pluralRu(n,'шаг','шага','шагов') + '">' + n + '</span></span>' +
     '</button>';
   }).join('') : '<p class="ref-empty">' + (allProcesses().length ? 'Ничего не найдено.' : 'Процессов пока нет.') + '</p>';
@@ -167,23 +190,41 @@ function stepRoleLineHTML(s){
   else text = '<span class="is-faint">Роль не указана</span>';
   return '<div class="step-card-role" title="' + escapeHtml(stepKindTitle(s.kind)) + '">' + icon + '<span>' + text + '</span></div>';
 }
+function readinessText(rd){ return 'Готово ' + rd.ready + ' из ' + rd.total + ' ' + pluralRu(rd.total,'шага','шагов','шагов'); }
+var DEV_TITLE = ' · В разработке';
 function stepChipHTML(p){
-  var info = participantInfo(p), role = participationRole(p.entityType, p.role);
-  return '<span class="step-chip' + (info.broken ? ' is-broken' : '') + '" title="' + escapeHtml(role.title + ': ' + (info.title || info.label)) + '">' +
+  var info = participantInfo(p), role = participationRole(p.entityType, p.role), dev = isDevStatus(refStatus(p.entityType, p.entityId));
+  return '<span class="step-chip' + (info.broken ? ' is-broken' : '') + (dev ? ' is-dev' : '') + '" title="' + escapeHtml(role.title + ': ' + (info.title || info.label) + (dev ? DEV_TITLE : '')) + '">' +
     (role.letter ? '<span class="step-chip-letter">' + role.letter + '</span>' : '') + info.iconHTML +
     '<span class="step-chip-text">' + escapeHtml(info.label) + '</span></span>';
 }
+/* Чип контроля: щит (сплошной — автоматический, контурный — ручной), название, буква реакции. */
+function stepControlChipHTML(c){
+  var info = stepControlInfo(c), r = controlReaction(c.reaction), dev = isDevStatus(refStatus(controlRefType(c), c.sourceId));
+  var title = (info.auto ? 'Автоматический контроль: ' : 'Ручной контроль: ') + info.label + ' · ' + r.title +
+    (c.targets.length ? ' · цели: ' + targetsText(c) : '') + (info.temp ? ' · временный → ' + info.temp : '') + (dev ? DEV_TITLE : '');
+  return '<span class="step-chip ctrl-chip' + (info.broken ? ' is-broken' : '') + (dev ? ' is-dev' : '') + '" title="' + escapeHtml(title) + '">' +
+    info.iconHTML + '<span class="step-chip-text">' + escapeHtml(info.label) + '</span>' +
+    (info.temp ? '<span class="chip-temp">временный → ' + escapeHtml(info.temp) + '</span>' : '') +
+    '<span class="step-chip-letter" title="' + escapeHtml(r.title) + '">' + r.letter + '</span></span>';
+}
 function stepCardHTML(s, num){
+  var rd = stepReadiness(s), mark = rd.level && READINESS_MARKS[rd.level];
+  var manual = procOnlyProd && isManualWorkStep(s);
+  var ctrls = stepControls(s);
   return '<div class="step-card' + (s.id === procSel.stepId ? ' is-active' : '') + '" data-step="' + s.id + '" tabindex="0">' +
     '<div class="step-card-head"><span class="step-num">' + num + '</span>' +
+      (mark ? '<span class="step-ready is-' + rd.level + '" title="' + escapeHtml(mark.title) + '">' + mark.glyph + '</span>' : '') +
       '<span class="step-card-name" title="' + escapeHtml(s.name) + '">' + escapeHtml(s.name) + '</span>' +
       '<button type="button" class="card-menu-btn step-menu-btn" aria-haspopup="menu" aria-expanded="false" aria-label="Действия с шагом" title="Действия">⋯</button></div>' +
     stepRoleLineHTML(s) +
+    (manual ? '<span class="step-manual-badge" title="В проме у шага не осталось ни механизмов, ни контролей">ручная работа</span>' : '') +
     PARTICIPANT_TYPES.map(function(t){
       var parts = s.participants.filter(function(p){ return p.entityType === t.code; });
       if (!parts.length) return '';
       return '<div class="step-chips" data-type="' + t.code + '">' + parts.map(stepChipHTML).join('') + '<span class="step-chip-more" hidden></span></div>';
     }).join('') +
+    (ctrls.length ? '<div class="step-chips" data-type="control">' + ctrls.map(stepControlChipHTML).join('') + '<span class="step-chip-more" hidden></span></div>' : '') +
   '</div>';
 }
 function stepLinkHTML(afterId){
@@ -193,7 +234,7 @@ function stepLinkHTML(afterId){
 
 function renderRibbon(){
   var p = currentProcess();
-  var head = document.getElementById('proc-head'), stage = document.getElementById('proc-stage'), empty = document.getElementById('proc-empty');
+  var head = document.getElementById('proc-head-info'), stage = document.getElementById('proc-stage'), empty = document.getElementById('proc-empty');
   empty.hidden = !!p;
   document.getElementById('proc-main').classList.toggle('is-empty', !p);
   if (!p){
@@ -203,7 +244,8 @@ function renderRibbon(){
   }
   var list = orderedSteps(p);
   head.innerHTML = '<h2 class="proc-title">' + escapeHtml(p.name) + '</h2>' +
-    '<span class="proc-meta">' + list.length + ' ' + pluralRu(list.length,'шаг','шага','шагов') + '</span>';
+    '<span class="proc-meta">' + list.length + ' ' + pluralRu(list.length,'шаг','шага','шагов') + ' · ' + readinessText(processReadiness(p)) + '</span>';
+  stage.classList.toggle('only-prod', procOnlyProd);
   stage.innerHTML = list.length ?
     list.map(function(s, i){ return (i ? stepLinkHTML(list[i - 1].id) : '') + stepCardHTML(s, i + 1); }).join('') +
       '<div class="step-link is-tail"><button type="button" class="step-add" data-after="' + list[list.length - 1].id + '" title="Добавить шаг в конец" aria-label="Добавить шаг в конец">+</button></div>'
@@ -243,11 +285,13 @@ function addStepAfter(afterId){
 }
 function deleteStepUI(stepId){
   var p = currentProcess(), s = p && stepById(p, stepId); if (!s) return;
-  var n = s.participants.length;
+  var n = s.participants.length, k = stepControls(s).length, with_ = [];
+  if (n) with_.push(n + ' ' + pluralRu(n,'участником','участниками','участниками'));
+  if (k) with_.push(k + ' ' + pluralRu(k,'контролем','контролями','контролями'));
   openModal({
     title:'Удалить шаг?',
     bodyHTML:'<p>Шаг ' + stepNumbers(p)[s.id] + ' «' + escapeHtml(s.name) + '» будет удалён' +
-      (n ? ' вместе с ' + n + ' ' + pluralRu(n,'участником','участниками','участниками') : '') + '. Соседние шаги соединятся.</p>',
+      (with_.length ? ' вместе с ' + with_.join(' и ') : '') + '. Соседние шаги соединятся.</p>',
     footerButtons:[
       {label:'Отмена', onClick:function(){ return true; }},
       {label:'Удалить', variant:'danger', onClick:function(){
@@ -347,5 +391,12 @@ function bindProcessView(){
   document.getElementById('btn-proc-zoom-in').addEventListener('click', function(){ setProcZoom(procZoom * PROC_ZOOM_STEP); });
   document.getElementById('btn-proc-zoom-out').addEventListener('click', function(){ setProcZoom(procZoom / PROC_ZOOM_STEP); });
   document.getElementById('btn-proc-fit').addEventListener('click', fitProcessRibbon);
+  var onlyProd = document.getElementById('proc-only-prod');
+  onlyProd.checked = procOnlyProd;
+  onlyProd.addEventListener('change', function(){
+    procOnlyProd = onlyProd.checked;
+    try{ localStorage.setItem(PROC_ONLY_PROD_KEY, procOnlyProd ? '1' : '0'); }catch(e){}
+    renderRibbon();
+  });
   if (window.ResizeObserver) new ResizeObserver(function(){ if (currentView === 'process') fitChipLines(); }).observe(sc);
 }
