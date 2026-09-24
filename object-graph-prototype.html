@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nodus v.0.4 — локальный прототип</title>
+<title>Nodus v.0.5.0 — локальный прототип</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -57,10 +57,10 @@
   --type-const:hsl(0,58%,62%);
   --type-catalog:hsl(30,58%,62%);
   --type-document:hsl(60,58%,62%);
-  --type-infreg:hsl(90,58%,62%);
+  --type-infreg:hsl(180,58%,62%);   /* РС — бирюзовый: оттенок РН (120°) отличается на 60° */
   --type-accumreg:hsl(120,58%,62%);
   --type-enumt:hsl(150,58%,62%);
-  --type-process:hsl(180,58%,62%);
+  --type-process:hsl(90,58%,62%);
   --type-report:hsl(210,58%,62%);
   --type-charchart:hsl(240,58%,62%);
   --type-role:hsl(270,58%,62%);
@@ -305,6 +305,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .view-list .card-actions{ display:none; } /* фокус-режим есть только на графе */
 .canvas-tooltip{ position:absolute; z-index:5; max-width:320px; padding:6px 8px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); font-size:var(--fs-caption); color:var(--text); pointer-events:none; white-space:normal; }
 .canvas-tooltip[hidden]{ display:none; }
+.ctip-mech + .ctip-mech{ margin-top:6px; padding-top:6px; border-top:1px solid var(--border-soft); }
+.ctip-title{ display:flex; align-items:center; gap:7px; font-weight:600; }
+.ctip-title .om-diamond{ width:7px; height:7px; }
+.ctip-dir{ color:var(--text-muted); margin-top:2px; padding-left:14px; }
+.ctip-note{ color:var(--text-muted); padding-left:14px; }
+.ctip-note b{ font-weight:500; color:var(--text); }
+.legend-line{ width:22px; height:10px; flex:none; color:var(--text-muted); }
 
 /* Мини-карта (слева от контролов холста, вровень по нижнему краю) */
 .minimap{ position:absolute; right:62px; bottom:14px; width:182px; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
@@ -597,7 +604,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     <div class="topbar-left">
       <h1 class="app-title">
         <svg class="app-logo" viewBox="0 0 24 24" aria-hidden="true"><polyline class="logo-line" points="5,19 5,5 19,19 19,5" stroke-width="2" stroke-linejoin="round"/><circle class="logo-n2" cx="5" cy="19" r="2.6"/><circle class="logo-n1" cx="5" cy="5" r="2.6"/><circle class="logo-n3" cx="19" cy="19" r="2.6"/><circle class="logo-n4" cx="19" cy="5" r="2.6"/></svg>
-        Nodus <span class="app-version">v.0.4</span>
+        Nodus <span class="app-version">v.0.5.0</span>
       </h1>
     </div>
     <div class="topbar-group">
@@ -1662,18 +1669,48 @@ var LABEL_MIN_PX = 7;
 var LABEL_FADE_PX = 3;
 var LABEL_CELL = 64;
 var LABEL_PAD_X = 5;
-var LABEL_H = 18;
+var LABEL_H = 18;          /* высота плашки в одну строку */
+var LABEL_LINE_H = 14;     /* каждая следующая строка */
 var LABEL_GAP = 4;
+var LABEL_MAX_CHARS = 24;  /* ширина строки подписи, символов */
+var LABEL_MAX_LINES = 2;
 
-function labelWidth(ctx, n){
-  if (n._labelFor !== n.label){ n._labelW = ctx.measureText(n.label).width; n._labelFor = n.label; }
-  return n._labelW;
+/* Перенос по словам: до LABEL_MAX_LINES строк по LABEL_MAX_CHARS символов;
+   не поместилось — многоточие (полный текст — во всплывающей подсказке). */
+function wrapLabel(text){
+  var words = String(text || '').replace(/\s+/g, ' ').trim().split(' ');
+  var lines = [], cur = '', i = 0;
+  while (i < words.length && lines.length < LABEL_MAX_LINES){
+    var w = words[i];
+    if (!cur && w.length > LABEL_MAX_CHARS){ lines.push(w.slice(0, LABEL_MAX_CHARS)); words[i] = w.slice(LABEL_MAX_CHARS); continue; }
+    var next = cur ? cur + ' ' + w : w;
+    if (next.length <= LABEL_MAX_CHARS){ cur = next; i++; }
+    else { lines.push(cur); cur = ''; }
+  }
+  if (cur && lines.length < LABEL_MAX_LINES) lines.push(cur);
+  var truncated = i < words.length;
+  if (truncated){
+    var last = lines[lines.length - 1];
+    lines[lines.length - 1] = (last.length >= LABEL_MAX_CHARS ? last.slice(0, LABEL_MAX_CHARS - 1) : last).replace(/\s+$/, '') + '…';
+  }
+  return {lines:lines, truncated:truncated};
 }
+function labelInfo(ctx, n){
+  if (n._labelFor !== n.label){
+    var wr = wrapLabel(n.label);
+    n._labelLines = wr.lines; n._labelTruncated = wr.truncated;
+    n._labelW = Math.max.apply(null, wr.lines.map(function(l){ return ctx.measureText(l).width; }).concat([0]));
+    n._labelFor = n.label;
+  }
+  return n;
+}
+function labelWidth(ctx, n){ return labelInfo(ctx, n)._labelW; }
+function labelHeight(n){ return LABEL_H + ((n._labelLines ? n._labelLines.length : 1) - 1)*LABEL_LINE_H; }
 
 function labelCandidates(n, forced, w){
   var r = nodeRadius(n)*view.scale;
   var sx = n.x*view.scale + view.offsetX, sy = n.y*view.scale + view.offsetY;
-  var h = LABEL_H;
+  var h = labelHeight(n);
   var below = {cx:sx, cy:sy + r + LABEL_GAP + h/2};
   var above = {cx:sx, cy:sy - r - LABEL_GAP - h/2};
   var list = n.kind==='mechanism' ? [above, below] : [below, above];
@@ -1703,7 +1740,8 @@ function layoutLabels(ctx, focus){
     placed.push(b);
   }
   function box(n, c, w, alpha){
-    return {x0:c.cx - w/2, x1:c.cx + w/2, y0:c.cy - LABEL_H/2, y1:c.cy + LABEL_H/2, cx:c.cx, cy:c.cy, n:n, alpha:alpha};
+    var h = labelHeight(n);
+    return {x0:c.cx - w/2, x1:c.cx + w/2, y0:c.cy - h/2, y1:c.cy + h/2, cx:c.cx, cy:c.cy, n:n, alpha:alpha};
   }
   function onScreen(b){ return !(b.x1 < 0 || b.x0 > viewportWidth || b.y1 < 0 || b.y0 > viewportHeight); }
   function place(n, forced, alpha){
@@ -1773,7 +1811,9 @@ function drawLabels(ctx, labels){
     ctx.beginPath(); roundRectPath(ctx, b.x0, b.y0, b.x1-b.x0, b.y1-b.y0, 3); ctx.fill();
     ctx.globalAlpha = b.alpha;
     ctx.fillStyle = THEME.text;
-    ctx.fillText(b.n.label, b.cx, b.cy + 0.5);
+    var lines = b.n._labelLines || [b.n.label];
+    var y = b.cy - (lines.length - 1)*LABEL_LINE_H/2 + 0.5;
+    lines.forEach(function(l, i){ ctx.fillText(l, b.cx, y + i*LABEL_LINE_H); });
   });
   ctx.textBaseline = 'alphabetic';
   ctx.globalAlpha = 1;
@@ -1946,7 +1986,8 @@ function drawNodeBatch(ctx, nodes, baseAlpha){
     stubs.forEach(function(n){ var r = nodeRadius(n); ctx.moveTo(n.x+r, n.y); ctx.arc(n.x,n.y,r,0,Math.PI*2); });
     ctx.stroke(); ctx.setLineDash([]);
   }
-  drawTypeTags(ctx, fills, baseAlpha);
+  /* Метки типа только у неприглушённых узлов: в бледном круге они читаются как шум. */
+  if (baseAlpha >= 1) drawTypeTags(ctx, fills, baseAlpha);
   mechs.forEach(function(list, color){
     ctx.globalAlpha = baseAlpha;
     ctx.beginPath();
@@ -2011,6 +2052,7 @@ function drawNodes(ctx, nodes, focus){
   });
 }
 
+var lastLabels = [];
 function render(){
   var focus = getFocus();
   ctx2d.save();
@@ -2032,6 +2074,7 @@ function render(){
   }), focus);
   ctx2d.restore();
   var labels = layoutLabels(ctx2d, focus);
+  lastLabels = labels;
   drawLabels(ctx2d, labels);
   edgeLabelBoxes = focusMode ? drawFocusEdgeLabels(ctx2d, labels) : [];
   drawMinimap();
@@ -2044,6 +2087,7 @@ function requestRender(){
     renderRequested = false;
     /* В фокус-режиме физика стоит: раскладка фокуса временная и не должна плыть. */
     if (!focusMode && sim.alpha > sim.alphaMin){ tickSimulation(); requestRender(); }
+    else maybeInitialFit();
     render();
   });
 }
@@ -2125,8 +2169,9 @@ function onMouseMove(ev){
     return;
   }
   var wp = screenToWorld(sx,sy);
-  if (focusMode) updateCanvasTooltip(sx, sy);
   var node = hitTestNode(wp.x,wp.y);
+  if (focusMode) updateCanvasTooltip(sx, sy);
+  else updateGraphTooltip(sx, sy, node, wp);
   var newHoverId = node ? node.id : null;
   if (newHoverId !== hoverId){
     hoverId = newHoverId;
@@ -4165,7 +4210,7 @@ function setupResizeHandle(handleId, side){
 /* ===================== Масштаб, вписывание, центрирование ===================== */
 var SCALE_MIN = 0.05, SCALE_MAX = 3;
 var VIEW_ANIM_MS = 220;          /* ≤ 250 мс */
-var FIT_PADDING = 40;            /* отступ от краёв холста при «вписать в экран» */
+var FIT_PADDING = 48;            /* отступ от краёв холста до узла с подписью при «вписать в экран» */
 var FIT_MAX_SCALE = 1.5;
 var CENTER_EDGE_MARGIN = 80;     /* ближе к краю — центрируем */
 var ZOOM_STEP = 1.25;
@@ -4198,17 +4243,45 @@ function zoomBy(factor){
   animateView({scale:s, offsetX:cx - w.x*s, offsetY:cy - w.y*s});
 }
 
+/* Границы графа на экране при масштабе s (без сдвига): узлы плюс подписи, которые
+   имеют постоянный экранный размер (у объекта — под кругом, у механизма — над ромбом). */
+function screenExtents(s){
+  ctx2d.font = THEME.labelFont;
+  var e = {x0:Infinity, x1:-Infinity, y0:Infinity, y1:-Infinity};
+  currentNodes.forEach(function(n){
+    var r = nodeRadius(n)*s, cx = n.x*s, cy = n.y*s;
+    var hw = Math.max(r, labelWidth(ctx2d, n)/2 + LABEL_PAD_X), lh = labelHeight(n) + LABEL_GAP;
+    e.x0 = Math.min(e.x0, cx - hw); e.x1 = Math.max(e.x1, cx + hw);
+    e.y0 = Math.min(e.y0, cy - r - (n.kind === 'mechanism' ? lh : 0));
+    e.y1 = Math.max(e.y1, cy + r + (n.kind === 'mechanism' ? 0 : lh));
+  });
+  return e;
+}
+function fitView(){
+  var W = viewportWidth - 2*FIT_PADDING, H = viewportHeight - 2*FIT_PADDING;
+  function fits(s){ var e = screenExtents(s); return e.x1 - e.x0 <= W && e.y1 - e.y0 <= H; }
+  /* Размер подписей не зависит от масштаба — подбираем масштаб двоичным поиском. */
+  var lo = clampScale(0), hi = clampScale(FIT_MAX_SCALE);
+  if (fits(hi)) lo = hi;
+  else for (var i = 0; i < 30; i++){ var mid = (lo + hi)/2; if (fits(mid)) lo = mid; else hi = mid; }
+  var e = screenExtents(lo);
+  return {scale:lo, offsetX:viewportWidth/2 - (e.x0 + e.x1)/2, offsetY:viewportHeight/2 - (e.y0 + e.y1)/2};
+}
 function fitToScreen(){
   if (!currentNodes.length) return;
-  var minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
-  currentNodes.forEach(function(n){
-    var r = nodeRadius(n);
-    minX = Math.min(minX, n.x-r); maxX = Math.max(maxX, n.x+r);
-    minY = Math.min(minY, n.y-r); maxY = Math.max(maxY, n.y+r);
-  });
-  var bw = Math.max(1, maxX-minX), bh = Math.max(1, maxY-minY);
-  var s = clampScale(Math.min((viewportWidth - 2*FIT_PADDING)/bw, (viewportHeight - 2*FIT_PADDING)/bh, FIT_MAX_SCALE));
-  animateView({scale:s, offsetX:viewportWidth/2 - (minX+bw/2)*s, offsetY:viewportHeight/2 - (minY+bh/2)*s});
+  animateView(fitView());
+}
+/* Начальная раскладка (и «Разложить заново»): когда физика успокоилась, граф
+   вписывается, если выходит за отступы. */
+var pendingInitialFit = true;
+function maybeInitialFit(){
+  if (!pendingInitialFit || focusMode || currentView !== 'graph' || !currentNodes.length || !viewportWidth) return;
+  pendingInitialFit = false;
+  var e = screenExtents(view.scale);
+  var fitsNow = e.x0 + view.offsetX >= FIT_PADDING && e.x1 + view.offsetX <= viewportWidth - FIT_PADDING &&
+                e.y0 + view.offsetY >= FIT_PADDING && e.y1 + view.offsetY <= viewportHeight - FIT_PADDING;
+  if (fitsNow) return;
+  animateView(fitView());
 }
 
 /* Точка сущности на холсте: узел объекта/механизма; механизм без узла (режим без
@@ -4441,11 +4514,61 @@ function drawFocusEdgeLabels(ctx, nodeLabels){
 }
 
 function hideCanvasTooltip(){ var t = document.getElementById('canvas-tooltip'); if (t) t.hidden = true; }
+function showCanvasTooltipAt(tip, sx, sy){
+  tip.hidden = false;
+  var w = tip.offsetWidth, hgt = tip.offsetHeight;
+  tip.style.left = Math.max(4, Math.min(sx + 12, viewportWidth - w - 8)) + 'px';
+  tip.style.top = (sy + 14 + hgt > viewportHeight - 4 ? Math.max(4, sy - hgt - 10) : sy + 14) + 'px';
+}
+/* Ребро в режиме «связями»: все механизмы между двумя объектами — название (ромб в цвете
+   категории), направление «Источник → Приёмник» и описания участия. */
+function edgeTooltipHTML(e){
+  var a = state.objects[e.a.slice(4)], b = state.objects[e.b.slice(4)];
+  if (!a || !b) return '';
+  var ids = Array.from(e.mechanismIds).filter(function(id){ return state.mechanisms[id]; })
+    .sort(function(x, y){ return state.mechanisms[x].title.localeCompare(state.mechanisms[y].title, 'ru'); });
+  return ids.map(function(mid){
+    var m = state.mechanisms[mid];
+    function parts(o){ return m.participants.filter(function(p){ return p.objectId === o.id; }); }
+    function dir(o, d){ return parts(o).some(function(p){ return roleInfo(p.role).direction === d; }); }
+    var arrow;
+    if (dir(a,'source') && dir(b,'target')) arrow = escapeHtml(a.name) + ' → ' + escapeHtml(b.name);
+    else if (dir(b,'source') && dir(a,'target')) arrow = escapeHtml(b.name) + ' → ' + escapeHtml(a.name);
+    else arrow = escapeHtml(a.name) + ' — ' + escapeHtml(b.name);
+    var notes = [a, b].map(function(o){
+      var n = parts(o).map(function(p){ return p.note; }).filter(Boolean);
+      return n.length ? '<div class="ctip-note"><b>' + escapeHtml(o.name) + ':</b> ' + escapeHtml(n.join('; ')) + '</div>' : '';
+    }).join('');
+    return '<div class="ctip-mech"><div class="ctip-title"><span class="om-diamond" style="--c:' + categoryAccent(m.category) + '"></span>' + escapeHtml(m.title) + '</div>' +
+      '<div class="ctip-dir">' + arrow + '</div>' + notes + '</div>';
+  }).join('');
+}
+var graphTipKey = null;
+function updateGraphTooltip(sx, sy, node, wp){
+  var tip = document.getElementById('canvas-tooltip');
+  if (dragNode || isPanning){ tip.hidden = true; graphTipKey = null; return; }
+  var key = null, html = '';
+  if (node){
+    labelInfo(ctx2d, node);
+    if (node._labelTruncated){ key = 'n:' + node.id; html = escapeHtml(node.label); }
+  } else if (currentMode === 'collapsed'){
+    var edge = hitTestEdge(wp.x, wp.y);
+    if (edge){ key = 'e:' + edge.key; html = edgeTooltipHTML(edge); }
+  }
+  if (!key){
+    /* Обрезанная подпись под курсором (сама плашка, не круг). */
+    var lb = (lastLabels || []).filter(function(b){ return b.n._labelTruncated && sx >= b.x0 && sx <= b.x1 && sy >= b.y0 && sy <= b.y1; })[0];
+    if (lb){ key = 'n:' + lb.n.id; html = escapeHtml(lb.n.label); }
+  }
+  if (!key || !html){ tip.hidden = true; graphTipKey = null; return; }
+  if (key !== graphTipKey){ tip.innerHTML = html; graphTipKey = key; }
+  showCanvasTooltipAt(tip, sx, sy);
+}
 function updateCanvasTooltip(sx, sy){
   var tip = document.getElementById('canvas-tooltip');
   var b = edgeLabelBoxes.filter(function(b){ return b.full !== b.text && sx >= b.x0 && sx <= b.x1 && sy >= b.y0 && sy <= b.y1; })[0];
   if (!b){ tip.hidden = true; return; }
-  tip.textContent = b.full;
+  tip.textContent = b.full; graphTipKey = null;
   tip.style.left = Math.min(sx + 12, viewportWidth - 330) + 'px';
   tip.style.top = (sy + 14) + 'px';
   tip.hidden = false;
@@ -4535,6 +4658,17 @@ function updateLegend(){
   if (cats.length){
     html += '<p class="legend-group-title">Категории механизмов</p>' + cats.map(function(c){
       return '<div class="legend-item"><span class="dot dot-diamond" style="--c:'+categoryAccent(c.code)+'"></span>'+escapeHtml(c.title)+'</div>';
+    }).join('');
+  }
+  if (html){
+    /* Линии — те же, что рисует холст (EDGE_DASH, edgeStyle). */
+    var lines = currentMode === 'full'
+      ? [['solid', 'Объект передаёт данные в механизм'], ['dashed', 'Механизм передаёт данные в объект'], ['dotted', 'Участие без направления (параметр, условие)']]
+      : [['solid', 'Передача данных: от источника к приёмнику'], ['dotted', 'Связь без направления (параметр, условие)']];
+    html += '<p class="legend-group-title">Связи</p>' + lines.map(function(l){
+      var dash = EDGE_DASH[l[0]].join(' ');
+      return '<div class="legend-item"><svg class="legend-line" viewBox="0 0 22 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="currentColor" stroke-width="1.5"' +
+        (dash ? ' stroke-dasharray="' + dash + '"' : '') + (l[0] === 'dotted' ? ' stroke-linecap="round"' : '') + '/></svg>' + escapeHtml(l[1]) + '</div>';
     }).join('');
   }
   document.getElementById('legend-body').innerHTML = html;
@@ -4721,15 +4855,25 @@ function attachHandlers(){
   document.getElementById('btn-zoom-in').addEventListener('click', function(){ zoomBy(ZOOM_STEP); });
   document.getElementById('btn-zoom-out').addEventListener('click', function(){ zoomBy(1/ZOOM_STEP); });
   document.getElementById('btn-fit').addEventListener('click', fitToScreen);
+  /* Легенда: при первом запуске (нет сохранённого состояния) развёрнута, дальше — как оставил пользователь. */
+  var LEGEND_OPEN_KEY = 'nodusLegendOpen';
+  (function(){
+    var open = true;
+    try{ open = localStorage.getItem(LEGEND_OPEN_KEY) !== '0'; }catch(e){}
+    document.getElementById('legend-body').hidden = !open;
+    document.getElementById('legend-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+  })();
   document.getElementById('legend-toggle').addEventListener('click', function(ev){
     var body = document.getElementById('legend-body');
     body.hidden = !body.hidden;
     ev.currentTarget.setAttribute('aria-expanded', body.hidden ? 'false' : 'true');
+    try{ localStorage.setItem(LEGEND_OPEN_KEY, body.hidden ? '0' : '1'); }catch(e){}
   });
   document.getElementById('btn-relayout').addEventListener('click', function(){
     if (focusMode) exitFocus(true);
     Object.keys(state.objects).forEach(function(id){ state.objects[id].fx=null; state.objects[id].fy=null; });
     Object.keys(state.mechanisms).forEach(function(id){ state.mechanisms[id].fx=null; state.mechanisms[id].fy=null; });
+    pendingInitialFit = true;
     var spread = initialSpread(nodeById.size, 200);
     nodeById.forEach(function(n){
       n.fx=null; n.fy=null;
