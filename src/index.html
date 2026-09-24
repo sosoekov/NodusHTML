@@ -31,6 +31,7 @@
       <div class="view-toggle" role="tablist">
         <button class="mode-btn active" data-view="graph" type="button">Граф</button>
         <button class="mode-btn" data-view="list" type="button">Список</button>
+        <button class="mode-btn" data-view="process" type="button">Процессы</button>
       </div>
     </div>
     <div class="global-search" id="global-search">
@@ -139,8 +140,42 @@
     </div>
     <div class="list-view-body" id="list-view-body"></div>
   </div>
+  <div id="process-view" class="process-view" hidden>
+    <aside id="proc-sidebar">
+      <div class="sidebar-section side-search">
+        <input type="text" id="proc-search" class="search-input" placeholder="Поиск процессов…" autocomplete="off">
+        <button class="btn btn-accent side-create" id="btn-proc-add" type="button" title="Создать процесс" aria-label="Создать процесс">+</button>
+      </div>
+      <div class="sidebar-section filters">
+        <div class="filters-row">
+          <div class="multi-select side-sub-filter" data-ms="proc-sub">
+            <button class="select-sm multi-select-btn" type="button" aria-haspopup="true" aria-expanded="false">Все подсистемы</button>
+            <div class="multi-select-dropdown" hidden></div>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-section list-wrap">
+        <div id="proc-list"></div>
+      </div>
+    </aside>
+    <main id="proc-main">
+      <div class="proc-head" id="proc-head"></div>
+      <div class="proc-scroll" id="proc-scroll"><div class="proc-stage" id="proc-stage"></div></div>
+      <div class="empty-state proc-empty" id="proc-empty" hidden>
+        <p class="empty-title" id="proc-empty-title">Процессов пока нет</p>
+        <p class="empty-hint">Процесс — цепочка шагов: кто что делает, какие объекты, реквизиты и механизмы участвуют.</p>
+        <button class="btn btn-accent" id="btn-proc-empty-add" type="button">+ Процесс</button>
+      </div>
+      <div class="canvas-controls" role="toolbar" aria-label="Масштаб ленты">
+        <button class="canvas-ctl" id="btn-proc-zoom-in" type="button" title="Приблизить (Ctrl + колесо)" aria-label="Приблизить">+</button>
+        <button class="canvas-ctl" id="btn-proc-zoom-out" type="button" title="Отдалить (Ctrl + колесо)" aria-label="Отдалить">−</button>
+        <button class="canvas-ctl" id="btn-proc-fit" type="button" title="Вписать" aria-label="Вписать">⤢</button>
+      </div>
+    </main>
+  </div>
     <div class="resize-handle" id="resize-right" aria-hidden="true"></div>
     <aside id="detail-panel">
+      <div id="panel-back" class="panel-back" hidden><button type="button" class="link-btn"></button></div>
       <div id="panel-empty" class="panel-empty">
         <p>Ничего не выбрано.</p>
         <p>Выберите объект или механизм на графе или в списке слева, чтобы увидеть и отредактировать детали.</p>
@@ -150,6 +185,8 @@
       <div id="panel-edge" class="panel-content" hidden></div>
       <div id="panel-role" class="panel-content" hidden></div>
       <div id="panel-control" class="panel-content" hidden></div>
+      <div id="panel-process" class="panel-content" hidden></div>
+      <div id="panel-step" class="panel-content" hidden></div>
     </aside>
   </div>
 </div>
@@ -165,6 +202,9 @@
 <script src="js/roles.js"></script>
 <script src="js/attributes.js"></script>
 <script src="js/controls.js"></script>
+<script src="js/processes.js"></script>
+<script src="js/process-view.js"></script>
+<script src="js/process-cards.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

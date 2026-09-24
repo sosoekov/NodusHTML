@@ -948,17 +948,28 @@ function selectEdge(edge){
 function clearSelection(){
   pinnedNodeId = null; pinnedEdgeKey = null; pinnedMechanismId = null;
   showPanel(null);
+  /* В «Процессах» пустой панели нет: возвращаемся к карточке шага или процесса. */
+  if (currentView === 'process') showProcessDefaultPanel();
   syncSidebarActive();
   requestRender();
 }
 
 function switchView(view){
   if (focusMode) exitFocus(true);
+  var prev = currentView;
   currentView = view;
   document.body.classList.toggle('view-list', view === 'list');
+  document.body.classList.toggle('view-process', view === 'process');
   var main = document.getElementById('main');
   var listView = document.getElementById('list-view');
-  if (view === 'list'){
+  document.getElementById('process-view').hidden = view !== 'process';
+  if (prev === 'process' && view !== 'process') leaveProcessView();
+  if (view === 'process'){
+    main.hidden = true;
+    listView.hidden = true;
+    enterProcessView();
+    updateDetailPanelVisibility();
+  } else if (view === 'list'){
     main.hidden = true;
     listView.hidden = false;
     /* Ребро в «Списке» не показывается — его карточку закрываем, выбор объекта/механизма сохраняется. */

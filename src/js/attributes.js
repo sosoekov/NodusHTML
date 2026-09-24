@@ -136,11 +136,29 @@ function renderAttributesBlock(obj, panel){
     });
     var menuBtn = row.querySelector('.attr-menu-btn');
     menuBtn.addEventListener('click', function(){
-      openPopoverMenu(menuBtn, [{value:'delete', label:'Удалить реквизит', danger:true}], function(){
-        delete state.attributes[a.id];
-        attributesChanged(obj, panel);
-      });
+      openPopoverMenu(menuBtn, [{value:'delete', label:'Удалить реквизит', danger:true}], function(){ deleteAttribute(a, obj, panel); });
     });
+  });
+}
+
+/* Удаление реквизита: если он участвует в шагах процессов — подтверждение со списком шагов,
+   ссылка в шаге остаётся «⚠ Удалено: Объект · Реквизит». */
+function deleteAttribute(a, obj, panel){
+  var refs = processRefsTo('attribute', a.id);
+  function proceed(){
+    if (refs.length) rememberDeleted('attr', a.id, attributeDisplayName(a));
+    delete state.attributes[a.id];
+    attributesChanged(obj, panel);
+    if (currentView === 'process') renderProcessView();
+  }
+  if (!refs.length){ proceed(); return; }
+  openModal({
+    title:'Удалить реквизит?',
+    bodyHTML:'<p>Реквизит «' + escapeHtml(attributeFullName(a)) + '» будет удалён.</p>' + processRefsWarningHTML(refs),
+    footerButtons:[
+      {label:'Отмена', onClick:function(){ return true; }},
+      {label:'Удалить', variant:'danger', onClick:function(){ proceed(); }}
+    ]
   });
 }
 

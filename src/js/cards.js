@@ -4,10 +4,11 @@
 
 function showPanel(kind){
   document.getElementById('panel-empty').hidden = !!kind;
-  ['object','mechanism','edge','role','control'].forEach(function(k){
+  ['object','mechanism','edge','role','control','process','step'].forEach(function(k){
     document.getElementById('panel-'+k).hidden = (k!==kind);
   });
   if (pinnedAux && AUX_KINDS[pinnedAux.kind].panel !== kind) pinnedAux = null;
+  updateProcessBackBar(kind);
   updateDetailPanelVisibility();
 }
 
@@ -15,7 +16,7 @@ function showPanel(kind){
    с открытой карточкой объекта или механизма (список при этом сужается). */
 function updateDetailPanelVisibility(){
   var hasCard = ['object','mechanism','role','control'].some(function(k){ return !document.getElementById('panel-' + k).hidden; });
-  var show = currentView === 'graph' || hasCard;
+  var show = currentView === 'graph' || currentView === 'process' || hasCard;
   document.getElementById('detail-panel').hidden = !show;
   document.getElementById('resize-right').hidden = !show;
 }

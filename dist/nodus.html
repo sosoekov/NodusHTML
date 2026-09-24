@@ -77,6 +77,10 @@
   /* Контроли (процессы): цвет щита ручного и автоматического контроля */
   --control:hsl(145,55%,64%);
 
+  /* Лента процесса: ширина карточки шага и стрелки между шагами */
+  --step-card-w:240px;
+  --step-link-w:56px;
+
   /* Граф: рёбра, сетка, обводка заглушки, бейдж числа механизмов, логотип */
   --graph-edge:rgba(90,105,130,0.55);
   --graph-arrow:rgba(140,155,180,0.75);
@@ -636,6 +640,74 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .ref-link .type-icon{ width:14px; height:14px; color:var(--text-muted); }
 .ref-broken, .lv-cell.is-broken{ color:var(--warning); }
 .moment-seg{ margin-top:2px; }
+
+/* ===== Режим «Процессы» (фаза 3) ===== */
+.process-view{ flex:1; display:flex; min-height:0; min-width:0; }
+.process-view[hidden]{ display:none; }
+#proc-sidebar{ width:280px; flex:none; border-right:1px solid var(--border); background:var(--bg-panel); display:flex; flex-direction:column; min-height:0; }
+#proc-main{ flex:1; position:relative; display:flex; flex-direction:column; min-width:0; background:var(--bg); }
+.proc-head{ flex:none; display:flex; align-items:baseline; gap:10px; padding:14px 20px 10px; border-bottom:1px solid var(--border-soft); min-height:48px; }
+.proc-title{ margin:0; font-size:var(--fs-title); font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.proc-meta{ font-size:var(--fs-caption); color:var(--text-faint); flex:none; }
+#proc-main.is-empty .proc-head, #proc-main.is-empty .canvas-controls{ display:none; }
+.proc-scroll{ flex:1; overflow:auto; min-height:0; }
+.proc-stage{ display:inline-flex; align-items:flex-start; padding:28px 28px 80px; min-width:100%; }
+.proc-empty:not([hidden]){ display:flex; }
+
+.step-card{ flex:none; width:var(--step-card-w); background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); padding:10px 12px 12px; cursor:pointer; display:flex; flex-direction:column; gap:7px; }
+.step-card:hover{ border-color:var(--text-faint); }
+.step-card:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+.step-card.is-active{ border-color:var(--accent); background:var(--bg-elevated); }
+.step-card-head{ display:flex; align-items:flex-start; gap:8px; }
+.step-num{ flex:none; min-width:20px; height:20px; padding:0 5px; border-radius:10px; background:var(--bg-selected); color:var(--text); font-size:var(--fs-caption); font-weight:600; display:inline-flex; align-items:center; justify-content:center; font-variant-numeric:tabular-nums; }
+.step-num-lg{ min-width:26px; height:26px; border-radius:13px; font-size:var(--fs-base); }
+.step-card-name{ flex:1; min-width:0; font-size:var(--fs-base); font-weight:500; color:var(--text); line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word; }
+.step-menu-btn{ width:22px; height:20px; margin:-2px -4px 0 0; }
+.step-card-role{ display:flex; align-items:center; gap:6px; font-size:var(--fs-caption); color:var(--text-muted); min-width:0; }
+.step-card-role span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.step-card-role .type-icon{ width:13px; height:13px; }
+.is-faint{ color:var(--text-faint); }
+.step-chips{ display:flex; gap:4px; overflow:hidden; min-width:0; }
+.step-chip{ flex:none; max-width:100%; display:inline-flex; align-items:center; gap:4px; padding:1px 6px 1px 3px; border:1px solid var(--border); border-radius:10px; font-size:var(--fs-caption); color:var(--text); background:var(--bg); min-width:0; }
+.step-chip:first-child{ flex-shrink:1; }
+.step-chip[hidden], .step-chip-more[hidden]{ display:none; }
+.step-chip .dot{ width:7px; height:7px; border-radius:50%; flex:none; }
+.step-chip .om-diamond{ flex:none; }
+.step-chip-text{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.step-chip-letter{ flex:none; min-width:15px; height:15px; border-radius:8px; background:var(--bg-selected); color:var(--text); font-size:var(--fs-caption); font-weight:600; line-height:15px; text-align:center; }
+.step-chip.is-broken{ color:var(--warning); border-style:dashed; }
+.step-chip-more{ flex:none; font-size:var(--fs-caption); color:var(--text-faint); padding:1px 2px; }
+
+.step-link{ flex:none; width:var(--step-link-w); height:40px; position:relative; display:flex; align-items:center; justify-content:center; }
+.step-arrow{ position:absolute; left:4px; right:4px; top:50%; border-top:1.5px solid var(--graph-arrow); }
+.step-arrow::after{ content:''; position:absolute; right:-1px; top:-5px; width:8px; height:8px; border-right:1.5px solid var(--graph-arrow); border-top:1.5px solid var(--graph-arrow); transform:rotate(45deg); }
+.step-add{ position:relative; width:22px; height:22px; border-radius:11px; border:1px solid var(--border); background:var(--bg-panel); color:var(--text-muted); font-size:var(--fs-md); line-height:1; cursor:pointer; opacity:0; padding:0; }
+.step-link:hover .step-add, .step-add:focus-visible{ opacity:1; }
+.step-add:hover{ color:var(--on-accent); background:var(--accent); border-color:var(--accent); }
+.step-link.is-tail .step-add{ opacity:1; border-style:dashed; }
+.step-add-first{ margin:20px 0; }
+
+.panel-back{ margin:-6px 0 12px; }
+.panel-back[hidden]{ display:none; }
+.panel-back .link-btn{ font-size:var(--fs-base); color:var(--accent); }
+.card-icon-process{ color:var(--type-bproc); }
+.step-kind-badge .type-icon{ width:12px; height:12px; }
+.step-proc-name{ font-size:var(--fs-caption); color:var(--text-faint); align-self:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.proc-kind-counts{ margin:0 0 6px; font-size:var(--fs-caption); color:var(--text-faint); }
+.proc-step-link{ display:flex; align-items:center; gap:8px; padding:3px 4px; }
+.proc-step-link .ref-item-title{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--fs-base); }
+.sp-group + .sp-group{ margin-top:8px; }
+.sp-item{ padding:3px 0; }
+.sp-row{ display:flex; align-items:center; gap:6px; min-width:0; }
+.sp-name{ flex:1; min-width:0; }
+.sp-name.ref-broken{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--fs-base); }
+.sp-role{ flex:none; }
+.sp-menu{ width:24px; height:22px; flex:none; }
+.sp-note{ margin:1px 0 0 14px; font-size:var(--fs-caption); color:var(--text-muted); cursor:text; border-radius:var(--radius); padding:0 4px; }
+.sp-note.is-empty{ color:var(--text-faint); }
+.sp-note:hover, .sp-note:focus-visible{ background:var(--bg-elevated); outline:none; }
+.sp-note-input{ margin:2px 0 0 14px; width:calc(100% - 14px); padding:3px 6px; font-size:var(--fs-caption); }
+.sp-add-roles[hidden], .sp-add-object[hidden], .sp-add-step1[hidden]{ display:none; }
 </style>
 </head>
 <body>
@@ -651,6 +723,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       <div class="view-toggle" role="tablist">
         <button class="mode-btn active" data-view="graph" type="button">Граф</button>
         <button class="mode-btn" data-view="list" type="button">Список</button>
+        <button class="mode-btn" data-view="process" type="button">Процессы</button>
       </div>
     </div>
     <div class="global-search" id="global-search">
@@ -759,8 +832,42 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     </div>
     <div class="list-view-body" id="list-view-body"></div>
   </div>
+  <div id="process-view" class="process-view" hidden>
+    <aside id="proc-sidebar">
+      <div class="sidebar-section side-search">
+        <input type="text" id="proc-search" class="search-input" placeholder="Поиск процессов…" autocomplete="off">
+        <button class="btn btn-accent side-create" id="btn-proc-add" type="button" title="Создать процесс" aria-label="Создать процесс">+</button>
+      </div>
+      <div class="sidebar-section filters">
+        <div class="filters-row">
+          <div class="multi-select side-sub-filter" data-ms="proc-sub">
+            <button class="select-sm multi-select-btn" type="button" aria-haspopup="true" aria-expanded="false">Все подсистемы</button>
+            <div class="multi-select-dropdown" hidden></div>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-section list-wrap">
+        <div id="proc-list"></div>
+      </div>
+    </aside>
+    <main id="proc-main">
+      <div class="proc-head" id="proc-head"></div>
+      <div class="proc-scroll" id="proc-scroll"><div class="proc-stage" id="proc-stage"></div></div>
+      <div class="empty-state proc-empty" id="proc-empty" hidden>
+        <p class="empty-title" id="proc-empty-title">Процессов пока нет</p>
+        <p class="empty-hint">Процесс — цепочка шагов: кто что делает, какие объекты, реквизиты и механизмы участвуют.</p>
+        <button class="btn btn-accent" id="btn-proc-empty-add" type="button">+ Процесс</button>
+      </div>
+      <div class="canvas-controls" role="toolbar" aria-label="Масштаб ленты">
+        <button class="canvas-ctl" id="btn-proc-zoom-in" type="button" title="Приблизить (Ctrl + колесо)" aria-label="Приблизить">+</button>
+        <button class="canvas-ctl" id="btn-proc-zoom-out" type="button" title="Отдалить (Ctrl + колесо)" aria-label="Отдалить">−</button>
+        <button class="canvas-ctl" id="btn-proc-fit" type="button" title="Вписать" aria-label="Вписать">⤢</button>
+      </div>
+    </main>
+  </div>
     <div class="resize-handle" id="resize-right" aria-hidden="true"></div>
     <aside id="detail-panel">
+      <div id="panel-back" class="panel-back" hidden><button type="button" class="link-btn"></button></div>
       <div id="panel-empty" class="panel-empty">
         <p>Ничего не выбрано.</p>
         <p>Выберите объект или механизм на графе или в списке слева, чтобы увидеть и отредактировать детали.</p>
@@ -770,6 +877,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       <div id="panel-edge" class="panel-content" hidden></div>
       <div id="panel-role" class="panel-content" hidden></div>
       <div id="panel-control" class="panel-content" hidden></div>
+      <div id="panel-process" class="panel-content" hidden></div>
+      <div id="panel-step" class="panel-content" hidden></div>
     </aside>
   </div>
 </div>
@@ -886,17 +995,17 @@ function readTheme(){
 
 /* ===================== Состояние ===================== */
 
-var state = { objects:{}, mechanisms:{}, roles:{}, attributes:{}, controls:{}, tombstones:{} };
+var state = { objects:{}, mechanisms:{}, roles:{}, attributes:{}, controls:{}, processes:{}, tombstones:{} };
 var STORAGE_KEY = 'objectGraphPrototypeV1';
 
-/* Формат данных (localStorage, папка, экспорт). Разделы roles, attributes, controls и
+/* Формат данных (localStorage, папка, экспорт). Разделы roles, attributes, controls, processes и
    tombstones появились в formatVersion 2 и необязательны: файл без них читается как пустые.
    tombstones — последние известные названия удалённых сущностей, на которые остались ссылки
    (id → {kind, name}): ссылка не исчезает, а показывается как «⚠ Удалено: <название>». */
 var FORMAT_VERSION = 2;
 function serializeState(){
   return {formatVersion:FORMAT_VERSION, objects:state.objects, mechanisms:state.mechanisms, roles:state.roles,
-    attributes:state.attributes, controls:state.controls, tombstones:state.tombstones};
+    attributes:state.attributes, controls:state.controls, processes:state.processes, tombstones:state.tombstones};
 }
 function applyState(data){
   data = data || {};
@@ -905,6 +1014,7 @@ function applyState(data){
   state.roles = data.roles || {};
   state.attributes = data.attributes || {};
   state.controls = data.controls || {};
+  state.processes = data.processes || {};
   state.tombstones = data.tombstones || {};
 }
 function emptyState(){ applyState({}); }
@@ -912,11 +1022,12 @@ function emptyState(){ applyState({}); }
    Роли и реквизиты упоминаются, только если они есть. */
 function dataSummary(data){
   function n(sec){ return Object.keys((data && data[sec]) || {}).length; }
-  var oc = n('objects'), mc = n('mechanisms'), rc = n('roles'), ac = n('attributes'), cc = n('controls');
+  var oc = n('objects'), mc = n('mechanisms'), rc = n('roles'), ac = n('attributes'), cc = n('controls'), pc = n('processes');
   var parts = [oc + ' ' + pluralRu(oc,'объект','объекта','объектов'), mc + ' ' + pluralRu(mc,'механизм','механизма','механизмов')];
   if (rc) parts.push(rc + ' ' + pluralRu(rc,'роль','роли','ролей'));
   if (ac) parts.push(ac + ' ' + pluralRu(ac,'реквизит','реквизита','реквизитов'));
   if (cc) parts.push(cc + ' ' + pluralRu(cc,'контроль','контроля','контролей'));
+  if (pc) parts.push(pc + ' ' + pluralRu(pc,'процесс','процесса','процессов'));
   return parts.join(', ');
 }
 /* Запомнить название удаляемой сущности, на которую остаются ссылки. */
@@ -1342,22 +1453,27 @@ function deleteObject(id, onCancel){
     .filter(function(m){ return m.participants.some(function(p){return p.objectId===id;}); });
   var attrs = objectAttributes(id);
   var ctrls = controlsByTool(id);
+  /* Ссылки из шагов процессов — на сам объект и на его реквизиты. */
+  var procRefs = processRefsTo('object', id), usedAttrs = [];
+  attrs.forEach(function(a){ var r = processRefsTo('attribute', a.id); if (r.length){ usedAttrs.push(a); procRefs = procRefs.concat(r); } });
   var proceed = function(){
-    if (ctrls.length) rememberDeleted('obj', id, state.objects[id].name);
+    if (ctrls.length || processRefsTo('object', id).length) rememberDeleted('obj', id, state.objects[id].name);
+    usedAttrs.forEach(function(a){ rememberDeleted('attr', a.id, attributeDisplayName(a)); });
     refs.forEach(function(m){ m.participants = m.participants.filter(function(p){return p.objectId!==id;}); });
     attrs.forEach(function(a){ delete state.attributes[a.id]; });
     delete state.objects[id];
     persist(); syncGraphModel(); renderSidebar(); updateStats(); clearSelection();
     closeModal();
   };
-  if (refs.length === 0 && attrs.length === 0 && ctrls.length === 0){ proceed(); return; }
+  if (refs.length === 0 && attrs.length === 0 && ctrls.length === 0 && procRefs.length === 0){ proceed(); return; }
   openModal({
     title:'Удалить объект?',
     bodyHTML:(refs.length ? '<p>Объект участвует в ' + refs.length + ' ' + pluralRu(refs.length,'механизме','механизмах','механизмах') + ': ' +
       escapeHtml(refs.map(function(m){return m.title;}).join(', ')) + '. Он будет убран из ' + pluralRu(refs.length,'него','них','них') + '.</p>' : '') +
       (attrs.length ? '<p>У объекта ' + attrs.length + ' ' + pluralRu(attrs.length,'реквизит','реквизита','реквизитов') + ' — ' +
         pluralRu(attrs.length,'он будет удалён','они будут удалены','они будут удалены') + ' вместе с объектом.</p>' : '') +
-      controlRefsWarningHTML(ctrls, 'Объект — инструмент'),
+      controlRefsWarningHTML(ctrls, 'Объект — инструмент') +
+      processRefsWarningHTML(procRefs),
     footerButtons:[
       {label:'Отмена', onClick:function(){ if (onCancel) setTimeout(onCancel, 0); return true; }},
       {label:'Удалить', variant:'danger', onClick:function(){ proceed(); }}
@@ -1366,15 +1482,15 @@ function deleteObject(id, onCancel){
 }
 
 function deleteMechanism(id, onCancel){
-  var ctrls = controlsReplacedBy(id);
+  var ctrls = controlsReplacedBy(id), procRefs = processRefsTo('mechanism', id);
   openModal({
     title:'Удалить механизм?',
     bodyHTML:'<p>Механизм «' + escapeHtml(state.mechanisms[id] ? state.mechanisms[id].title : '') + '» и описание его связей будут удалены без возможности восстановления.</p>' +
-      controlRefsWarningHTML(ctrls, 'Механизм указан как замена'),
+      controlRefsWarningHTML(ctrls, 'Механизм указан как замена') + processRefsWarningHTML(procRefs),
     footerButtons:[
       {label:'Отмена', onClick:function(){ if (onCancel) setTimeout(onCancel, 0); return true; }},
       {label:'Удалить', variant:'danger', onClick:function(){
-        if (ctrls.length) rememberDeleted('mech', id, state.mechanisms[id].title);
+        if (ctrls.length || procRefs.length) rememberDeleted('mech', id, state.mechanisms[id].title);
         delete state.mechanisms[id];
         persist(); syncGraphModel(); renderSidebar(); updateStats(); clearSelection();
         closeModal();
@@ -2331,17 +2447,28 @@ function selectEdge(edge){
 function clearSelection(){
   pinnedNodeId = null; pinnedEdgeKey = null; pinnedMechanismId = null;
   showPanel(null);
+  /* В «Процессах» пустой панели нет: возвращаемся к карточке шага или процесса. */
+  if (currentView === 'process') showProcessDefaultPanel();
   syncSidebarActive();
   requestRender();
 }
 
 function switchView(view){
   if (focusMode) exitFocus(true);
+  var prev = currentView;
   currentView = view;
   document.body.classList.toggle('view-list', view === 'list');
+  document.body.classList.toggle('view-process', view === 'process');
   var main = document.getElementById('main');
   var listView = document.getElementById('list-view');
-  if (view === 'list'){
+  document.getElementById('process-view').hidden = view !== 'process';
+  if (prev === 'process' && view !== 'process') leaveProcessView();
+  if (view === 'process'){
+    main.hidden = true;
+    listView.hidden = true;
+    enterProcessView();
+    updateDetailPanelVisibility();
+  } else if (view === 'list'){
     main.hidden = true;
     listView.hidden = false;
     /* Ребро в «Списке» не показывается — его карточку закрываем, выбор объекта/механизма сохраняется. */
@@ -2361,10 +2488,11 @@ function switchView(view){
 
 function showPanel(kind){
   document.getElementById('panel-empty').hidden = !!kind;
-  ['object','mechanism','edge','role','control'].forEach(function(k){
+  ['object','mechanism','edge','role','control','process','step'].forEach(function(k){
     document.getElementById('panel-'+k).hidden = (k!==kind);
   });
   if (pinnedAux && AUX_KINDS[pinnedAux.kind].panel !== kind) pinnedAux = null;
+  updateProcessBackBar(kind);
   updateDetailPanelVisibility();
 }
 
@@ -2372,7 +2500,7 @@ function showPanel(kind){
    с открытой карточкой объекта или механизма (список при этом сужается). */
 function updateDetailPanelVisibility(){
   var hasCard = ['object','mechanism','role','control'].some(function(k){ return !document.getElementById('panel-' + k).hidden; });
-  var show = currentView === 'graph' || hasCard;
+  var show = currentView === 'graph' || currentView === 'process' || hasCard;
   document.getElementById('detail-panel').hidden = !show;
   document.getElementById('resize-right').hidden = !show;
 }
@@ -4186,6 +4314,7 @@ function renderSidebar(){
   });
   syncSidebarActive();
   if (currentView === 'list') renderListView();
+  if (currentView === 'process') renderProcessView();
 }
 
 /* ===================== Глобальный поиск =====================
@@ -4244,7 +4373,7 @@ function selectEntity(kind, id){
   }
   syncSidebarActive(); requestRender();
   if (currentView === 'list') scrollActiveListRowIntoView();
-  else centerOnEntity(kind, id);
+  else if (currentView === 'graph') centerOnEntity(kind, id);
 }
 
 function bindGlobalSearch(){
@@ -4997,17 +5126,18 @@ function roleProcessCount(roleId){ return 0; }
 function deleteRole(id){
   var r = state.roles[id];
   if (!r) return;
-  var ctrls = controlsByResponsible(id);
+  var ctrls = controlsByResponsible(id), procRefs = processRefsTo('role', id);
   openModal({
     title:'Удалить роль?',
     bodyHTML:'<p>Роль «' + escapeHtml(r.name) + '» будет удалена без возможности восстановления.</p>' +
-      controlRefsWarningHTML(ctrls, 'Роль — ответственный'),
+      controlRefsWarningHTML(ctrls, 'Роль — ответственный') + processRefsWarningHTML(procRefs),
     footerButtons:[
       {label:'Отмена', onClick:function(){ return true; }},
       {label:'Удалить', variant:'danger', onClick:function(){
-        if (ctrls.length) rememberDeleted('role', id, r.name);
+        if (ctrls.length || procRefs.length) rememberDeleted('role', id, r.name);
         delete state.roles[id];
         persist(); clearSelection();
+        if (currentView === 'process') renderProcessView();
         if (currentView === 'list') renderListView();
       }}
     ]
@@ -5195,11 +5325,29 @@ function renderAttributesBlock(obj, panel){
     });
     var menuBtn = row.querySelector('.attr-menu-btn');
     menuBtn.addEventListener('click', function(){
-      openPopoverMenu(menuBtn, [{value:'delete', label:'Удалить реквизит', danger:true}], function(){
-        delete state.attributes[a.id];
-        attributesChanged(obj, panel);
-      });
+      openPopoverMenu(menuBtn, [{value:'delete', label:'Удалить реквизит', danger:true}], function(){ deleteAttribute(a, obj, panel); });
     });
+  });
+}
+
+/* Удаление реквизита: если он участвует в шагах процессов — подтверждение со списком шагов,
+   ссылка в шаге остаётся «⚠ Удалено: Объект · Реквизит». */
+function deleteAttribute(a, obj, panel){
+  var refs = processRefsTo('attribute', a.id);
+  function proceed(){
+    if (refs.length) rememberDeleted('attr', a.id, attributeDisplayName(a));
+    delete state.attributes[a.id];
+    attributesChanged(obj, panel);
+    if (currentView === 'process') renderProcessView();
+  }
+  if (!refs.length){ proceed(); return; }
+  openModal({
+    title:'Удалить реквизит?',
+    bodyHTML:'<p>Реквизит «' + escapeHtml(attributeFullName(a)) + '» будет удалён.</p>' + processRefsWarningHTML(refs),
+    footerButtons:[
+      {label:'Отмена', onClick:function(){ return true; }},
+      {label:'Удалить', variant:'danger', onClick:function(){ proceed(); }}
+    ]
   });
 }
 
@@ -5466,6 +5614,889 @@ function renderControlBackLinks(container, title, ctrls){
   '</div>';
   container.querySelectorAll('.ctrl-link').forEach(function(b){
     b.addEventListener('click', function(){ setGraphHint(null); selectEntity('ctrl', b.getAttribute('data-ctrl')); });
+  });
+}
+/* ===================== Процессы: данные =====================
+   Коллекция state.processes: {id, name, description, subsystem, subsystems[], ownerRoleId,
+   startStepId, steps[]}. Подсистемы хранятся как у объекта: subsystems[] + subsystem = первая.
+   Шаг: {id, name, description, kind, roleId, next, participants[], controls[]}.
+   Порядок шагов задаётся только ссылками startStepId / next; массив steps — неупорядоченное
+   хранилище. В этой фазе процессы линейные (решения и ветки — фаза 5). */
+
+var STEP_KINDS = [
+  {code:'user_action', title:'Действие пользователя'},
+  {code:'auto_action', title:'Автоматическое действие'},
+  {code:'event',       title:'Событие'}
+];
+var DEFAULT_STEP_KIND = 'user_action';
+function stepKindTitle(code){
+  var k = STEP_KINDS.filter(function(x){ return x.code === code; })[0];
+  return k ? k.title : code;
+}
+
+/* Роли участия в шаге и их буквы (для чипов ленты и, позже, матрицы). */
+var PARTICIPATION_ROLES = {
+  object: [
+    {code:'create', title:'создаёт',   letter:'С'},
+    {code:'update', title:'изменяет',  letter:'И'},
+    {code:'read',   title:'читает',    letter:'Ч'},
+    {code:'post',   title:'проводит',  letter:'П'},
+    {code:'close',  title:'закрывает', letter:'Х'}
+  ],
+  attribute: [
+    {code:'fill',   title:'заполняет', letter:'З'},
+    {code:'update', title:'изменяет',  letter:'И'},
+    {code:'read',   title:'читает',    letter:'Ч'}
+  ],
+  mechanism: [
+    {code:'run',  title:'запускается',               letter:''},
+    {code:'auto', title:'срабатывает автоматически', letter:''}
+  ]
+};
+var PARTICIPANT_TYPES = [
+  {code:'mechanism', title:'Механизмы'},
+  {code:'object',    title:'Объекты'},
+  {code:'attribute', title:'Реквизиты'}
+];
+function participationRole(entityType, code){
+  return (PARTICIPATION_ROLES[entityType] || []).filter(function(r){ return r.code === code; })[0] || {code:code, title:code, letter:'?'};
+}
+
+function allProcesses(){ return Object.keys(state.processes).map(function(id){ return state.processes[id]; }); }
+
+function newStep(partial){
+  return {
+    id:uid('step'), name:(partial && partial.name) || 'Новый шаг', description:'',
+    kind:(partial && partial.kind) || DEFAULT_STEP_KIND, roleId:'', next:null,
+    participants:[], controls:[]
+  };
+}
+function createProcess(partial){
+  var first = newStep();
+  var p = {
+    id:uid('proc'), name:(partial && partial.name) || 'Новый процесс', description:'',
+    subsystem:'', subsystems:[], ownerRoleId:'',
+    startStepId:first.id, steps:[first]
+  };
+  state.processes[p.id] = p;
+  persist();
+  return p;
+}
+function stepById(proc, id){ return proc.steps.filter(function(s){ return s.id === id; })[0] || null; }
+
+/* Шаги в порядке next от startStepId. Шаги, до которых нельзя дойти (в линейном процессе
+   их быть не должно), добавляются в конец в порядке массива, чтобы не потеряться. */
+function orderedSteps(proc){
+  var out = [], seen = {}, cur = proc.startStepId;
+  while (cur && !seen[cur]){
+    var s = stepById(proc, cur); if (!s) break;
+    seen[cur] = true; out.push(s); cur = s.next;
+  }
+  proc.steps.forEach(function(s){ if (!seen[s.id]) out.push(s); });
+  return out;
+}
+/* Номер шага (1…N) в порядке ленты. */
+function stepNumbers(proc){
+  var n = {};
+  orderedSteps(proc).forEach(function(s, i){ n[s.id] = i + 1; });
+  return n;
+}
+/* Перестроить ссылки линейного процесса по заданному порядку. */
+function relinkLinear(proc, list){
+  proc.startStepId = list.length ? list[0].id : null;
+  list.forEach(function(s, i){ s.next = i < list.length - 1 ? list[i + 1].id : null; });
+}
+/* Вставить новый шаг после afterId (null — в начало). */
+function insertStep(proc, afterId){
+  var list = orderedSteps(proc), s = newStep();
+  var i = afterId ? list.findIndex(function(x){ return x.id === afterId; }) + 1 : 0;
+  proc.steps.push(s);
+  list.splice(i, 0, s);
+  relinkLinear(proc, list);
+  return s;
+}
+/* Удалить шаг: next предыдущего сшивается с последующим. */
+function removeStep(proc, stepId){
+  var list = orderedSteps(proc).filter(function(s){ return s.id !== stepId; });
+  proc.steps = proc.steps.filter(function(s){ return s.id !== stepId; });
+  relinkLinear(proc, list);
+}
+/* Сдвинуть шаг на позицию влево (-1) или вправо (+1). */
+function moveStep(proc, stepId, dir){
+  var list = orderedSteps(proc), i = list.findIndex(function(s){ return s.id === stepId; }), j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return false;
+  var t = list[i]; list[i] = list[j]; list[j] = t;
+  relinkLinear(proc, list);
+  return true;
+}
+
+/* ----- Участники шага: подписи и ссылки ----- */
+
+function attributeDisplayName(a){
+  var o = state.objects[a.objectId];
+  return (o ? o.name : '?') + ' · ' + a.name;
+}
+/* {label, iconHTML, broken} для участника; удалённая сущность — broken с последним названием. */
+function participantInfo(p){
+  var e;
+  if (p.entityType === 'mechanism' && (e = state.mechanisms[p.entityId]))
+    return {label:e.title, iconHTML:'<span class="om-diamond" style="--c:' + categoryAccent(e.category) + '"></span>'};
+  if (p.entityType === 'object' && (e = state.objects[p.entityId]))
+    return {label:e.name, iconHTML:'<span class="dot" style="background:' + typeColor(e.type) + '"></span>'};
+  if (p.entityType === 'attribute' && (e = state.attributes[p.entityId])){
+    var o = state.objects[e.objectId];
+    return {label:attributeDisplayName(e), iconHTML:'<span class="dot" style="background:' + (o ? typeColor(o.type) : THEME.typeUnknown) + '"></span>', title:attributeFullName(e)};
+  }
+  return {label:'⚠ Удалено: ' + deletedName(p.entityId), iconHTML:'', broken:true};
+}
+
+/* ----- Ссылочная целостность -----
+   Где в процессах используется сущность: [{proc, step|null, what}] (step = null — владелец процесса). */
+function processRefsTo(entityType, id){
+  var out = [];
+  allProcesses().forEach(function(proc){
+    if (entityType === 'role' && proc.ownerRoleId === id) out.push({proc:proc, step:null, what:'владелец'});
+    orderedSteps(proc).forEach(function(s){
+      if (entityType === 'role' ? s.roleId === id : s.participants.some(function(p){ return p.entityType === entityType && p.entityId === id; }))
+        out.push({proc:proc, step:s});
+    });
+  });
+  return out;
+}
+/* Абзац предупреждения при удалении: «Используется в процессах: «Подбор персонала» — шаги 1, 6». */
+function processRefsWarningHTML(refs){
+  if (!refs.length) return '';
+  var byProc = [], idx = {};
+  refs.forEach(function(r){
+    if (!(r.proc.id in idx)){ idx[r.proc.id] = byProc.length; byProc.push({proc:r.proc, nums:[], owner:false}); }
+    var g = byProc[idx[r.proc.id]];
+    if (!r.step) g.owner = true;
+    else { var n = stepNumbers(r.proc)[r.step.id]; if (g.nums.indexOf(n) < 0) g.nums.push(n); }
+  });
+  return '<p>Используется в процессах: ' + byProc.map(function(g){
+    var parts = [];
+    if (g.nums.length) parts.push((g.nums.length === 1 ? 'шаг ' : 'шаги ') + g.nums.sort(function(a,b){ return a - b; }).join(', '));
+    if (g.owner) parts.push('владелец процесса');
+    return '«' + escapeHtml(g.proc.name) + '» — ' + parts.join(', ');
+  }).join('; ') + '. Ссылка останется с пометкой «⚠ Удалено».</p>';
+}
+/* ===================== Режим «Процессы»: левая панель и лента =====================
+   Выбранный процесс и шаг хранятся в браузере (как ширины панелей) и переживают смену
+   режима и перезагрузку. Лента — HTML: карточки шагов слева направо, между ними стрелки
+   с «+» для вставки; масштаб — CSS zoom сцены (Ctrl + колесо, кнопки, «Вписать»). */
+
+var PROC_SEL_KEY = 'nodusProcessSelection';
+var procSel = (function(){
+  try{
+    var d = JSON.parse(localStorage.getItem(PROC_SEL_KEY) || 'null');
+    if (d && typeof d === 'object') return {processId:d.processId || null, stepId:d.stepId || null};
+  }catch(e){}
+  return {processId:null, stepId:null};
+})();
+function saveProcSel(){ try{ localStorage.setItem(PROC_SEL_KEY, JSON.stringify(procSel)); }catch(e){} }
+
+var procSearch = '';
+var procSubFilter = {};
+var procZoom = 1;
+var PROC_ZOOM_MIN = 0.25, PROC_ZOOM_MAX = 1.5, PROC_ZOOM_STEP = 1.2;
+/* Шаг, к которому ведёт кнопка «← К шагу», пока открыта карточка участника. */
+var procReturn = null;
+
+var STEP_KIND_ICONS = {
+  user_action:'<svg class="type-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5" r="2.5"/><path d="M3 14c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/></svg>',
+  auto_action:'<svg class="type-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M3.6 12.4 5 11M11 5l1.4-1.4"/></svg>',
+  event:'<svg class="type-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 1.5 4 9h4l-1 5.5L12 7H8z"/></svg>'
+};
+
+function currentProcess(){ return procSel.processId ? state.processes[procSel.processId] || null : null; }
+function currentStep(){ var p = currentProcess(); return p && procSel.stepId ? stepById(p, procSel.stepId) : null; }
+function processSubsystems(p){ return objectSubsystems(p); }
+
+/* Выбранный процесс удалён или не задан — берём первый в списке; шаг удалён — сбрасываем. */
+function validateProcSel(){
+  if (!currentProcess()){
+    var list = filteredProcesses();
+    var first = list[0] || allProcesses().sort(function(a,b){ return a.name.localeCompare(b.name,'ru'); })[0];
+    procSel.processId = first ? first.id : null;
+    procSel.stepId = null;
+  } else if (procSel.stepId && !currentStep()) procSel.stepId = null;
+}
+
+function filteredProcesses(){
+  var q = procSearch.toLowerCase().trim();
+  return allProcesses()
+    .filter(function(p){ return !q || p.name.toLowerCase().indexOf(q) >= 0 || (p.description||'').toLowerCase().indexOf(q) >= 0; })
+    .filter(function(p){ return matchesAny(procSubFilter, processSubsystems(p)); })
+    .sort(function(a,b){ return a.name.localeCompare(b.name,'ru'); });
+}
+
+/* ----- Вход / выход из режима ----- */
+
+function enterProcessView(){
+  validateProcSel();
+  renderProcessSidebar();
+  renderRibbon();
+  showProcessDefaultPanel();
+}
+function leaveProcessView(){
+  procReturn = null;
+  if (!document.getElementById('panel-process').hidden || !document.getElementById('panel-step').hidden) clearSelection();
+}
+/* Перерисовка после изменения данных извне (правка объекта, удаление, импорт). */
+function renderProcessView(){
+  if (currentView !== 'process') return;
+  var before = procSel.processId + '|' + procSel.stepId;
+  validateProcSel();
+  renderProcessSidebar();
+  renderRibbon();
+  var procPanel = document.getElementById('panel-process'), stepPanel = document.getElementById('panel-step');
+  var stale = (!procPanel.hidden && procPanel.getAttribute('data-id') !== procSel.processId) ||
+              (!stepPanel.hidden && stepPanel.getAttribute('data-id') !== procSel.stepId) ||
+              before !== procSel.processId + '|' + procSel.stepId;
+  if (stale) showProcessDefaultPanel();
+}
+function showProcessDefaultPanel(){
+  validateProcSel();
+  var p = currentProcess(), s = currentStep();
+  if (s) renderStepPanel(p, s);
+  else if (p) renderProcessPanel(p);
+  else showPanel(null);
+}
+/* Esc в «Процессах»: карточка шага → карточка процесса; карточка участника → обратно (clearSelection). */
+function processEscape(){
+  if (!document.getElementById('panel-step').hidden){ deselectStep(); return true; }
+  if (!document.getElementById('panel-process').hidden) return true;
+  return false;
+}
+
+function selectProcess(id){
+  procSel = {processId:id, stepId:null}; saveProcSel();
+  procReturn = null;
+  renderProcessSidebar();
+  renderRibbon();
+  renderProcessPanel(state.processes[id]);
+}
+function selectStep(stepId){
+  var p = currentProcess(); if (!p) return;
+  var s = stepById(p, stepId); if (!s) return;
+  procSel.stepId = stepId; saveProcSel();
+  procReturn = null;
+  markActiveStep();
+  renderStepPanel(p, s);
+}
+function deselectStep(){
+  procSel.stepId = null; saveProcSel();
+  markActiveStep();
+  if (currentProcess()) renderProcessPanel(currentProcess());
+}
+
+/* «← К шагу N» над карточкой участника, открытой из шага. */
+function updateProcessBackBar(kind){
+  var bar = document.getElementById('panel-back');
+  var r = procReturn, p = r && state.processes[r.processId], s = p && stepById(p, r.stepId);
+  var show = currentView === 'process' && !!s && !!kind && kind !== 'process' && kind !== 'step';
+  bar.hidden = !show;
+  if (show) bar.querySelector('button').textContent = '← К шагу ' + stepNumbers(p)[s.id] + ' · ' + s.name;
+}
+function returnToStep(){
+  var r = procReturn; procReturn = null;
+  if (!r || !state.processes[r.processId]) return;
+  if (procSel.processId !== r.processId){ procSel.processId = r.processId; renderProcessSidebar(); renderRibbon(); }
+  selectStep(r.stepId);
+}
+/* Клик по участнику шага: его карточка в правой панели с возвратом к шагу. */
+function openParticipant(p){
+  var kind = p.entityType === 'mechanism' ? 'mech' : 'obj';
+  var id = p.entityId;
+  if (p.entityType === 'attribute'){ var a = state.attributes[id]; if (!a) return; id = a.objectId; }
+  if (kind === 'obj' ? !state.objects[id] : !state.mechanisms[id]) return;
+  procReturn = {processId:procSel.processId, stepId:procSel.stepId};
+  selectEntity(kind, id);
+}
+
+/* ----- Левая панель ----- */
+
+function renderProcessSidebar(){
+  var cnt = {};
+  allProcesses().forEach(function(p){ processSubsystems(p).forEach(function(s){ cnt[s] = (cnt[s]||0) + 1; }); });
+  fillMultiSelect(document.querySelector('[data-ms="proc-sub"]'), {
+    items:Object.keys(cnt).sort(function(a,b){ return a.localeCompare(b,'ru'); }).map(function(s){ return {code:s, title:s, count:cnt[s]}; }),
+    selected:procSubFilter, allLabel:'Все подсистемы', manyLabel:'Подсистем', emptyText:'Подсистем пока нет', onChange:renderProcessSidebar});
+  var list = filteredProcesses();
+  var box = document.getElementById('proc-list');
+  box.innerHTML = list.length ? list.map(function(p){
+    var n = p.steps.length, subs = processSubsystems(p);
+    return '<button type="button" class="list-row' + (p.id === procSel.processId ? ' active' : '') + '" data-proc="' + p.id + '">' +
+      '<span class="list-row-main"><span class="list-row-title">' + escapeHtml(p.name) + '</span>' +
+        (subs.length ? '<span class="list-row-sub">' + escapeHtml(subs.join(', ')) + '</span>' : '') + '</span>' +
+      '<span class="list-row-meta"><span class="list-row-count" title="' + n + ' ' + pluralRu(n,'шаг','шага','шагов') + '">' + n + '</span></span>' +
+    '</button>';
+  }).join('') : '<p class="ref-empty">' + (allProcesses().length ? 'Ничего не найдено.' : 'Процессов пока нет.') + '</p>';
+  box.querySelectorAll('.list-row').forEach(function(b){
+    b.addEventListener('click', function(){ selectProcess(b.getAttribute('data-proc')); });
+  });
+}
+
+/* ----- Лента ----- */
+
+function stepRoleLineHTML(s){
+  var icon = STEP_KIND_ICONS[s.kind] || STEP_KIND_ICONS.user_action, text;
+  if (s.roleId) text = state.roles[s.roleId] ? escapeHtml(state.roles[s.roleId].name) : brokenRefHTML(s.roleId);
+  else if (s.kind === 'auto_action') text = 'Система';
+  else if (s.kind === 'event') text = 'Событие';
+  else text = '<span class="is-faint">Роль не указана</span>';
+  return '<div class="step-card-role" title="' + escapeHtml(stepKindTitle(s.kind)) + '">' + icon + '<span>' + text + '</span></div>';
+}
+function stepChipHTML(p){
+  var info = participantInfo(p), role = participationRole(p.entityType, p.role);
+  return '<span class="step-chip' + (info.broken ? ' is-broken' : '') + '" title="' + escapeHtml(role.title + ': ' + (info.title || info.label)) + '">' +
+    (role.letter ? '<span class="step-chip-letter">' + role.letter + '</span>' : '') + info.iconHTML +
+    '<span class="step-chip-text">' + escapeHtml(info.label) + '</span></span>';
+}
+function stepCardHTML(s, num){
+  return '<div class="step-card' + (s.id === procSel.stepId ? ' is-active' : '') + '" data-step="' + s.id + '" tabindex="0">' +
+    '<div class="step-card-head"><span class="step-num">' + num + '</span>' +
+      '<span class="step-card-name" title="' + escapeHtml(s.name) + '">' + escapeHtml(s.name) + '</span>' +
+      '<button type="button" class="card-menu-btn step-menu-btn" aria-haspopup="menu" aria-expanded="false" aria-label="Действия с шагом" title="Действия">⋯</button></div>' +
+    stepRoleLineHTML(s) +
+    PARTICIPANT_TYPES.map(function(t){
+      var parts = s.participants.filter(function(p){ return p.entityType === t.code; });
+      if (!parts.length) return '';
+      return '<div class="step-chips" data-type="' + t.code + '">' + parts.map(stepChipHTML).join('') + '<span class="step-chip-more" hidden></span></div>';
+    }).join('') +
+  '</div>';
+}
+function stepLinkHTML(afterId){
+  return '<div class="step-link"><span class="step-arrow" aria-hidden="true"></span>' +
+    '<button type="button" class="step-add" data-after="' + afterId + '" title="Вставить шаг" aria-label="Вставить шаг">+</button></div>';
+}
+
+function renderRibbon(){
+  var p = currentProcess();
+  var head = document.getElementById('proc-head'), stage = document.getElementById('proc-stage'), empty = document.getElementById('proc-empty');
+  empty.hidden = !!p;
+  document.getElementById('proc-main').classList.toggle('is-empty', !p);
+  if (!p){
+    head.innerHTML = ''; stage.innerHTML = '';
+    document.getElementById('proc-empty-title').textContent = allProcesses().length ? 'Выберите процесс слева' : 'Процессов пока нет';
+    return;
+  }
+  var list = orderedSteps(p);
+  head.innerHTML = '<h2 class="proc-title">' + escapeHtml(p.name) + '</h2>' +
+    '<span class="proc-meta">' + list.length + ' ' + pluralRu(list.length,'шаг','шага','шагов') + '</span>';
+  stage.innerHTML = list.length ?
+    list.map(function(s, i){ return (i ? stepLinkHTML(list[i - 1].id) : '') + stepCardHTML(s, i + 1); }).join('') +
+      '<div class="step-link is-tail"><button type="button" class="step-add" data-after="' + list[list.length - 1].id + '" title="Добавить шаг в конец" aria-label="Добавить шаг в конец">+</button></div>'
+    : '<button type="button" class="btn step-add-first" data-after="">+ Добавить шаг</button>';
+  stage.style.zoom = procZoom;
+  fitChipLines();
+}
+/* Группа чипов — одна строка; не поместившиеся прячутся под «+N» (с подсказкой). */
+function fitChipLines(){
+  document.querySelectorAll('#proc-stage .step-chips').forEach(function(line){
+    var chips = Array.prototype.slice.call(line.querySelectorAll('.step-chip'));
+    var more = line.querySelector('.step-chip-more');
+    chips.forEach(function(c){ c.hidden = false; });
+    more.hidden = true;
+    var n = 0;
+    while (line.scrollWidth > line.clientWidth + 1 && n < chips.length - 1){
+      n++; chips[chips.length - n].hidden = true;
+      more.hidden = false; more.textContent = '+' + n;
+    }
+    more.title = chips.slice(chips.length - n).map(function(c){ return c.title; }).join('\n');
+  });
+}
+function markActiveStep(){
+  document.querySelectorAll('#proc-stage .step-card').forEach(function(c){ c.classList.toggle('is-active', c.getAttribute('data-step') === procSel.stepId); });
+}
+
+/* ----- Действия с шагами на ленте ----- */
+
+function addStepAfter(afterId){
+  var p = currentProcess(); if (!p) return;
+  var s = insertStep(p, afterId || null);
+  persist(); renderRibbon(); renderProcessSidebar();
+  selectStep(s.id);
+  var card = document.querySelector('#proc-stage .step-card[data-step="' + s.id + '"]');
+  if (card) card.scrollIntoView({block:'nearest', inline:'nearest'});
+  startInlineTitleEdit(document.getElementById('panel-step'));
+}
+function deleteStepUI(stepId){
+  var p = currentProcess(), s = p && stepById(p, stepId); if (!s) return;
+  var n = s.participants.length;
+  openModal({
+    title:'Удалить шаг?',
+    bodyHTML:'<p>Шаг ' + stepNumbers(p)[s.id] + ' «' + escapeHtml(s.name) + '» будет удалён' +
+      (n ? ' вместе с ' + n + ' ' + pluralRu(n,'участником','участниками','участниками') : '') + '. Соседние шаги соединятся.</p>',
+    footerButtons:[
+      {label:'Отмена', onClick:function(){ return true; }},
+      {label:'Удалить', variant:'danger', onClick:function(){
+        removeStep(p, stepId);
+        if (procSel.stepId === stepId){ procSel.stepId = null; saveProcSel(); }
+        persist(); renderRibbon(); renderProcessSidebar(); showProcessDefaultPanel();
+      }}
+    ]
+  });
+}
+function moveStepUI(stepId, dir){
+  var p = currentProcess(); if (!p || !moveStep(p, stepId, dir)) return;
+  persist(); renderRibbon();
+  if (procSel.stepId && !document.getElementById('panel-step').hidden) renderStepPanel(p, currentStep());
+  else if (!document.getElementById('panel-process').hidden) renderProcessPanel(p);
+}
+function openStepMenu(btn, stepId){
+  var p = currentProcess(), list = orderedSteps(p), i = list.findIndex(function(s){ return s.id === stepId; });
+  var items = [];
+  if (i > 0) items.push({value:'left', label:'Сдвинуть влево'});
+  if (i < list.length - 1) items.push({value:'right', label:'Сдвинуть вправо'});
+  if (items.length) items.push({sep:true});
+  items.push({value:'delete', label:'Удалить шаг', danger:true});
+  openPopoverMenu(btn, items, function(v){
+    if (v === 'left') moveStepUI(stepId, -1);
+    else if (v === 'right') moveStepUI(stepId, 1);
+    else if (v === 'delete') deleteStepUI(stepId);
+  });
+}
+
+/* ----- Масштаб ----- */
+
+function setProcZoom(z, anchorX, anchorY){
+  var sc = document.getElementById('proc-scroll'), stage = document.getElementById('proc-stage');
+  z = Math.min(PROC_ZOOM_MAX, Math.max(PROC_ZOOM_MIN, z));
+  if (anchorX == null){ anchorX = sc.clientWidth / 2; anchorY = sc.clientHeight / 2; }
+  var cx = (sc.scrollLeft + anchorX) / procZoom, cy = (sc.scrollTop + anchorY) / procZoom;
+  procZoom = z;
+  stage.style.zoom = z;
+  sc.scrollLeft = cx * z - anchorX;
+  sc.scrollTop = cy * z - anchorY;
+}
+/* «Вписать»: вся лента помещается в видимую область (не крупнее 100%). */
+function fitProcessRibbon(){
+  var sc = document.getElementById('proc-scroll'), stage = document.getElementById('proc-stage');
+  stage.style.zoom = 1;
+  var w = stage.scrollWidth, h = stage.scrollHeight;
+  procZoom = Math.min(PROC_ZOOM_MAX, Math.max(PROC_ZOOM_MIN, Math.min(1, sc.clientWidth / w, sc.clientHeight / h)));
+  stage.style.zoom = procZoom;
+  sc.scrollLeft = 0; sc.scrollTop = 0;
+}
+
+/* ----- Обработчики (один раз при старте) ----- */
+
+function bindProcessView(){
+  var search = document.getElementById('proc-search');
+  search.addEventListener('input', function(){ procSearch = search.value; renderProcessSidebar(); });
+  bindMultiSelectToggle(document.querySelector('[data-ms="proc-sub"]'));
+  document.getElementById('btn-proc-add').addEventListener('click', function(){
+    procSearch = ''; search.value = '';
+    Object.keys(procSubFilter).forEach(function(k){ delete procSubFilter[k]; });
+    var p = createProcess();
+    selectProcess(p.id);
+    startInlineTitleEdit(document.getElementById('panel-process'));
+  });
+  document.getElementById('btn-proc-empty-add').addEventListener('click', function(){ document.getElementById('btn-proc-add').click(); });
+  document.getElementById('panel-back').querySelector('button').addEventListener('click', returnToStep);
+
+  var stage = document.getElementById('proc-stage'), sc = document.getElementById('proc-scroll');
+  stage.addEventListener('click', function(e){
+    var add = e.target.closest('.step-add, .step-add-first');
+    if (add){ addStepAfter(add.getAttribute('data-after')); return; }
+    var menu = e.target.closest('.step-menu-btn');
+    if (menu){ openStepMenu(menu, menu.closest('.step-card').getAttribute('data-step')); return; }
+    var card = e.target.closest('.step-card');
+    if (card){ selectStep(card.getAttribute('data-step')); return; }
+  });
+  stage.addEventListener('keydown', function(e){
+    var card = e.target.classList && e.target.classList.contains('step-card') ? e.target : null;
+    if (card && e.key === 'Enter'){ e.preventDefault(); selectStep(card.getAttribute('data-step')); }
+  });
+  /* Клик по пустому месту ленты — снять выбор шага (карточка процесса). */
+  sc.addEventListener('click', function(e){
+    if (!e.target.closest('.step-card, .step-link, .step-add-first') && procSel.stepId) deselectStep();
+  });
+  sc.addEventListener('wheel', function(e){
+    if (e.ctrlKey || e.metaKey){
+      e.preventDefault();
+      var r = sc.getBoundingClientRect();
+      setProcZoom(procZoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1), e.clientX - r.left, e.clientY - r.top);
+    } else if (sc.scrollHeight <= sc.clientHeight && Math.abs(e.deltaY) > Math.abs(e.deltaX)){
+      /* Лента горизонтальная: без вертикальной прокрутки колесо листает вбок. */
+      e.preventDefault();
+      sc.scrollLeft += e.deltaY;
+    }
+  }, {passive:false});
+  document.getElementById('btn-proc-zoom-in').addEventListener('click', function(){ setProcZoom(procZoom * PROC_ZOOM_STEP); });
+  document.getElementById('btn-proc-zoom-out').addEventListener('click', function(){ setProcZoom(procZoom / PROC_ZOOM_STEP); });
+  document.getElementById('btn-proc-fit').addEventListener('click', fitProcessRibbon);
+  if (window.ResizeObserver) new ResizeObserver(function(){ if (currentView === 'process') fitChipLines(); }).observe(sc);
+}
+/* ===================== Процессы: карточки в правой панели =====================
+   Карточка процесса — когда шаг не выбран; карточка шага — по клику на шаг ленты. */
+
+function processChanged(){ persist(); renderProcessSidebar(); renderRibbon(); }
+
+/* ----- Карточка процесса ----- */
+
+function processPanelTemplate(p){
+  var list = orderedSteps(p), kinds = {};
+  list.forEach(function(s){ kinds[s.kind] = (kinds[s.kind] || 0) + 1; });
+  return (
+    '<div class="card-head">' +
+      '<div class="card-head-row">' +
+        '<span class="card-icon card-icon-process" aria-hidden="true">' + typeIconSVG('bproc') + '</span>' +
+        '<h2 class="inline-title" tabindex="0" title="Название процесса — нажмите, чтобы изменить">' + escapeHtml(p.name) + '</h2>' +
+        '<span class="save-indicator" aria-live="polite"></span>' + cardMenuButtonHTML() +
+      '</div>' +
+      '<p class="inline-msg" hidden></p>' +
+      '<div class="card-head-badges"><span class="status-badge is-default">Процесс</span></div>' +
+    '</div>' +
+    viewFieldHTML('description', 'Описание') +
+    '<div class="vfield" data-key="psubs"><div class="vfield-label">Подсистема</div><div class="vfield-value" tabindex="0"></div></div>' +
+    refFieldHTML('owner', 'Владелец') +
+    '<div class="panel-section is-tight">' +
+      '<div class="panel-section-header"><p class="panel-section-title">Шаги · ' + list.length + '</p></div>' +
+      (list.length ? '<p class="proc-kind-counts">' + STEP_KINDS.filter(function(k){ return kinds[k.code]; }).map(function(k){
+          return escapeHtml(k.title) + ': ' + kinds[k.code];
+        }).join(' · ') + '</p>' +
+        '<div class="proc-step-links">' + list.map(function(s, i){
+          return '<button type="button" class="om-link proc-step-link" data-step="' + s.id + '"><span class="step-num">' + (i + 1) + '</span><span class="ref-item-title">' + escapeHtml(s.name) + '</span></button>';
+        }).join('') + '</div>'
+        : '<p class="ref-empty">Шагов нет.</p>') +
+    '</div>'
+  );
+}
+
+function renderProcessPanel(p){
+  if (!p) return;
+  var panel = document.getElementById('panel-process');
+  showPanel('process');
+  panel.setAttribute('data-id', p.id);
+  panel.innerHTML = processPanelTemplate(p);
+  bindInlineTitle(panel, function(){ return p.name; }, function(v){ p.name = normalizeLabel(v); processChanged(); }, 'Название процесса');
+  var menuBtn = panel.querySelector('.card-menu-btn');
+  menuBtn.addEventListener('click', function(){
+    openPopoverMenu(menuBtn, [{value:'delete', label:'Удалить процесс', danger:true}], function(){ deleteProcess(p.id); });
+  });
+  bindViewField(panel, 'description', {label:'Описание', addText:'Добавить описание', multiline:true,
+    get:function(){ return p.description || ''; }, set:function(v){ p.description = v; persist(); }});
+  bindProcessSubsystems(panel, p);
+  bindRefField(panel, 'owner', {label:'Владелец', addText:'Выбрать роль-владельца процесса',
+    get:function(){ return p.ownerRoleId || ''; }, set:function(id){ p.ownerRoleId = id; persist(); },
+    resolve:function(id){ var r = state.roles[id]; return r ? {label:r.name, iconHTML:typeIconSVG('role')} : null; },
+    open:function(id){ selectEntity('role', id); },
+    source:roleComboSource,
+    createLabel:function(q){ return q && !roleNameError(q) ? '+ Создать роль «' + normalizeLabel(q) + '»' : null; },
+    create:function(text){ return createRole({name:text}).id; }});
+  panel.querySelectorAll('.proc-step-link').forEach(function(b){
+    b.addEventListener('click', function(){ selectStep(b.getAttribute('data-step')); });
+  });
+}
+
+/* Подсистема процесса — тот же редактор чипов, что у объекта; подсказки — подсистемы объектов и процессов. */
+function processSubsystemSuggestions(){
+  var seen = {}, out = [], all = allSubsystems();
+  allProcesses().forEach(function(p){ all = all.concat(processSubsystems(p)); });
+  all.forEach(function(s){
+    var k = s.toLowerCase(); if (!seen[k]){ seen[k] = true; out.push(s); }
+  });
+  return out.sort(function(a,b){ return a.localeCompare(b,'ru'); });
+}
+function bindProcessSubsystems(panel, p){
+  var wrap = panel.querySelector('.vfield[data-key="psubs"]');
+  var view = wrap.querySelector('.vfield-value');
+  function renderView(){
+    var subs = processSubsystems(p);
+    view.classList.toggle('is-empty', !subs.length);
+    view.innerHTML = !subs.length ? '+ Добавить подсистему' :
+      '<div class="chips-view">' + subs.map(function(s){ return '<span class="sub-chip" title="Подсистема">' + typeIconSVG('subsystem') + escapeHtml(s) + '</span>'; }).join('') + '</div>' + PENCIL_SVG;
+  }
+  function edit(){
+    if (wrap.querySelector('.subtags-edit')) return;
+    view.hidden = true;
+    var box = document.createElement('div'); box.className = 'subtags-edit';
+    wrap.appendChild(box);
+    var ed = buildChipEditor(box, {
+      label:'Подсистемы', placeholder:'Начните вводить подсистему…', chipClass:'sub-chip', createLabel:'Создать',
+      values:function(){ return processSubsystems(p); }, suggestions:processSubsystemSuggestions,
+      onChange:function(list){ setObjectSubsystems(p, list); processChanged(); }
+    });
+    ed.focus();
+    function close(){ box.remove(); view.hidden = false; renderView(); }
+    box.addEventListener('focusout', function(){ setTimeout(function(){ if (box.isConnected && !box.contains(document.activeElement)) close(); }, 0); });
+    box.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && !box.querySelector('.combo-dropdown:not([hidden])')){ e.preventDefault(); e.stopPropagation(); close(); view.focus(); }
+    });
+  }
+  view.addEventListener('click', edit);
+  view.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); edit(); } });
+  renderView();
+}
+
+function deleteProcess(id){
+  var p = state.processes[id]; if (!p) return;
+  openModal({
+    title:'Удалить процесс?',
+    bodyHTML:'<p>Процесс «' + escapeHtml(p.name) + '» и его ' + p.steps.length + ' ' + pluralRu(p.steps.length,'шаг','шага','шагов') +
+      ' будут удалены без возможности восстановления. Объекты, механизмы и реквизиты останутся.</p>',
+    footerButtons:[
+      {label:'Отмена', onClick:function(){ return true; }},
+      {label:'Удалить', variant:'danger', onClick:function(){
+        delete state.processes[id];
+        procSel = {processId:null, stepId:null}; saveProcSel();
+        persist(); renderProcessView(); showProcessDefaultPanel();
+      }}
+    ]
+  });
+}
+
+/* ----- Карточка шага ----- */
+
+function stepPanelTemplate(p, s){
+  return (
+    '<div class="card-head">' +
+      '<div class="card-head-row">' +
+        '<span class="step-num step-num-lg">' + stepNumbers(p)[s.id] + '</span>' +
+        '<h2 class="inline-title" tabindex="0" title="Название шага — нажмите, чтобы изменить">' + escapeHtml(s.name) + '</h2>' +
+        '<span class="save-indicator" aria-live="polite"></span>' + cardMenuButtonHTML() +
+      '</div>' +
+      '<p class="inline-msg" hidden></p>' +
+      '<div class="card-head-badges">' +
+        '<button type="button" class="badge-btn status-badge is-default step-kind-badge" aria-haspopup="menu" aria-expanded="false" title="Вид шага — нажмите, чтобы изменить">' +
+          STEP_KIND_ICONS[s.kind] + escapeHtml(stepKindTitle(s.kind)) + '</button>' +
+        '<span class="step-proc-name" title="Процесс">' + escapeHtml(p.name) + '</span>' +
+      '</div>' +
+    '</div>' +
+    refFieldHTML('role', 'Роль') +
+    viewFieldHTML('description', 'Описание') +
+    '<div class="panel-section is-tight">' +
+      '<div class="panel-section-header"><p class="panel-section-title" id="step-parts-title">Участники</p>' +
+        '<button class="btn btn-sm" id="btn-add-participant" type="button" title="Добавить механизм, объект или реквизит">+ Участник</button></div>' +
+      '<div id="step-add-participant"></div>' +
+      '<div id="step-parts-list"></div>' +
+    '</div>'
+  );
+}
+
+function renderStepPanel(p, s){
+  if (!p || !s) return;
+  var panel = document.getElementById('panel-step');
+  showPanel('step');
+  panel.setAttribute('data-id', s.id);
+  panel.innerHTML = stepPanelTemplate(p, s);
+  function changed(){ persist(); renderRibbon(); }
+  bindInlineTitle(panel, function(){ return s.name; }, function(v){ s.name = normalizeLabel(v); changed(); }, 'Название шага');
+  var menuBtn = panel.querySelector('.card-menu-btn');
+  menuBtn.addEventListener('click', function(){ openStepMenu(menuBtn, s.id); });
+  var kindBtn = panel.querySelector('.step-kind-badge');
+  kindBtn.addEventListener('click', function(){
+    openPopoverMenu(kindBtn, STEP_KINDS.map(function(k){ return {value:k.code, label:k.title, icon:STEP_KIND_ICONS[k.code], current:k.code === s.kind}; }), function(code){
+      if (code === s.kind) return;
+      s.kind = code; changed(); renderStepPanel(p, s);
+    });
+  });
+  bindRefField(panel, 'role', {label:'Роль', addText:s.kind === 'auto_action' ? 'Система — или выбрать роль' : 'Выбрать роль исполнителя',
+    get:function(){ return s.roleId || ''; }, set:function(id){ s.roleId = id; changed(); },
+    resolve:function(id){ var r = state.roles[id]; return r ? {label:r.name, iconHTML:typeIconSVG('role')} : null; },
+    open:function(id){ procReturn = {processId:p.id, stepId:s.id}; selectEntity('role', id); },
+    source:roleComboSource,
+    createLabel:function(q){ return q && !roleNameError(q) ? '+ Создать роль «' + normalizeLabel(q) + '»' : null; },
+    create:function(text){ return createRole({name:text}).id; }});
+  bindViewField(panel, 'description', {label:'Описание', addText:'Добавить описание', multiline:true,
+    get:function(){ return s.description || ''; }, set:function(v){ s.description = v; persist(); }});
+  renderStepParticipants(p, s, panel);
+  bindAddParticipant(p, s, panel);
+}
+
+/* Участники шага, сгруппированные: Механизмы / Объекты / Реквизиты. */
+function renderStepParticipants(p, s, panel){
+  var box = panel.querySelector('#step-parts-list');
+  panel.querySelector('#step-parts-title').textContent = 'Участники · ' + s.participants.length;
+  if (!s.participants.length){ box.innerHTML = '<p class="ref-empty">Участников пока нет.</p>'; return; }
+  box.innerHTML = PARTICIPANT_TYPES.map(function(t){
+    var rows = [];
+    s.participants.forEach(function(pt, i){
+      if (pt.entityType !== t.code) return;
+      var info = participantInfo(pt), role = participationRole(pt.entityType, pt.role);
+      rows.push('<div class="sp-item" data-i="' + i + '">' +
+        '<div class="sp-row">' +
+          (info.broken ? '<span class="sp-name ref-broken">' + escapeHtml(info.label) + '</span>'
+                       : '<button type="button" class="sp-name ref-link" title="' + escapeHtml(info.title || 'Открыть карточку') + '">' + info.iconHTML + '<span>' + escapeHtml(info.label) + '</span></button>') +
+          '<button type="button" class="badge-btn status-badge is-default sp-role" aria-haspopup="menu" aria-expanded="false" title="Роль участия — нажмите, чтобы изменить">' +
+            (role.letter ? role.letter + ' · ' : '') + escapeHtml(role.title) + '</button>' +
+          '<button type="button" class="card-menu-btn sp-menu" aria-haspopup="menu" aria-expanded="false" aria-label="Действия с участником" title="Действия">⋯</button>' +
+        '</div>' +
+        '<div class="sp-note' + (pt.note ? '' : ' is-empty') + '" tabindex="0" title="Примечание — нажмите, чтобы изменить">' + (pt.note ? escapeHtml(pt.note) : '+ примечание') + '</div>' +
+      '</div>');
+    });
+    return rows.length ? '<div class="sp-group"><p class="om-group-title">' + escapeHtml(t.title) + '</p>' + rows.join('') + '</div>' : '';
+  }).join('');
+
+  function changed(){ persist(); renderRibbon(); renderStepParticipants(p, s, panel); }
+  box.querySelectorAll('.sp-item').forEach(function(item){
+    var pt = s.participants[Number(item.getAttribute('data-i'))];
+    var name = item.querySelector('button.sp-name');
+    if (name) name.addEventListener('click', function(){ openParticipant(pt); });
+    var roleBtn = item.querySelector('.sp-role');
+    roleBtn.addEventListener('click', function(){
+      openPopoverMenu(roleBtn, PARTICIPATION_ROLES[pt.entityType].map(function(r){
+        return {value:r.code, label:(r.letter ? r.letter + ' · ' : '') + r.title, current:r.code === pt.role};
+      }), function(code){ if (code !== pt.role){ pt.role = code; changed(); } });
+    });
+    var menu = item.querySelector('.sp-menu');
+    menu.addEventListener('click', function(){
+      openPopoverMenu(menu, [{value:'remove', label:'Убрать из шага', danger:true}], function(){
+        s.participants.splice(s.participants.indexOf(pt), 1); changed();
+      });
+    });
+    var note = item.querySelector('.sp-note');
+    function editNote(){
+      var input = document.createElement('input');
+      input.type = 'text'; input.className = 'field-input sp-note-input'; input.value = pt.note || '';
+      input.placeholder = 'Примечание'; input.setAttribute('aria-label', 'Примечание');
+      note.replaceWith(input); input.focus();
+      var done = false;
+      function finish(save){
+        if (done) return; done = true;
+        var v = normalizeLabel(input.value);
+        if (save && v !== (pt.note || '')){ pt.note = v; persist(); }
+        renderStepParticipants(p, s, panel);
+      }
+      input.addEventListener('keydown', function(e){
+        if (e.key === 'Enter'){ e.preventDefault(); finish(true); }
+        else if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); finish(false); }
+      });
+      input.addEventListener('blur', function(){ finish(true); });
+    }
+    note.addEventListener('click', editNote);
+    note.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); editNote(); } });
+  });
+}
+
+/* ----- Добавление участника: «+ Участник» → поиск → выбор → роль участия (≤ 4 клика) ----- */
+
+var PARTICIPANT_PICK_LIMIT = 6;
+
+/* Объект по тексту: точное совпадение синонима или имени в конфигураторе, иначе единственное вхождение. */
+function resolveObjectByText(text){
+  var k = normalizeLabel(text).toLowerCase(); if (!k) return null;
+  var objs = Object.keys(state.objects).map(function(id){ return state.objects[id]; });
+  var exact = objs.filter(function(o){ return o.name.toLowerCase() === k || objectIdentifier(o).toLowerCase() === k; });
+  if (exact.length === 1) return exact[0];
+  var part = objs.filter(function(o){ return o.name.toLowerCase().indexOf(k) >= 0 || objectIdentifier(o).toLowerCase().indexOf(k) >= 0; });
+  return part.length === 1 ? part[0] : null;
+}
+/* «Объект.Реквизит» → {objText, name}; без точки — только имя. */
+function splitAttrQuery(q){
+  var d = q.lastIndexOf('.');
+  return d > 0 ? {objText:q.slice(0, d), name:normalizeLabel(q.slice(d + 1))} : {objText:'', name:normalizeLabel(q)};
+}
+function participantComboSource(q){
+  var k = q.toLowerCase(), out = [];
+  var sq = splitAttrQuery(k), dotted = !!sq.objText;
+  if (!dotted){
+    mechanismComboSource(q).slice(0, PARTICIPANT_PICK_LIMIT).forEach(function(it){ out.push({value:'mechanism:' + it.value, label:it.label, sub:'Механизм · ' + it.sub, iconHTML:it.iconHTML}); });
+    Object.keys(state.objects).map(function(id){ return state.objects[id]; })
+      .filter(function(o){ return !k || o.name.toLowerCase().indexOf(k) >= 0 || (o.fullName || '').toLowerCase().indexOf(k) >= 0; })
+      .sort(function(a,b){ return a.name.localeCompare(b.name,'ru'); }).slice(0, PARTICIPANT_PICK_LIMIT)
+      .forEach(function(o){ out.push({value:'object:' + o.id, label:o.name, sub:typeTitle(o.type), iconHTML:'<span class="dot" style="background:' + typeColor(o.type) + '"></span>'}); });
+  }
+  Object.keys(state.attributes).map(function(id){ return state.attributes[id]; })
+    .filter(function(a){
+      var o = state.objects[a.objectId]; if (!o) return false;
+      var an = a.name.toLowerCase(), syn = (a.synonym || '').toLowerCase();
+      if (dotted) return (o.name.toLowerCase().indexOf(sq.objText) >= 0 || objectIdentifier(o).toLowerCase().indexOf(sq.objText) >= 0) &&
+        (an.indexOf(sq.name.toLowerCase()) >= 0 || syn.indexOf(sq.name.toLowerCase()) >= 0);
+      return !k || an.indexOf(k) >= 0 || syn.indexOf(k) >= 0 || attributeFullName(a).toLowerCase().indexOf(k) >= 0;
+    })
+    .sort(function(a,b){ return attributeDisplayName(a).localeCompare(attributeDisplayName(b),'ru'); }).slice(0, PARTICIPANT_PICK_LIMIT)
+    .forEach(function(a){
+      var o = state.objects[a.objectId];
+      out.push({value:'attribute:' + a.id, label:attributeDisplayName(a), sub:'Реквизит' + (a.tabularSection ? ' · ' + a.tabularSection : ''),
+        iconHTML:'<span class="dot" style="background:' + typeColor(o.type) + '"></span>'});
+    });
+  return out;
+}
+function attributeCreateLabel(q){
+  var sq = splitAttrQuery(q);
+  if (!sq.name) return null;
+  var o = sq.objText ? resolveObjectByText(sq.objText) : null;
+  return '+ Создать реквизит «' + sq.name + '» у объекта ' + (o ? '«' + o.name + '»' : '…');
+}
+
+function bindAddParticipant(p, s, panel){
+  var btn = panel.querySelector('#btn-add-participant'), host = panel.querySelector('#step-add-participant');
+  function close(){ host.innerHTML = ''; }
+  function added(){ persist(); renderRibbon(); renderStepParticipants(p, s, panel); close(); btn.focus(); }
+  btn.addEventListener('click', function(){
+    if (host.firstChild){ close(); return; }
+    host.innerHTML = '<div class="om-add sp-add">' +
+      '<div class="sp-add-step1"><div class="om-add-label">Механизм, объект или реквизит</div><div class="sp-add-picker"></div></div>' +
+      '<div class="sp-add-object" hidden><div class="om-add-label sp-add-object-label"></div><div class="sp-add-object-picker"></div></div>' +
+      '<div class="sp-add-roles" hidden><div class="om-add-label sp-add-chosen"></div><div class="om-add-roles"></div></div>' +
+      '<p class="field-error sp-add-error" hidden></p>' +
+      '<div class="om-add-actions"><button type="button" class="btn btn-sm sp-add-cancel">Отмена</button></div>' +
+    '</div>';
+    var err = host.querySelector('.sp-add-error');
+    function showError(text){ err.textContent = text; err.hidden = !text; }
+
+    /* Шаг 2: роль участия — один клик добавляет участника. */
+    function chooseEntity(type, id){
+      var info = participantInfo({entityType:type, entityId:id});
+      host.querySelector('.sp-add-step1').hidden = true;
+      host.querySelector('.sp-add-object').hidden = true;
+      var box = host.querySelector('.sp-add-roles'); box.hidden = false;
+      host.querySelector('.sp-add-chosen').innerHTML = 'Роль участия: <b>' + escapeHtml(info.label) + '</b>';
+      var roles = box.querySelector('.om-add-roles');
+      roles.innerHTML = PARTICIPATION_ROLES[type].map(function(r){
+        return '<button type="button" class="om-add-role" data-role="' + r.code + '">' + (r.letter ? r.letter + ' · ' : '') + escapeHtml(r.title) + '</button>';
+      }).join('');
+      roles.querySelectorAll('.om-add-role').forEach(function(b){
+        b.addEventListener('click', function(){
+          var role = b.getAttribute('data-role');
+          var dup = s.participants.some(function(x){ return x.entityType === type && x.entityId === id && x.role === role; });
+          if (!dup) s.participants.push({entityType:type, entityId:id, role:role, note:''});
+          added();
+        });
+      });
+      roles.querySelector('.om-add-role').focus();
+    }
+    /* Создание реквизита прямо из поиска: «Заявка.НовыйРеквизит» или имя + выбор объекта. */
+    function createAttrFor(o, name){
+      var e = attributeNameError(name, o.id, '');
+      if (e){ showError(e); return; }
+      var a = createAttribute({objectId:o.id, name:name});
+      chooseEntity('attribute', a.id);
+    }
+    function startCreateAttr(text){
+      var sq = splitAttrQuery(text), o = sq.objText ? resolveObjectByText(sq.objText) : null;
+      if (!validIdentifier(sq.name)){ showError('Имя реквизита — без пробелов и точек и не начинается с цифры.'); return; }
+      if (o){ createAttrFor(o, sq.name); return; }
+      showError(sq.objText ? 'Объект «' + sq.objText + '» не найден — выберите его.' : '');
+      var ob = host.querySelector('.sp-add-object'); ob.hidden = false;
+      host.querySelector('.sp-add-object-label').textContent = 'У какого объекта создать реквизит «' + sq.name + '»';
+      var oi = buildCombobox(host.querySelector('.sp-add-object-picker'), {
+        placeholder:'Начните вводить название объекта…', autoActive:true, emptyText:'Объекты не найдены',
+        source:function(q){ return objectComboSource(q).slice(0, 10); },
+        onPick:function(it){ createAttrFor(state.objects[it.value], sq.name); }
+      });
+      oi.focus();
+    }
+    var input = buildCombobox(host.querySelector('.sp-add-picker'), {
+      placeholder:'«Заявка», «Заявка.ПлановаяДата», механизм…', ariaLabel:'Участник шага', autoActive:true, emptyText:'Ничего не найдено',
+      source:participantComboSource,
+      createLabel:attributeCreateLabel,
+      onPick:function(it){
+        showError('');
+        if (it.create){ startCreateAttr(it.value); return; }
+        var d = it.value.indexOf(':');
+        chooseEntity(it.value.slice(0, d), it.value.slice(d + 1));
+      }
+    });
+    input.addEventListener('input', function(){ showError(''); host.querySelector('.sp-add-object').hidden = true; });
+    host.querySelector('.sp-add-cancel').addEventListener('click', function(){ close(); btn.focus(); });
+    host.querySelector('.sp-add').addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && !e.defaultPrevented){ e.preventDefault(); e.stopPropagation(); close(); btn.focus(); }
+    });
+    input.focus();
   });
 }
 function resizeCanvas(){
@@ -5788,6 +6819,7 @@ function attachHandlers(){
   });
 
   bindGlobalSearch();
+  bindProcessView();
 
   window.addEventListener('keydown', function(e){
     if (currentView === 'list' && (e.key === 'ArrowDown' || e.key === 'ArrowUp') && !e.altKey && !e.ctrlKey && !e.metaKey &&
@@ -5806,6 +6838,7 @@ function attachHandlers(){
       if (!document.getElementById('more-menu').hidden){ document.getElementById('more-menu').hidden = true; document.getElementById('btn-more').setAttribute('aria-expanded','false'); document.getElementById('btn-more').focus(); }
       else if (closeListDropdowns()){}
       else if (document.getElementById('modal-root').innerHTML) closeModal();
+      else if (currentView === 'process' && processEscape()){}
       else if (focusMode) exitFocus();
       else clearSelection();
     }
