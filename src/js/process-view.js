@@ -33,7 +33,8 @@ var READINESS_MARKS = {
 var STEP_KIND_ICONS = {
   user_action:'<svg class="type-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5" r="2.5"/><path d="M3 14c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/></svg>',
   auto_action:'<svg class="type-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M3.6 12.4 5 11M11 5l1.4-1.4"/></svg>',
-  event:'<svg class="type-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 1.5 4 9h4l-1 5.5L12 7H8z"/></svg>'
+  event:'<svg class="type-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 1.5 4 9h4l-1 5.5L12 7H8z"/></svg>',
+  decision:'<svg class="type-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8 14.2 8 8 14.2 1.8 8z"/></svg>'
 };
 
 function currentProcess(){ return procSel.processId ? state.processes[procSel.processId] || null : null; }
@@ -187,6 +188,7 @@ function stepRoleLineHTML(s){
   if (s.roleId) text = state.roles[s.roleId] ? escapeHtml(state.roles[s.roleId].name) : brokenRefHTML(s.roleId);
   else if (s.kind === 'auto_action') text = 'Система';
   else if (s.kind === 'event') text = 'Событие';
+  else if (s.kind === 'decision') text = '<span class="is-faint">Решение · роль не указана</span>';
   else text = '<span class="is-faint">Роль не указана</span>';
   return '<div class="step-card-role" title="' + escapeHtml(stepKindTitle(s.kind)) + '">' + icon + '<span>' + text + '</span></div>';
 }
@@ -208,13 +210,15 @@ function stepControlChipHTML(c){
     (info.temp ? '<span class="chip-temp">временный → ' + escapeHtml(info.temp) + '</span>' : '') +
     '<span class="step-chip-letter" title="' + escapeHtml(r.title) + '">' + r.letter + '</span></span>';
 }
-function stepCardHTML(s, num){
+function stepCardHTML(s, num, unreachable){
   var rd = stepReadiness(s), mark = rd.level && READINESS_MARKS[rd.level];
   var manual = procOnlyProd && isManualWorkStep(s);
   var ctrls = stepControls(s);
-  return '<div class="step-card' + (s.id === procSel.stepId ? ' is-active' : '') + '" data-step="' + s.id + '" tabindex="0">' +
+  return '<div class="step-card' + (s.id === procSel.stepId ? ' is-active' : '') + (s.kind === 'decision' ? ' is-decision' : '') + (unreachable ? ' is-unreachable' : '') +
+      '" data-step="' + s.id + '" tabindex="0"' + (unreachable ? ' title="Шаг недостижим от начала процесса"' : '') + '>' +
     '<div class="step-card-head"><span class="step-num">' + num + '</span>' +
       (mark ? '<span class="step-ready is-' + rd.level + '" title="' + escapeHtml(mark.title) + '">' + mark.glyph + '</span>' : '') +
+      (s.kind === 'decision' ? '<span class="step-decision-mark" title="Решение" aria-label="Решение"></span>' : '') +
       '<span class="step-card-name" title="' + escapeHtml(s.name) + '">' + escapeHtml(s.name) + '</span>' +
       '<button type="button" class="card-menu-btn step-menu-btn" aria-haspopup="menu" aria-expanded="false" aria-label="Действия с шагом" title="Действия">⋯</button></div>' +
     stepRoleLineHTML(s) +
@@ -227,11 +231,6 @@ function stepCardHTML(s, num){
     (ctrls.length ? '<div class="step-chips" data-type="control">' + ctrls.map(stepControlChipHTML).join('') + '<span class="step-chip-more" hidden></span></div>' : '') +
   '</div>';
 }
-function stepLinkHTML(afterId){
-  return '<div class="step-link"><span class="step-arrow" aria-hidden="true"></span>' +
-    '<button type="button" class="step-add" data-after="' + afterId + '" title="Вставить шаг" aria-label="Вставить шаг">+</button></div>';
-}
-
 function renderRibbon(){
   var p = currentProcess();
   var head = document.getElementById('proc-head-info'), stage = document.getElementById('proc-stage'), empty = document.getElementById('proc-empty');
@@ -242,16 +241,11 @@ function renderRibbon(){
     document.getElementById('proc-empty-title').textContent = allProcesses().length ? 'Выберите процесс слева' : 'Процессов пока нет';
     return;
   }
-  var list = orderedSteps(p);
+  var n = p.steps.length;
   head.innerHTML = '<h2 class="proc-title">' + escapeHtml(p.name) + '</h2>' +
-    '<span class="proc-meta">' + list.length + ' ' + pluralRu(list.length,'шаг','шага','шагов') + ' · ' + readinessText(processReadiness(p)) + '</span>';
+    '<span class="proc-meta">' + n + ' ' + pluralRu(n,'шаг','шага','шагов') + ' · ' + readinessText(processReadiness(p)) + '</span>';
   stage.classList.toggle('only-prod', procOnlyProd);
-  stage.innerHTML = list.length ?
-    list.map(function(s, i){ return (i ? stepLinkHTML(list[i - 1].id) : '') + stepCardHTML(s, i + 1); }).join('') +
-      '<div class="step-link is-tail"><button type="button" class="step-add" data-after="' + list[list.length - 1].id + '" title="Добавить шаг в конец" aria-label="Добавить шаг в конец">+</button></div>'
-    : '<button type="button" class="btn step-add-first" data-after="">+ Добавить шаг</button>';
-  stage.style.zoom = procZoom;
-  fitChipLines();
+  renderRibbonLayout(stage, p, processLayout(p));
 }
 /* Группа чипов — одна строка; не поместившиеся прячутся под «+N» (с подсказкой). */
 function fitChipLines(){
@@ -274,9 +268,10 @@ function markActiveStep(){
 
 /* ----- Действия с шагами на ленте ----- */
 
-function addStepAfter(afterId){
+/* «+» на переходе: новый шаг встаёт на этот переход (в ветку исхода — для решения). */
+function addStepOnEdge(fromId, outIdx){
   var p = currentProcess(); if (!p) return;
-  var s = insertStep(p, afterId || null);
+  var s = insertOnEdge(p, fromId || null, outIdx);
   persist(); renderRibbon(); renderProcessSidebar();
   selectStep(s.id);
   var card = document.querySelector('#proc-stage .step-card[data-step="' + s.id + '"]');
@@ -288,10 +283,18 @@ function deleteStepUI(stepId){
   var n = s.participants.length, k = stepControls(s).length, with_ = [];
   if (n) with_.push(n + ' ' + pluralRu(n,'участником','участниками','участниками'));
   if (k) with_.push(k + ' ' + pluralRu(k,'контролем','контролями','контролями'));
+  /* Ссылки на шаг (next и исходы других шагов) переводятся на его следующий шаг или на завершение. */
+  var nums = stepNumbers(p), inc = incomingRefs(p, stepId).filter(function(r){ return r.step.id !== stepId; });
+  var succ = stepSuccessor(s), succStep = succ && succ !== stepId ? stepById(p, succ) : null;
+  var incHTML = inc.length > 1 || inc.some(function(r){ return r.outIdx >= 0; }) ?
+    '<p>На шаг ведут: ' + inc.map(function(r){
+      return nums[r.step.id] + ' «' + escapeHtml(r.step.name) + '»' + (r.outIdx >= 0 ? ' (исход «' + escapeHtml(r.label) + '»)' : '');
+    }).join('; ') + '. Эти переходы будут вести ' +
+    (succStep ? 'на шаг ' + nums[succStep.id] + ' «' + escapeHtml(succStep.name) + '»' : 'на «Завершение процесса»') + '.</p>' : '';
   openModal({
     title:'Удалить шаг?',
-    bodyHTML:'<p>Шаг ' + stepNumbers(p)[s.id] + ' «' + escapeHtml(s.name) + '» будет удалён' +
-      (with_.length ? ' вместе с ' + with_.join(' и ') : '') + '. Соседние шаги соединятся.</p>',
+    bodyHTML:'<p>Шаг ' + nums[s.id] + ' «' + escapeHtml(s.name) + '» будет удалён' +
+      (with_.length ? ' вместе с ' + with_.join(' и ') : '') + '. Соседние шаги соединятся.</p>' + incHTML,
     footerButtons:[
       {label:'Отмена', onClick:function(){ return true; }},
       {label:'Удалить', variant:'danger', onClick:function(){
@@ -309,10 +312,10 @@ function moveStepUI(stepId, dir){
   else if (!document.getElementById('panel-process').hidden) renderProcessPanel(p);
 }
 function openStepMenu(btn, stepId){
-  var p = currentProcess(), list = orderedSteps(p), i = list.findIndex(function(s){ return s.id === stepId; });
+  var p = currentProcess(), s = stepById(p, stepId);
   var items = [];
-  if (i > 0) items.push({value:'left', label:'Сдвинуть влево'});
-  if (i < list.length - 1) items.push({value:'right', label:'Сдвинуть вправо'});
+  if (canMoveLeft(p, s)) items.push({value:'left', label:'Сдвинуть влево'});
+  if (canMoveRight(p, s)) items.push({value:'right', label:'Сдвинуть вправо'});
   if (items.length) items.push({sep:true});
   items.push({value:'delete', label:'Удалить шаг', danger:true});
   openPopoverMenu(btn, items, function(v){
@@ -363,7 +366,7 @@ function bindProcessView(){
   var stage = document.getElementById('proc-stage'), sc = document.getElementById('proc-scroll');
   stage.addEventListener('click', function(e){
     var add = e.target.closest('.step-add, .step-add-first');
-    if (add){ addStepAfter(add.getAttribute('data-after')); return; }
+    if (add){ addStepOnEdge(add.getAttribute('data-from'), Number(add.getAttribute('data-out'))); return; }
     var menu = e.target.closest('.step-menu-btn');
     if (menu){ openStepMenu(menu, menu.closest('.step-card').getAttribute('data-step')); return; }
     var card = e.target.closest('.step-card');
@@ -375,7 +378,7 @@ function bindProcessView(){
   });
   /* Клик по пустому месту ленты — снять выбор шага (карточка процесса). */
   sc.addEventListener('click', function(e){
-    if (!e.target.closest('.step-card, .step-link, .step-add-first') && procSel.stepId) deselectStep();
+    if (!e.target.closest('.step-card, .step-add, .step-add-first, .step-term') && procSel.stepId) deselectStep();
   });
   sc.addEventListener('wheel', function(e){
     if (e.ctrlKey || e.metaKey){

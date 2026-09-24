@@ -3,13 +3,16 @@
 /* ===================== Процессы: данные =====================
    Коллекция state.processes: {id, name, description, subsystem, subsystems[], ownerRoleId,
    startStepId, steps[]}. Подсистемы хранятся как у объекта: subsystems[] + subsystem = первая.
-   Шаг: {id, name, description, kind, roleId, next, participants[], controls[]}.
-   Порядок шагов задаётся только ссылками startStepId / next; массив steps — неупорядоченное
-   хранилище. В этой фазе процессы линейные (решения и ветки — фаза 5). */
+   Шаг: {id, name, description, kind, roleId, next, outcomes?, participants[], controls[]}.
+   Порядок шагов задаётся только ссылками startStepId / next / outcomes[].next; массив steps —
+   неупорядоченное хранилище. У решения (kind = decision) next не используется: переходы —
+   outcomes [{id, label, next}], 2 и больше; next = null — «Завершение процесса».
+   Раскладка ленты и номера шагов — process-layout.js. */
 
 var STEP_KINDS = [
   {code:'user_action', title:'Действие пользователя'},
   {code:'auto_action', title:'Автоматическое действие'},
+  {code:'decision',    title:'Решение'},
   {code:'event',       title:'Событие'}
 ];
 var DEFAULT_STEP_KIND = 'user_action';
@@ -68,49 +71,98 @@ function createProcess(partial){
 }
 function stepById(proc, id){ return proc.steps.filter(function(s){ return s.id === id; })[0] || null; }
 
-/* Шаги в порядке next от startStepId. Шаги, до которых нельзя дойти (в линейном процессе
-   их быть не должно), добавляются в конец в порядке массива, чтобы не потеряться. */
+/* Переходы шага: [{to, outIdx, label}]; у обычного шага один (outIdx = -1), у решения — по исходам. */
+function stepEdges(s){
+  if (s.kind === 'decision') return (s.outcomes || []).map(function(o, i){ return {to:o.next || null, outIdx:i, label:o.label}; });
+  return [{to:s.next || null, outIdx:-1, label:''}];
+}
+/* «Следующий» шаг: у решения — цель первого исхода. */
+function stepSuccessor(s){ var e = stepEdges(s)[0]; return e ? e.to : null; }
+function newOutcome(label, next){ return {id:uid('out'), label:label, next:next || null}; }
+
+/* Шаги в порядке чтения ленты (колонка, затем строка); недостижимые — в конце. */
 function orderedSteps(proc){
-  var out = [], seen = {}, cur = proc.startStepId;
-  while (cur && !seen[cur]){
-    var s = stepById(proc, cur); if (!s) break;
-    seen[cur] = true; out.push(s); cur = s.next;
-  }
-  proc.steps.forEach(function(s){ if (!seen[s.id]) out.push(s); });
+  var L = processLayout(proc);
+  return L.order.map(function(id){ return stepById(proc, id); });
+}
+/* Номера шагов: по колонке, внутри колонки — по строке (4, 4а, 4б); недостижимые — «—». */
+function stepNumbers(proc){ return processLayout(proc).numbers; }
+
+/* Кто ссылается на шаг: [{step, outIdx}] (outIdx = -1 — next), start — шаг первый в процессе. */
+function incomingRefs(proc, id){
+  var out = [];
+  proc.steps.forEach(function(x){
+    stepEdges(x).forEach(function(e){ if (e.to === id) out.push({step:x, outIdx:e.outIdx, label:e.label}); });
+  });
   return out;
 }
-/* Номер шага (1…N) в порядке ленты. */
-function stepNumbers(proc){
-  var n = {};
-  orderedSteps(proc).forEach(function(s, i){ n[s.id] = i + 1; });
-  return n;
+/* Ссылки на несуществующие шаги → «Завершение процесса». */
+function sanitizeProcess(proc){
+  var ids = {}; proc.steps.forEach(function(x){ ids[x.id] = true; });
+  proc.steps.forEach(function(x){
+    if (x.kind === 'decision') (x.outcomes || []).forEach(function(o){ if (o.next && !ids[o.next]) o.next = null; });
+    else if (x.next && !ids[x.next]) x.next = null;
+  });
+  if (proc.startStepId && !ids[proc.startStepId]) proc.startStepId = proc.steps.length ? proc.steps[0].id : null;
 }
-/* Перестроить ссылки линейного процесса по заданному порядку. */
-function relinkLinear(proc, list){
-  proc.startStepId = list.length ? list[0].id : null;
-  list.forEach(function(s, i){ s.next = i < list.length - 1 ? list[i + 1].id : null; });
-}
-/* Вставить новый шаг после afterId (null — в начало). */
-function insertStep(proc, afterId){
-  var list = orderedSteps(proc), s = newStep();
-  var i = afterId ? list.findIndex(function(x){ return x.id === afterId; }) + 1 : 0;
+/* Вставить новый шаг на переход fromId (outIdx — исход решения, -1 — next); fromId = null — в начало. */
+function insertOnEdge(proc, fromId, outIdx){
+  var s = newStep();
   proc.steps.push(s);
-  list.splice(i, 0, s);
-  relinkLinear(proc, list);
+  var from = fromId ? stepById(proc, fromId) : null;
+  if (!from){ s.next = proc.startStepId || null; proc.startStepId = s.id; }
+  else if (from.kind === 'decision' && from.outcomes[outIdx]){ s.next = from.outcomes[outIdx].next; from.outcomes[outIdx].next = s.id; }
+  else { s.next = from.next; from.next = s.id; }
   return s;
 }
-/* Удалить шаг: next предыдущего сшивается с последующим. */
+/* Удалить шаг: все ссылки на него (next, исходы, начало) переводятся на его следующий шаг,
+   а если следующего нет — на «Завершение процесса». */
 function removeStep(proc, stepId){
-  var list = orderedSteps(proc).filter(function(s){ return s.id !== stepId; });
-  proc.steps = proc.steps.filter(function(s){ return s.id !== stepId; });
-  relinkLinear(proc, list);
+  var s = stepById(proc, stepId); if (!s) return;
+  var succ = stepSuccessor(s); if (succ === stepId) succ = null;
+  proc.steps = proc.steps.filter(function(x){ return x.id !== stepId; });
+  function redirect(ref, ownerId){ return ref !== stepId ? ref : (succ === ownerId ? null : succ); }
+  proc.steps.forEach(function(x){
+    if (x.kind === 'decision') (x.outcomes || []).forEach(function(o){ o.next = redirect(o.next, x.id); });
+    else x.next = redirect(x.next, x.id);
+  });
+  if (proc.startStepId === stepId) proc.startStepId = succ;
+  sanitizeProcess(proc);
 }
-/* Сдвинуть шаг на позицию влево (-1) или вправо (+1). */
+/* Смена вида шага. В решение: next становится первым исходом «Да», второй исход — пустой
+   («Завершение процесса»). Из решения: next = цель первого исхода, остальные исходы удаляются. */
+function setStepKind(s, code){
+  if (code === 'decision' && s.kind !== 'decision'){ s.outcomes = [newOutcome('Да', s.next), newOutcome('Нет', null)]; s.next = null; }
+  else if (code !== 'decision' && s.kind === 'decision'){ s.next = stepSuccessor(s); delete s.outcomes; }
+  s.kind = code;
+}
+/* Сдвиг внутри цепочки: шаг и соседний — обычные (не решения), сосед связан только с ним. */
+function canMoveRight(proc, s){
+  if (!s || s.kind === 'decision' || !s.next) return false;
+  var v = stepById(proc, s.next);
+  if (!v || v.kind === 'decision' || v.next === s.id) return false;
+  var inc = incomingRefs(proc, v.id);
+  return inc.length === 1 && inc[0].step === s && proc.startStepId !== v.id;
+}
+function moveRight(proc, s){
+  var v = stepById(proc, s.next), after = v.next;
+  proc.steps.forEach(function(x){
+    if (x === v) return;
+    if (x.kind === 'decision') (x.outcomes || []).forEach(function(o){ if (o.next === s.id) o.next = v.id; });
+    else if (x.next === s.id) x.next = v.id;
+  });
+  if (proc.startStepId === s.id) proc.startStepId = v.id;
+  v.next = s.id; s.next = after;
+}
+function plainPredecessor(proc, s){
+  var inc = incomingRefs(proc, s.id);
+  return inc.length === 1 && inc[0].outIdx < 0 ? inc[0].step : null;
+}
+function canMoveLeft(proc, s){ var p = plainPredecessor(proc, s); return !!p && canMoveRight(proc, p); }
 function moveStep(proc, stepId, dir){
-  var list = orderedSteps(proc), i = list.findIndex(function(s){ return s.id === stepId; }), j = i + dir;
-  if (i < 0 || j < 0 || j >= list.length) return false;
-  var t = list[i]; list[i] = list[j]; list[j] = t;
-  relinkLinear(proc, list);
+  var s = stepById(proc, stepId);
+  if (dir > 0){ if (!canMoveRight(proc, s)) return false; moveRight(proc, s); }
+  else { if (!canMoveLeft(proc, s)) return false; moveRight(proc, plainPredecessor(proc, s)); }
   return true;
 }
 
@@ -233,14 +285,15 @@ function processRefsWarningHTML(refs){
   if (!refs.length) return '';
   var byProc = [], idx = {};
   refs.forEach(function(r){
-    if (!(r.proc.id in idx)){ idx[r.proc.id] = byProc.length; byProc.push({proc:r.proc, nums:[], owner:false}); }
+    if (!(r.proc.id in idx)){ idx[r.proc.id] = byProc.length; byProc.push({proc:r.proc, ids:[], owner:false}); }
     var g = byProc[idx[r.proc.id]];
     if (!r.step) g.owner = true;
-    else { var n = stepNumbers(r.proc)[r.step.id]; if (g.nums.indexOf(n) < 0) g.nums.push(n); }
+    else if (g.ids.indexOf(r.step.id) < 0) g.ids.push(r.step.id);
   });
   return '<p>Используется в процессах: ' + byProc.map(function(g){
-    var parts = [];
-    if (g.nums.length) parts.push((g.nums.length === 1 ? 'шаг ' : 'шаги ') + g.nums.sort(function(a,b){ return a - b; }).join(', '));
+    var parts = [], L = processLayout(g.proc);
+    var nums = g.ids.sort(function(a, b){ return L.order.indexOf(a) - L.order.indexOf(b); }).map(function(id){ return L.numbers[id]; });
+    if (nums.length) parts.push((nums.length === 1 ? 'шаг ' : 'шаги ') + nums.join(', '));
     if (g.owner) parts.push('владелец процесса');
     return '«' + escapeHtml(g.proc.name) + '» — ' + parts.join(', ');
   }).join('; ') + '. Ссылка останется с пометкой «⚠ Удалено».</p>';

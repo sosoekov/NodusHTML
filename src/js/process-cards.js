@@ -8,7 +8,7 @@ function processChanged(){ persist(); renderProcessSidebar(); renderRibbon(); }
 /* ----- Карточка процесса ----- */
 
 function processPanelTemplate(p){
-  var list = orderedSteps(p), kinds = {};
+  var list = orderedSteps(p), nums = stepNumbers(p), kinds = {};
   list.forEach(function(s){ kinds[s.kind] = (kinds[s.kind] || 0) + 1; });
   return (
     '<div class="card-head">' +
@@ -28,8 +28,8 @@ function processPanelTemplate(p){
       (list.length ? '<p class="proc-kind-counts">' + STEP_KINDS.filter(function(k){ return kinds[k.code]; }).map(function(k){
           return escapeHtml(k.title) + ': ' + kinds[k.code];
         }).join(' · ') + '</p>' +
-        '<div class="proc-step-links">' + list.map(function(s, i){
-          return '<button type="button" class="om-link proc-step-link" data-step="' + s.id + '"><span class="step-num">' + (i + 1) + '</span><span class="ref-item-title">' + escapeHtml(s.name) + '</span></button>';
+        '<div class="proc-step-links">' + list.map(function(s){
+          return '<button type="button" class="om-link proc-step-link" data-step="' + s.id + '"><span class="step-num">' + nums[s.id] + '</span><span class="ref-item-title">' + escapeHtml(s.name) + '</span></button>';
         }).join('') + '</div>'
         : '<p class="ref-empty">Шагов нет.</p>') +
     '</div>'
@@ -136,7 +136,8 @@ function stepPanelTemplate(p, s){
         '<span class="step-proc-name" title="Процесс">' + escapeHtml(p.name) + '</span>' +
       '</div>' +
     '</div>' +
-    refFieldHTML('role', 'Роль') +
+    refFieldHTML('role', s.kind === 'decision' ? 'Кто решает' : 'Роль') +
+    (s.kind === 'decision' ? stepOutcomesSectionHTML() : '') +
     viewFieldHTML('description', 'Описание') +
     '<div class="panel-section is-tight">' +
       '<div class="panel-section-header"><p class="panel-section-title" id="step-parts-title">Участники</p>' +
@@ -162,7 +163,18 @@ function renderStepPanel(p, s){
   kindBtn.addEventListener('click', function(){
     openPopoverMenu(kindBtn, STEP_KINDS.map(function(k){ return {value:k.code, label:k.title, icon:STEP_KIND_ICONS[k.code], current:k.code === s.kind}; }), function(code){
       if (code === s.kind) return;
-      s.kind = code; changed(); renderStepPanel(p, s);
+      function apply(){ setStepKind(s, code); changed(); renderStepPanel(p, s); }
+      var lost = s.kind === 'decision' ? (s.outcomes || []).slice(1).filter(function(o){ return o.next; }) : [];
+      if (!lost.length){ apply(); return; }
+      openModal({
+        title:'Сменить вид шага?',
+        bodyHTML:'<p>Шаг перестанет быть решением: останется только переход первого исхода «' + escapeHtml(s.outcomes[0].label) + '». ' +
+          'Исходы ' + lost.map(function(o){ return '«' + escapeHtml(o.label) + '»'; }).join(', ') + ' будут удалены; шаги их веток останутся, но могут стать недостижимыми.</p>',
+        footerButtons:[
+          {label:'Отмена', onClick:function(){ return true; }},
+          {label:'Сменить вид', variant:'primary', onClick:function(){ apply(); }}
+        ]
+      });
     });
   });
   bindRefField(panel, 'role', {label:'Роль', addText:s.kind === 'auto_action' ? 'Система — или выбрать роль' : 'Выбрать роль исполнителя',
@@ -177,6 +189,7 @@ function renderStepPanel(p, s){
   renderStepParticipants(p, s, panel);
   bindAddParticipant(p, s, panel);
   renderStepControls(p, s, panel);
+  if (s.kind === 'decision') renderStepOutcomes(p, s, panel);
   bindAddStepControl(p, s, panel);
 }
 
@@ -371,5 +384,95 @@ function bindAddParticipant(p, s, panel){
       if (e.key === 'Escape' && !e.defaultPrevented){ e.preventDefault(); e.stopPropagation(); close(); btn.focus(); }
     });
     input.focus();
+  });
+}
+
+/* ----- Исходы решения ----- */
+
+function stepOutcomesSectionHTML(){
+  return '<div class="panel-section is-tight">' +
+    '<div class="panel-section-header"><p class="panel-section-title" id="step-outs-title">Исходы</p>' +
+      '<button class="btn btn-sm" id="btn-add-outcome" type="button">+ Исход</button></div>' +
+    '<div id="step-outs-list"></div>' +
+  '</div>';
+}
+function outcomeTargetText(p, o){
+  if (!o.next) return 'Завершение процесса';
+  var t = stepById(p, o.next);
+  return t ? '→ ' + stepNumbers(p)[t.id] + ' ' + t.name : 'Завершение процесса';
+}
+/* Исход: подпись (правка по клику), цель — новая ветка / существующий шаг / завершение. Минимум 2 исхода. */
+function renderStepOutcomes(p, s, panel){
+  var box = panel.querySelector('#step-outs-list'), outs = s.outcomes || (s.outcomes = []);
+  panel.querySelector('#step-outs-title').textContent = 'Исходы · ' + outs.length;
+  box.innerHTML = outs.map(function(o, i){
+    return '<div class="sp-item so-item" data-i="' + i + '">' +
+      '<div class="sp-row">' +
+        '<span class="so-label" tabindex="0" title="Подпись исхода — нажмите, чтобы изменить">' + escapeHtml(o.label || 'Исход ' + (i + 1)) + '</span>' +
+        '<button type="button" class="badge-btn status-badge is-default so-target" aria-haspopup="menu" aria-expanded="false" title="Куда ведёт исход — нажмите, чтобы изменить">' + escapeHtml(outcomeTargetText(p, o)) + '</button>' +
+        (outs.length > 2 ? '<button type="button" class="card-menu-btn sp-menu" aria-haspopup="menu" aria-expanded="false" aria-label="Действия с исходом" title="Действия">⋯</button>' : '') +
+      '</div>' +
+      '<div class="so-pick" hidden></div>' +
+    '</div>';
+  }).join('');
+  function changed(){ persist(); renderRibbon(); renderProcessSidebar(); renderStepOutcomes(p, s, panel); }
+  panel.querySelector('#btn-add-outcome').onclick = function(){ outs.push(newOutcome('Исход ' + (outs.length + 1), null)); changed(); };
+  box.querySelectorAll('.so-item').forEach(function(item){
+    var o = outs[Number(item.getAttribute('data-i'))];
+    var label = item.querySelector('.so-label');
+    function editLabel(){
+      var input = document.createElement('input');
+      input.type = 'text'; input.className = 'field-input so-label-input'; input.value = o.label || '';
+      input.setAttribute('aria-label', 'Подпись исхода');
+      label.replaceWith(input); input.focus(); input.select();
+      var done = false;
+      function finish(save){
+        if (done) return; done = true;
+        var v = normalizeLabel(input.value);
+        if (save && v && v !== o.label){ o.label = v; persist(); renderRibbon(); }
+        renderStepOutcomes(p, s, panel);
+      }
+      input.addEventListener('keydown', function(e){
+        if (e.key === 'Enter'){ e.preventDefault(); finish(true); }
+        else if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); finish(false); }
+      });
+      input.addEventListener('blur', function(){ finish(true); });
+    }
+    label.addEventListener('click', editLabel);
+    label.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); editLabel(); } });
+    var tBtn = item.querySelector('.so-target');
+    tBtn.addEventListener('click', function(){
+      openPopoverMenu(tBtn, [
+        {value:'new', label:'Новая ветка'},
+        {value:'existing', label:'К существующему шагу…', current:!!o.next},
+        {value:'end', label:'Завершение процесса', current:!o.next}
+      ], function(v){
+        if (v === 'new'){ var ns = newStep(); p.steps.push(ns); o.next = ns.id; changed(); }
+        else if (v === 'end'){ o.next = null; changed(); }
+        else if (v === 'existing'){
+          var pick = item.querySelector('.so-pick'); pick.hidden = false;
+          var input = buildCombobox(pick, {
+            placeholder:'Номер или название шага…', ariaLabel:'Шаг, к которому ведёт исход', autoActive:true, emptyText:'Шаги не найдены',
+            source:function(q){
+              var k = q.toLowerCase(), nums = stepNumbers(p);
+              return orderedSteps(p).filter(function(x){ return x.id !== s.id; })
+                .filter(function(x){ return !k || x.name.toLowerCase().indexOf(k) >= 0 || String(nums[x.id]).indexOf(k) === 0; })
+                .map(function(x){ return {value:x.id, label:nums[x.id] + ' · ' + x.name, sub:stepKindTitle(x.kind)}; });
+            },
+            onPick:function(it){ o.next = it.value; changed(); }
+          });
+          input.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !e.defaultPrevented){ e.preventDefault(); e.stopPropagation(); renderStepOutcomes(p, s, panel); } });
+          input.addEventListener('blur', function(){ setTimeout(function(){ if (pick.isConnected && !pick.contains(document.activeElement)) renderStepOutcomes(p, s, panel); }, 200); });
+          input.focus();
+        }
+      });
+    });
+    var menu = item.querySelector('.sp-menu');
+    if (menu) menu.addEventListener('click', function(){
+      openPopoverMenu(menu, [{value:'remove', label:'Удалить исход', danger:true}], function(){
+        if (outs.length <= 2) return;
+        outs.splice(outs.indexOf(o), 1); changed();
+      });
+    });
   });
 }

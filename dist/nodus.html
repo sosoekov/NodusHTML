@@ -79,7 +79,8 @@
 
   /* Лента процесса: ширина карточки шага и стрелки между шагами */
   --step-card-w:240px;
-  --step-link-w:56px;
+  --step-link-w:112px;   /* промежуток между колонками: стрелка, подпись исхода, «+» */
+  --step-term-w:120px;   /* «Завершение» — конец исхода решения */
   /* Готовность: штриховка «в разработке» и приглушение в режиме «Только в проме» */
   --dev-hatch:repeating-linear-gradient(135deg, transparent 0 4px, rgba(229,192,123,0.16) 4px 6px);
   --alpha-dev-dim:0.35;
@@ -654,10 +655,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .proc-meta{ font-size:var(--fs-caption); color:var(--text-faint); flex:none; }
 #proc-main.is-empty .proc-head, #proc-main.is-empty .canvas-controls{ display:none; }
 .proc-scroll{ flex:1; overflow:auto; min-height:0; }
-.proc-stage{ display:inline-flex; align-items:flex-start; padding:28px 28px 80px; min-width:100%; }
+.proc-stage{ position:relative; }
+.proc-edges{ position:absolute; left:0; top:0; pointer-events:none; overflow:visible; }
 .proc-empty:not([hidden]){ display:flex; }
 
-.step-card{ flex:none; width:var(--step-card-w); background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); padding:10px 12px 12px; cursor:pointer; display:flex; flex-direction:column; gap:7px; }
+.step-card{ position:absolute; width:var(--step-card-w); background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); padding:10px 12px 12px; cursor:pointer; display:flex; flex-direction:column; gap:7px; }
 .step-card:hover{ border-color:var(--text-faint); }
 .step-card:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
 .step-card.is-active{ border-color:var(--accent); background:var(--bg-elevated); }
@@ -681,14 +683,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .step-chip.is-broken{ color:var(--warning); border-style:dashed; }
 .step-chip-more{ flex:none; font-size:var(--fs-caption); color:var(--text-faint); padding:1px 2px; }
 
-.step-link{ flex:none; width:var(--step-link-w); height:40px; position:relative; display:flex; align-items:center; justify-content:center; }
-.step-arrow{ position:absolute; left:4px; right:4px; top:50%; border-top:1.5px solid var(--graph-arrow); }
-.step-arrow::after{ content:''; position:absolute; right:-1px; top:-5px; width:8px; height:8px; border-right:1.5px solid var(--graph-arrow); border-top:1.5px solid var(--graph-arrow); transform:rotate(45deg); }
-.step-add{ position:relative; width:22px; height:22px; border-radius:11px; border:1px solid var(--border); background:var(--bg-panel); color:var(--text-muted); font-size:var(--fs-md); line-height:1; cursor:pointer; opacity:0; padding:0; }
-.step-link:hover .step-add, .step-add:focus-visible{ opacity:1; }
+.step-add{ position:absolute; width:22px; height:22px; border-radius:11px; border:1px solid var(--border); background:var(--bg-panel); color:var(--text-muted); font-size:var(--fs-md); line-height:1; cursor:pointer; opacity:.45; padding:0; z-index:2; }
+.step-add:hover, .step-add:focus-visible{ opacity:1; }
 .step-add:hover{ color:var(--on-accent); background:var(--accent); border-color:var(--accent); }
-.step-link.is-tail .step-add{ opacity:1; border-style:dashed; }
-.step-add-first{ margin:20px 0; }
+.step-add.is-tail{ opacity:1; border-style:dashed; }
+.step-add-first{ position:absolute; left:40px; top:24px; }
 
 .panel-back{ margin:-6px 0 12px; }
 .panel-back[hidden]{ display:none; }
@@ -738,6 +737,22 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .sc-target{ padding:3px 2px; }
 .sc-target .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
 .ctrl-use .step-num{ margin-right:2px; }
+
+/* ===== Решения, ветки, возвраты (фаза 5) ===== */
+.proc-edge{ fill:none; stroke:var(--graph-arrow); stroke-width:1.5; }
+.proc-edge.is-return{ stroke-dasharray:5 4; }
+.proc-arrowhead{ fill:var(--graph-arrow); }
+.proc-edge-label{ fill:var(--text-muted); font-size:var(--fs-caption); font-family:var(--sans); paint-order:stroke; stroke:var(--bg); stroke-width:4px; stroke-linejoin:round; }
+.proc-edge-label.is-return{ fill:var(--text); }
+.step-term{ position:absolute; width:var(--step-term-w); height:28px; border:1px dashed var(--border); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:var(--fs-caption); color:var(--text-faint); background:var(--bg); }
+.step-decision-mark{ flex:none; width:9px; height:9px; margin:5px 1px 0; border:1.5px solid var(--accent); border-radius:1px; transform:rotate(45deg); }
+.step-card.is-unreachable{ border-style:dashed; opacity:.8; }
+.so-label{ flex:1; min-width:0; font-size:var(--fs-base); color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; border-radius:var(--radius); padding:1px 4px; margin-left:-4px; cursor:text; }
+.so-label:hover, .so-label:focus-visible{ background:var(--bg-elevated); outline:none; }
+.so-label-input{ flex:1; padding:3px 6px; font-size:var(--fs-base); }
+.so-target{ flex:none; max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; }
+.so-pick{ margin:4px 0 2px; }
+.so-pick[hidden]{ display:none; }
 </style>
 </head>
 <body>
@@ -881,7 +896,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       </div>
     </aside>
     <main id="proc-main">
-      <div class="proc-head" id="proc-head">
+      <div class="proc-head">
         <div class="proc-head-info" id="proc-head-info"></div>
         <label class="switch proc-only-prod" title="Приглушить всё «в разработке» и показать шаги, которые останутся ручной работой">
           <input type="checkbox" id="proc-only-prod">
@@ -5671,13 +5686,16 @@ function renderControlBackLinks(container, title, ctrls){
 /* ===================== Процессы: данные =====================
    Коллекция state.processes: {id, name, description, subsystem, subsystems[], ownerRoleId,
    startStepId, steps[]}. Подсистемы хранятся как у объекта: subsystems[] + subsystem = первая.
-   Шаг: {id, name, description, kind, roleId, next, participants[], controls[]}.
-   Порядок шагов задаётся только ссылками startStepId / next; массив steps — неупорядоченное
-   хранилище. В этой фазе процессы линейные (решения и ветки — фаза 5). */
+   Шаг: {id, name, description, kind, roleId, next, outcomes?, participants[], controls[]}.
+   Порядок шагов задаётся только ссылками startStepId / next / outcomes[].next; массив steps —
+   неупорядоченное хранилище. У решения (kind = decision) next не используется: переходы —
+   outcomes [{id, label, next}], 2 и больше; next = null — «Завершение процесса».
+   Раскладка ленты и номера шагов — process-layout.js. */
 
 var STEP_KINDS = [
   {code:'user_action', title:'Действие пользователя'},
   {code:'auto_action', title:'Автоматическое действие'},
+  {code:'decision',    title:'Решение'},
   {code:'event',       title:'Событие'}
 ];
 var DEFAULT_STEP_KIND = 'user_action';
@@ -5736,49 +5754,98 @@ function createProcess(partial){
 }
 function stepById(proc, id){ return proc.steps.filter(function(s){ return s.id === id; })[0] || null; }
 
-/* Шаги в порядке next от startStepId. Шаги, до которых нельзя дойти (в линейном процессе
-   их быть не должно), добавляются в конец в порядке массива, чтобы не потеряться. */
+/* Переходы шага: [{to, outIdx, label}]; у обычного шага один (outIdx = -1), у решения — по исходам. */
+function stepEdges(s){
+  if (s.kind === 'decision') return (s.outcomes || []).map(function(o, i){ return {to:o.next || null, outIdx:i, label:o.label}; });
+  return [{to:s.next || null, outIdx:-1, label:''}];
+}
+/* «Следующий» шаг: у решения — цель первого исхода. */
+function stepSuccessor(s){ var e = stepEdges(s)[0]; return e ? e.to : null; }
+function newOutcome(label, next){ return {id:uid('out'), label:label, next:next || null}; }
+
+/* Шаги в порядке чтения ленты (колонка, затем строка); недостижимые — в конце. */
 function orderedSteps(proc){
-  var out = [], seen = {}, cur = proc.startStepId;
-  while (cur && !seen[cur]){
-    var s = stepById(proc, cur); if (!s) break;
-    seen[cur] = true; out.push(s); cur = s.next;
-  }
-  proc.steps.forEach(function(s){ if (!seen[s.id]) out.push(s); });
+  var L = processLayout(proc);
+  return L.order.map(function(id){ return stepById(proc, id); });
+}
+/* Номера шагов: по колонке, внутри колонки — по строке (4, 4а, 4б); недостижимые — «—». */
+function stepNumbers(proc){ return processLayout(proc).numbers; }
+
+/* Кто ссылается на шаг: [{step, outIdx}] (outIdx = -1 — next), start — шаг первый в процессе. */
+function incomingRefs(proc, id){
+  var out = [];
+  proc.steps.forEach(function(x){
+    stepEdges(x).forEach(function(e){ if (e.to === id) out.push({step:x, outIdx:e.outIdx, label:e.label}); });
+  });
   return out;
 }
-/* Номер шага (1…N) в порядке ленты. */
-function stepNumbers(proc){
-  var n = {};
-  orderedSteps(proc).forEach(function(s, i){ n[s.id] = i + 1; });
-  return n;
+/* Ссылки на несуществующие шаги → «Завершение процесса». */
+function sanitizeProcess(proc){
+  var ids = {}; proc.steps.forEach(function(x){ ids[x.id] = true; });
+  proc.steps.forEach(function(x){
+    if (x.kind === 'decision') (x.outcomes || []).forEach(function(o){ if (o.next && !ids[o.next]) o.next = null; });
+    else if (x.next && !ids[x.next]) x.next = null;
+  });
+  if (proc.startStepId && !ids[proc.startStepId]) proc.startStepId = proc.steps.length ? proc.steps[0].id : null;
 }
-/* Перестроить ссылки линейного процесса по заданному порядку. */
-function relinkLinear(proc, list){
-  proc.startStepId = list.length ? list[0].id : null;
-  list.forEach(function(s, i){ s.next = i < list.length - 1 ? list[i + 1].id : null; });
-}
-/* Вставить новый шаг после afterId (null — в начало). */
-function insertStep(proc, afterId){
-  var list = orderedSteps(proc), s = newStep();
-  var i = afterId ? list.findIndex(function(x){ return x.id === afterId; }) + 1 : 0;
+/* Вставить новый шаг на переход fromId (outIdx — исход решения, -1 — next); fromId = null — в начало. */
+function insertOnEdge(proc, fromId, outIdx){
+  var s = newStep();
   proc.steps.push(s);
-  list.splice(i, 0, s);
-  relinkLinear(proc, list);
+  var from = fromId ? stepById(proc, fromId) : null;
+  if (!from){ s.next = proc.startStepId || null; proc.startStepId = s.id; }
+  else if (from.kind === 'decision' && from.outcomes[outIdx]){ s.next = from.outcomes[outIdx].next; from.outcomes[outIdx].next = s.id; }
+  else { s.next = from.next; from.next = s.id; }
   return s;
 }
-/* Удалить шаг: next предыдущего сшивается с последующим. */
+/* Удалить шаг: все ссылки на него (next, исходы, начало) переводятся на его следующий шаг,
+   а если следующего нет — на «Завершение процесса». */
 function removeStep(proc, stepId){
-  var list = orderedSteps(proc).filter(function(s){ return s.id !== stepId; });
-  proc.steps = proc.steps.filter(function(s){ return s.id !== stepId; });
-  relinkLinear(proc, list);
+  var s = stepById(proc, stepId); if (!s) return;
+  var succ = stepSuccessor(s); if (succ === stepId) succ = null;
+  proc.steps = proc.steps.filter(function(x){ return x.id !== stepId; });
+  function redirect(ref, ownerId){ return ref !== stepId ? ref : (succ === ownerId ? null : succ); }
+  proc.steps.forEach(function(x){
+    if (x.kind === 'decision') (x.outcomes || []).forEach(function(o){ o.next = redirect(o.next, x.id); });
+    else x.next = redirect(x.next, x.id);
+  });
+  if (proc.startStepId === stepId) proc.startStepId = succ;
+  sanitizeProcess(proc);
 }
-/* Сдвинуть шаг на позицию влево (-1) или вправо (+1). */
+/* Смена вида шага. В решение: next становится первым исходом «Да», второй исход — пустой
+   («Завершение процесса»). Из решения: next = цель первого исхода, остальные исходы удаляются. */
+function setStepKind(s, code){
+  if (code === 'decision' && s.kind !== 'decision'){ s.outcomes = [newOutcome('Да', s.next), newOutcome('Нет', null)]; s.next = null; }
+  else if (code !== 'decision' && s.kind === 'decision'){ s.next = stepSuccessor(s); delete s.outcomes; }
+  s.kind = code;
+}
+/* Сдвиг внутри цепочки: шаг и соседний — обычные (не решения), сосед связан только с ним. */
+function canMoveRight(proc, s){
+  if (!s || s.kind === 'decision' || !s.next) return false;
+  var v = stepById(proc, s.next);
+  if (!v || v.kind === 'decision' || v.next === s.id) return false;
+  var inc = incomingRefs(proc, v.id);
+  return inc.length === 1 && inc[0].step === s && proc.startStepId !== v.id;
+}
+function moveRight(proc, s){
+  var v = stepById(proc, s.next), after = v.next;
+  proc.steps.forEach(function(x){
+    if (x === v) return;
+    if (x.kind === 'decision') (x.outcomes || []).forEach(function(o){ if (o.next === s.id) o.next = v.id; });
+    else if (x.next === s.id) x.next = v.id;
+  });
+  if (proc.startStepId === s.id) proc.startStepId = v.id;
+  v.next = s.id; s.next = after;
+}
+function plainPredecessor(proc, s){
+  var inc = incomingRefs(proc, s.id);
+  return inc.length === 1 && inc[0].outIdx < 0 ? inc[0].step : null;
+}
+function canMoveLeft(proc, s){ var p = plainPredecessor(proc, s); return !!p && canMoveRight(proc, p); }
 function moveStep(proc, stepId, dir){
-  var list = orderedSteps(proc), i = list.findIndex(function(s){ return s.id === stepId; }), j = i + dir;
-  if (i < 0 || j < 0 || j >= list.length) return false;
-  var t = list[i]; list[i] = list[j]; list[j] = t;
-  relinkLinear(proc, list);
+  var s = stepById(proc, stepId);
+  if (dir > 0){ if (!canMoveRight(proc, s)) return false; moveRight(proc, s); }
+  else { if (!canMoveLeft(proc, s)) return false; moveRight(proc, plainPredecessor(proc, s)); }
   return true;
 }
 
@@ -5901,17 +5968,249 @@ function processRefsWarningHTML(refs){
   if (!refs.length) return '';
   var byProc = [], idx = {};
   refs.forEach(function(r){
-    if (!(r.proc.id in idx)){ idx[r.proc.id] = byProc.length; byProc.push({proc:r.proc, nums:[], owner:false}); }
+    if (!(r.proc.id in idx)){ idx[r.proc.id] = byProc.length; byProc.push({proc:r.proc, ids:[], owner:false}); }
     var g = byProc[idx[r.proc.id]];
     if (!r.step) g.owner = true;
-    else { var n = stepNumbers(r.proc)[r.step.id]; if (g.nums.indexOf(n) < 0) g.nums.push(n); }
+    else if (g.ids.indexOf(r.step.id) < 0) g.ids.push(r.step.id);
   });
   return '<p>Используется в процессах: ' + byProc.map(function(g){
-    var parts = [];
-    if (g.nums.length) parts.push((g.nums.length === 1 ? 'шаг ' : 'шаги ') + g.nums.sort(function(a,b){ return a - b; }).join(', '));
+    var parts = [], L = processLayout(g.proc);
+    var nums = g.ids.sort(function(a, b){ return L.order.indexOf(a) - L.order.indexOf(b); }).map(function(id){ return L.numbers[id]; });
+    if (nums.length) parts.push((nums.length === 1 ? 'шаг ' : 'шаги ') + nums.join(', '));
     if (g.owner) parts.push('владелец процесса');
     return '«' + escapeHtml(g.proc.name) + '» — ' + parts.join(', ');
   }).join('; ') + '. Ссылка останется с пометкой «⚠ Удалено».</p>';
+}
+/* ===================== Раскладка ленты процесса =====================
+   Детерминированная, пересчитывается при каждом изменении; зависит только от данных процесса:
+   1. Обход в глубину от startStepId (переходы — в порядке исходов). Переход к шагу, который
+      уже на текущем пути обхода, — возврат.
+   2. Колонка шага — длина самого длинного пути от старта без учёта возвратов.
+   3. Строка: первый ещё не размещённый переход продолжает строку шага, остальные — новые строки
+      ниже всего уже размещённого. Каждая строка — одна цепочка, поэтому ячейки не пересекаются.
+      Переход к уже размещённому шагу — слияние (стрелка к нему).
+   4. Номер — по колонке, внутри колонки — по строке: 4, 4а, 4б.
+   Шаги, недостижимые от начала, раскладываются так же отдельными блоками ниже, номер — «—». */
+
+var STEP_LETTERS = 'абвгдежзиклмнопрстуфхцчшщэюя';
+
+function processLayout(proc){
+  var byId = {}; proc.steps.forEach(function(s){ byId[s.id] = s; });
+  var comp = {}, col = {}, row = {}, order = [], numbers = {}, edgesOf = {};
+  var terms = [], edges = [], maxRow = -1, compCount = 0;
+
+  function layoutComponent(root){
+    var ci = compCount++, mark = {}, post = [];
+    function dfs(u){
+      mark[u] = 1; comp[u] = ci; edgesOf[u] = [];
+      stepEdges(byId[u]).forEach(function(e){
+        var v = e.to, edge = {from:u, to:v, outIdx:e.outIdx, label:e.label, kind:'fwd'};
+        if (!v || !byId[v]){ edge.to = null; edge.kind = byId[u].kind === 'decision' ? 'term' : 'tail'; }
+        else if (comp[v] !== undefined && comp[v] !== ci) edge.kind = 'back';   /* в блок выше — как возврат */
+        else if (mark[v] === 1) edge.kind = 'back';
+        else if (!mark[v]) dfs(v);
+        edgesOf[u].push(edge);
+      });
+      mark[u] = 2; post.push(u);
+    }
+    dfs(root);
+    /* Колонки: самый длинный путь по переходам без возвратов (обратный postorder — топологический). */
+    var topo = post.slice().reverse();
+    topo.forEach(function(u){ col[u] = col[u] || 0; });
+    topo.forEach(function(u){
+      edgesOf[u].forEach(function(e){ if (e.kind === 'fwd') col[e.to] = Math.max(col[e.to] || 0, col[u] + 1); });
+    });
+    /* Строки. */
+    function place(u, r){
+      row[u] = r; if (r > maxRow) maxRow = r;
+      var cont = false;
+      edgesOf[u].forEach(function(e){
+        if (e.kind === 'fwd' && row[e.to] === undefined){
+          if (!cont){ cont = true; place(e.to, r); } else place(e.to, maxRow + 1);
+        } else if (e.kind === 'term'){
+          var tr = cont ? maxRow + 1 : r; cont = true;
+          if (tr > maxRow) maxRow = tr;
+          var t = {key:u + '#' + e.outIdx, from:u, outIdx:e.outIdx, label:e.label, col:col[u] + 1, row:tr};
+          terms.push(t); e.to = t.key;
+        }
+      });
+    }
+    place(root, maxRow + 1);
+    var ids = post.slice().sort(function(a, b){ return col[a] - col[b] || row[a] - row[b]; });
+    ids.forEach(function(id){ order.push(id); });
+    /* Номера — только в основном блоке (от начала процесса). */
+    if (ci === 0 && root === proc.startStepId){
+      var inCol = {};
+      ids.forEach(function(id){
+        var k = inCol[col[id]] = (inCol[col[id]] || 0) + 1;
+        numbers[id] = String(col[id] + 1) + (k > 1 ? STEP_LETTERS.charAt(k - 2) : '');
+      });
+    } else ids.forEach(function(id){ numbers[id] = '—'; });
+    post.forEach(function(u){ edgesOf[u].forEach(function(e){ edges.push(e); }); });
+  }
+
+  if (proc.startStepId && byId[proc.startStepId]) layoutComponent(proc.startStepId);
+  /* Недостижимые: сначала те, на которые не ведут переходы из других недостижимых. */
+  for (;;){
+    var rest = proc.steps.filter(function(s){ return comp[s.id] === undefined; });
+    if (!rest.length) break;
+    var targeted = {};
+    rest.forEach(function(s){ stepEdges(s).forEach(function(e){ if (e.to) targeted[e.to] = true; }); });
+    var root = rest.filter(function(s){ return !targeted[s.id]; })[0] || rest[0];
+    layoutComponent(root.id);
+  }
+  return {order:order, numbers:numbers, col:col, row:row, comp:comp, terms:terms, edges:edges, maxRow:maxRow};
+}
+
+/* ----- Отрисовка ----- */
+
+var RIBBON = {padX:40, padY:20, rowGap:48, laneH:26, arrowY:20, termW:120, termH:28, bend:16, corner:8}; /* termW — из токена --step-term-w */
+var labelMeasureCtx = null;
+function fitLabel(text, maxW){
+  if (!labelMeasureCtx) labelMeasureCtx = document.createElement('canvas').getContext('2d');
+  labelMeasureCtx.font = '400 ' + getComputedStyle(document.documentElement).getPropertyValue('--fs-caption') + ' ' + THEME.sans;
+  if (maxW <= 12) return '';
+  if (labelMeasureCtx.measureText(text).width <= maxW) return text;
+  var t = text;
+  while (t.length > 1 && labelMeasureCtx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+  return t + '…';
+}
+/* SVG-путь по точкам со скруглёнными углами. */
+function roundedPath(pts, r){
+  var d = 'M' + pts[0][0] + ' ' + pts[0][1];
+  for (var i = 1; i < pts.length - 1; i++){
+    var p0 = pts[i - 1], p = pts[i], p1 = pts[i + 1];
+    var l0 = Math.hypot(p[0] - p0[0], p[1] - p0[1]), l1 = Math.hypot(p1[0] - p[0], p1[1] - p[1]);
+    var rr = Math.min(r, l0 / 2, l1 / 2);
+    if (!rr){ d += ' L' + p[0] + ' ' + p[1]; continue; }
+    var a = [p[0] - (p[0] - p0[0]) / l0 * rr, p[1] - (p[1] - p0[1]) / l0 * rr];
+    var b = [p[0] + (p1[0] - p[0]) / l1 * rr, p[1] + (p1[1] - p[1]) / l1 * rr];
+    d += ' L' + a[0] + ' ' + a[1] + ' Q' + p[0] + ' ' + p[1] + ' ' + b[0] + ' ' + b[1];
+  }
+  var last = pts[pts.length - 1];
+  return d + ' L' + last[0] + ' ' + last[1];
+}
+
+function renderRibbonLayout(stage, proc, L){
+  var cs = getComputedStyle(document.documentElement);
+  var cardW = parseFloat(cs.getPropertyValue('--step-card-w')) || 240, gap = parseFloat(cs.getPropertyValue('--step-link-w')) || 112;
+  var R = RIBBON, byId = {};
+  R.termW = parseFloat(cs.getPropertyValue('--step-term-w')) || 120;
+  proc.steps.forEach(function(s){ byId[s.id] = s; });
+  function xOf(c){ return R.padX + c * (cardW + gap); }
+
+  stage.style.zoom = 1;
+  stage.innerHTML = '<svg class="proc-edges" aria-hidden="true"></svg>' +
+    L.order.map(function(id){ return stepCardHTML(byId[id], L.numbers[id], L.comp[id] !== 0 || !proc.startStepId); }).join('') +
+    L.terms.map(function(t){ return '<div class="step-term" data-term="' + escapeHtml(t.key) + '" title="Исход «' + escapeHtml(t.label) + '» — завершение процесса">Завершение</div>'; }).join('');
+
+  /* Клетки: {id|key → {col,row,w,el}}; высоты строк — по самой высокой карточке. */
+  var cells = {}, rowH = [], occ = [];
+  function cell(key, c, r, el, w){ cells[key] = {col:c, row:r, el:el, w:w}; (occ[r] = occ[r] || {})[c] = true; }
+  stage.querySelectorAll('.step-card').forEach(function(el){
+    var id = el.getAttribute('data-step');
+    el.style.left = xOf(L.col[id]) + 'px';
+    cell(id, L.col[id], L.row[id], el, cardW);
+  });
+  L.terms.forEach(function(t){
+    var el = stage.querySelector('.step-term[data-term="' + t.key + '"]');
+    el.style.left = xOf(t.col) + 'px';
+    cell(t.key, t.col, t.row, el, R.termW);
+  });
+  fitChipLines();
+  Object.keys(cells).forEach(function(k){
+    var c = cells[k], h = cells[k].el.classList.contains('step-term') ? R.arrowY + R.termH / 2 : c.el.offsetHeight;
+    c.h = cells[k].el.offsetHeight;
+    rowH[c.row] = Math.max(rowH[c.row] || 0, h);
+  });
+  for (var r = 0; r <= L.maxRow; r++) if (!rowH[r]) rowH[r] = R.arrowY * 2;
+
+  /* Возвраты: полосы над лентой; более короткие — ниже, пересекающиеся — на разных уровнях. */
+  var returns = L.edges.filter(function(e){ return e.kind === 'back'; });
+  var lanes = [];
+  returns.forEach(function(e){
+    var U = cells[e.from], V = cells[e.to];
+    e.sx = U.row === 0 ? xOf(U.col) + cardW / 2 + 10 : xOf(U.col) + U.w + gap / 2;
+    e.ex = V.row === 0 ? xOf(V.col) + cardW / 2 - 10 : xOf(V.col) - (V.col === 0 ? R.padX / 2 : gap / 2);
+    e.span = [Math.min(e.sx, e.ex) - 4, Math.max(e.sx, e.ex) + 4];
+  });
+  returns.slice().sort(function(a, b){ return (a.span[1] - a.span[0]) - (b.span[1] - b.span[0]) || a.span[0] - b.span[0]; }).forEach(function(e){
+    var lv = 0;
+    while ((lanes[lv] || []).some(function(s){ return s[0] < e.span[1] && e.span[0] < s[1]; })) lv++;
+    (lanes[lv] = lanes[lv] || []).push(e.span); e.lane = lv;
+  });
+  var top0 = R.padY + (lanes.length ? lanes.length * R.laneH + 14 : 0);
+  var rowTop = [top0];
+  for (r = 1; r <= L.maxRow + 1; r++) rowTop[r] = rowTop[r - 1] + rowH[r - 1] + R.rowGap;
+  Object.keys(cells).forEach(function(k){
+    var c = cells[k];
+    c.x = xOf(c.col); c.y = c.el.classList.contains('step-term') ? rowTop[c.row] + R.arrowY - R.termH / 2 : rowTop[c.row];
+    c.yA = rowTop[c.row] + R.arrowY;
+    c.el.style.top = c.y + 'px';
+  });
+  function rowClear(rw, c1, c2){
+    var lo = Math.min(c1, c2), hi = Math.max(c1, c2);
+    for (var c = lo + 1; c < hi; c++) if (occ[rw] && occ[rw][c]) return false;
+    return true;
+  }
+
+  var paths = [], labels = [], plus = [];
+  L.edges.forEach(function(e){
+    var U = cells[e.from];
+    if (e.kind === 'tail'){
+      plus.push({x:U.x + U.w + R.bend, y:U.yA - 11, from:e.from, out:e.outIdx, tail:true});
+      return;
+    }
+    var V = cells[e.to];
+    if (e.kind === 'back'){
+      var laneY = top0 - 14 - e.lane * R.laneH, pts = [];
+      if (U.row === 0) pts.push([e.sx, U.y], [e.sx, laneY]);
+      else pts.push([U.x + U.w, U.yA + 8], [e.sx, U.yA + 8], [e.sx, laneY]);
+      if (V.row === 0) pts.push([e.ex, laneY], [e.ex, V.y]);
+      else pts.push([e.ex, laneY], [e.ex, V.yA + 8], [V.x, V.yA + 8]);
+      paths.push({pts:pts, cls:'proc-edge is-return'});
+      if (e.label) labels.push({x:(e.sx + e.ex) / 2, y:laneY - 5, text:fitLabel(e.label, Math.abs(e.sx - e.ex) - 12), full:e.label, anchor:'middle', cls:'is-return'});
+      return;
+    }
+    var xR = U.x + U.w, xL = V.x, p;
+    if (U.row === V.row && rowClear(U.row, U.col, V.col)) p = [[xR, U.yA], [xL, V.yA]];
+    else if (V.row !== U.row && rowClear(V.row, U.col, V.col)) p = [[xR, U.yA], [xR + R.bend, U.yA], [xR + R.bend, V.yA], [xL, V.yA]];
+    else if (V.row !== U.row && rowClear(U.row, U.col, V.col)) p = [[xR, U.yA], [xL - R.bend, U.yA], [xL - R.bend, V.yA], [xL, V.yA]];
+    else {
+      /* Обход по каналу под строкой источника. */
+      var chY = rowTop[U.row] + rowH[U.row] + R.rowGap / 2, sx = U.x + U.w / 2 + 20;
+      p = [[sx, U.y + U.h], [sx, chY], [xL - R.bend, chY], [xL - R.bend, V.yA], [xL, V.yA]];
+    }
+    paths.push({pts:p, cls:'proc-edge'});
+    /* Подпись исхода и «+» — на самом длинном горизонтальном отрезке. */
+    var best = null;
+    for (var i = 1; i < p.length; i++) if (p[i][1] === p[i - 1][1]){
+      var len = Math.abs(p[i][0] - p[i - 1][0]);
+      if (!best || len > best.len) best = {x0:Math.min(p[i][0], p[i - 1][0]), x1:Math.max(p[i][0], p[i - 1][0]), y:p[i][1], len:len};
+    }
+    if (!best) best = {x0:xR, x1:xL, y:U.yA, len:xL - xR};
+    var isDecision = e.outIdx >= 0;
+    var px = isDecision ? best.x1 - 20 : (best.x0 + best.x1) / 2;
+    plus.push({x:px - 11, y:best.y - 11, from:e.from, out:e.outIdx});
+    /* Подпись — над линией и выше кнопки «+», поэтому может занимать весь отрезок. */
+    if (isDecision && e.label) labels.push({x:best.x0 + 6, y:best.y - 14, text:fitLabel(e.label, best.len - 12), full:e.label, anchor:'start'});
+  });
+
+  var maxCol = 0; Object.keys(cells).forEach(function(k){ maxCol = Math.max(maxCol, cells[k].col); });
+  var W = xOf(maxCol + 1) + R.padX / 2, H = rowTop[L.maxRow + 1] - R.rowGap + R.padY + 40;
+  if (!L.order.length){ W = 400; H = 120; }
+  var svg = stage.querySelector('.proc-edges');
+  svg.setAttribute('width', W); svg.setAttribute('height', H); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.innerHTML = '<defs><marker id="proc-arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
+      '<path d="M0 0 L10 5 L0 10 z" class="proc-arrowhead"/></marker></defs>' +
+    paths.map(function(pp){ return '<path class="' + pp.cls + '" d="' + roundedPath(pp.pts, R.corner) + '" marker-end="url(#proc-arrowhead)"/>'; }).join('') +
+    labels.map(function(l){ return '<text class="proc-edge-label ' + (l.cls || '') + '" x="' + l.x + '" y="' + l.y + '" text-anchor="' + l.anchor + '"><title>' + escapeHtml(l.full) + '</title>' + escapeHtml(l.text) + '</text>'; }).join('');
+  stage.insertAdjacentHTML('beforeend', plus.map(function(b){
+    return '<button type="button" class="step-add' + (b.tail ? ' is-tail' : '') + '" data-from="' + b.from + '" data-out="' + b.out + '" style="left:' + b.x + 'px;top:' + b.y + 'px"' +
+      ' title="' + (b.tail ? 'Добавить шаг после' : 'Вставить шаг') + '" aria-label="' + (b.tail ? 'Добавить шаг после' : 'Вставить шаг') + '">+</button>';
+  }).join('') + (L.order.length ? '' : '<button type="button" class="btn step-add-first" data-from="" data-out="-1">+ Добавить шаг</button>'));
+  stage.style.width = W + 'px'; stage.style.height = H + 'px';
+  stage.style.zoom = procZoom;
 }
 /* ===================== Режим «Процессы»: левая панель и лента =====================
    Выбранный процесс и шаг хранятся в браузере (как ширины панелей) и переживают смену
@@ -5946,7 +6245,8 @@ var READINESS_MARKS = {
 var STEP_KIND_ICONS = {
   user_action:'<svg class="type-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5" r="2.5"/><path d="M3 14c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/></svg>',
   auto_action:'<svg class="type-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M3.6 12.4 5 11M11 5l1.4-1.4"/></svg>',
-  event:'<svg class="type-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 1.5 4 9h4l-1 5.5L12 7H8z"/></svg>'
+  event:'<svg class="type-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 1.5 4 9h4l-1 5.5L12 7H8z"/></svg>',
+  decision:'<svg class="type-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8 14.2 8 8 14.2 1.8 8z"/></svg>'
 };
 
 function currentProcess(){ return procSel.processId ? state.processes[procSel.processId] || null : null; }
@@ -6100,6 +6400,7 @@ function stepRoleLineHTML(s){
   if (s.roleId) text = state.roles[s.roleId] ? escapeHtml(state.roles[s.roleId].name) : brokenRefHTML(s.roleId);
   else if (s.kind === 'auto_action') text = 'Система';
   else if (s.kind === 'event') text = 'Событие';
+  else if (s.kind === 'decision') text = '<span class="is-faint">Решение · роль не указана</span>';
   else text = '<span class="is-faint">Роль не указана</span>';
   return '<div class="step-card-role" title="' + escapeHtml(stepKindTitle(s.kind)) + '">' + icon + '<span>' + text + '</span></div>';
 }
@@ -6121,13 +6422,15 @@ function stepControlChipHTML(c){
     (info.temp ? '<span class="chip-temp">временный → ' + escapeHtml(info.temp) + '</span>' : '') +
     '<span class="step-chip-letter" title="' + escapeHtml(r.title) + '">' + r.letter + '</span></span>';
 }
-function stepCardHTML(s, num){
+function stepCardHTML(s, num, unreachable){
   var rd = stepReadiness(s), mark = rd.level && READINESS_MARKS[rd.level];
   var manual = procOnlyProd && isManualWorkStep(s);
   var ctrls = stepControls(s);
-  return '<div class="step-card' + (s.id === procSel.stepId ? ' is-active' : '') + '" data-step="' + s.id + '" tabindex="0">' +
+  return '<div class="step-card' + (s.id === procSel.stepId ? ' is-active' : '') + (s.kind === 'decision' ? ' is-decision' : '') + (unreachable ? ' is-unreachable' : '') +
+      '" data-step="' + s.id + '" tabindex="0"' + (unreachable ? ' title="Шаг недостижим от начала процесса"' : '') + '>' +
     '<div class="step-card-head"><span class="step-num">' + num + '</span>' +
       (mark ? '<span class="step-ready is-' + rd.level + '" title="' + escapeHtml(mark.title) + '">' + mark.glyph + '</span>' : '') +
+      (s.kind === 'decision' ? '<span class="step-decision-mark" title="Решение" aria-label="Решение"></span>' : '') +
       '<span class="step-card-name" title="' + escapeHtml(s.name) + '">' + escapeHtml(s.name) + '</span>' +
       '<button type="button" class="card-menu-btn step-menu-btn" aria-haspopup="menu" aria-expanded="false" aria-label="Действия с шагом" title="Действия">⋯</button></div>' +
     stepRoleLineHTML(s) +
@@ -6140,11 +6443,6 @@ function stepCardHTML(s, num){
     (ctrls.length ? '<div class="step-chips" data-type="control">' + ctrls.map(stepControlChipHTML).join('') + '<span class="step-chip-more" hidden></span></div>' : '') +
   '</div>';
 }
-function stepLinkHTML(afterId){
-  return '<div class="step-link"><span class="step-arrow" aria-hidden="true"></span>' +
-    '<button type="button" class="step-add" data-after="' + afterId + '" title="Вставить шаг" aria-label="Вставить шаг">+</button></div>';
-}
-
 function renderRibbon(){
   var p = currentProcess();
   var head = document.getElementById('proc-head-info'), stage = document.getElementById('proc-stage'), empty = document.getElementById('proc-empty');
@@ -6155,16 +6453,11 @@ function renderRibbon(){
     document.getElementById('proc-empty-title').textContent = allProcesses().length ? 'Выберите процесс слева' : 'Процессов пока нет';
     return;
   }
-  var list = orderedSteps(p);
+  var n = p.steps.length;
   head.innerHTML = '<h2 class="proc-title">' + escapeHtml(p.name) + '</h2>' +
-    '<span class="proc-meta">' + list.length + ' ' + pluralRu(list.length,'шаг','шага','шагов') + ' · ' + readinessText(processReadiness(p)) + '</span>';
+    '<span class="proc-meta">' + n + ' ' + pluralRu(n,'шаг','шага','шагов') + ' · ' + readinessText(processReadiness(p)) + '</span>';
   stage.classList.toggle('only-prod', procOnlyProd);
-  stage.innerHTML = list.length ?
-    list.map(function(s, i){ return (i ? stepLinkHTML(list[i - 1].id) : '') + stepCardHTML(s, i + 1); }).join('') +
-      '<div class="step-link is-tail"><button type="button" class="step-add" data-after="' + list[list.length - 1].id + '" title="Добавить шаг в конец" aria-label="Добавить шаг в конец">+</button></div>'
-    : '<button type="button" class="btn step-add-first" data-after="">+ Добавить шаг</button>';
-  stage.style.zoom = procZoom;
-  fitChipLines();
+  renderRibbonLayout(stage, p, processLayout(p));
 }
 /* Группа чипов — одна строка; не поместившиеся прячутся под «+N» (с подсказкой). */
 function fitChipLines(){
@@ -6187,9 +6480,10 @@ function markActiveStep(){
 
 /* ----- Действия с шагами на ленте ----- */
 
-function addStepAfter(afterId){
+/* «+» на переходе: новый шаг встаёт на этот переход (в ветку исхода — для решения). */
+function addStepOnEdge(fromId, outIdx){
   var p = currentProcess(); if (!p) return;
-  var s = insertStep(p, afterId || null);
+  var s = insertOnEdge(p, fromId || null, outIdx);
   persist(); renderRibbon(); renderProcessSidebar();
   selectStep(s.id);
   var card = document.querySelector('#proc-stage .step-card[data-step="' + s.id + '"]');
@@ -6201,10 +6495,18 @@ function deleteStepUI(stepId){
   var n = s.participants.length, k = stepControls(s).length, with_ = [];
   if (n) with_.push(n + ' ' + pluralRu(n,'участником','участниками','участниками'));
   if (k) with_.push(k + ' ' + pluralRu(k,'контролем','контролями','контролями'));
+  /* Ссылки на шаг (next и исходы других шагов) переводятся на его следующий шаг или на завершение. */
+  var nums = stepNumbers(p), inc = incomingRefs(p, stepId).filter(function(r){ return r.step.id !== stepId; });
+  var succ = stepSuccessor(s), succStep = succ && succ !== stepId ? stepById(p, succ) : null;
+  var incHTML = inc.length > 1 || inc.some(function(r){ return r.outIdx >= 0; }) ?
+    '<p>На шаг ведут: ' + inc.map(function(r){
+      return nums[r.step.id] + ' «' + escapeHtml(r.step.name) + '»' + (r.outIdx >= 0 ? ' (исход «' + escapeHtml(r.label) + '»)' : '');
+    }).join('; ') + '. Эти переходы будут вести ' +
+    (succStep ? 'на шаг ' + nums[succStep.id] + ' «' + escapeHtml(succStep.name) + '»' : 'на «Завершение процесса»') + '.</p>' : '';
   openModal({
     title:'Удалить шаг?',
-    bodyHTML:'<p>Шаг ' + stepNumbers(p)[s.id] + ' «' + escapeHtml(s.name) + '» будет удалён' +
-      (with_.length ? ' вместе с ' + with_.join(' и ') : '') + '. Соседние шаги соединятся.</p>',
+    bodyHTML:'<p>Шаг ' + nums[s.id] + ' «' + escapeHtml(s.name) + '» будет удалён' +
+      (with_.length ? ' вместе с ' + with_.join(' и ') : '') + '. Соседние шаги соединятся.</p>' + incHTML,
     footerButtons:[
       {label:'Отмена', onClick:function(){ return true; }},
       {label:'Удалить', variant:'danger', onClick:function(){
@@ -6222,10 +6524,10 @@ function moveStepUI(stepId, dir){
   else if (!document.getElementById('panel-process').hidden) renderProcessPanel(p);
 }
 function openStepMenu(btn, stepId){
-  var p = currentProcess(), list = orderedSteps(p), i = list.findIndex(function(s){ return s.id === stepId; });
+  var p = currentProcess(), s = stepById(p, stepId);
   var items = [];
-  if (i > 0) items.push({value:'left', label:'Сдвинуть влево'});
-  if (i < list.length - 1) items.push({value:'right', label:'Сдвинуть вправо'});
+  if (canMoveLeft(p, s)) items.push({value:'left', label:'Сдвинуть влево'});
+  if (canMoveRight(p, s)) items.push({value:'right', label:'Сдвинуть вправо'});
   if (items.length) items.push({sep:true});
   items.push({value:'delete', label:'Удалить шаг', danger:true});
   openPopoverMenu(btn, items, function(v){
@@ -6276,7 +6578,7 @@ function bindProcessView(){
   var stage = document.getElementById('proc-stage'), sc = document.getElementById('proc-scroll');
   stage.addEventListener('click', function(e){
     var add = e.target.closest('.step-add, .step-add-first');
-    if (add){ addStepAfter(add.getAttribute('data-after')); return; }
+    if (add){ addStepOnEdge(add.getAttribute('data-from'), Number(add.getAttribute('data-out'))); return; }
     var menu = e.target.closest('.step-menu-btn');
     if (menu){ openStepMenu(menu, menu.closest('.step-card').getAttribute('data-step')); return; }
     var card = e.target.closest('.step-card');
@@ -6288,7 +6590,7 @@ function bindProcessView(){
   });
   /* Клик по пустому месту ленты — снять выбор шага (карточка процесса). */
   sc.addEventListener('click', function(e){
-    if (!e.target.closest('.step-card, .step-link, .step-add-first') && procSel.stepId) deselectStep();
+    if (!e.target.closest('.step-card, .step-add, .step-add-first, .step-term') && procSel.stepId) deselectStep();
   });
   sc.addEventListener('wheel', function(e){
     if (e.ctrlKey || e.metaKey){
@@ -6321,7 +6623,7 @@ function processChanged(){ persist(); renderProcessSidebar(); renderRibbon(); }
 /* ----- Карточка процесса ----- */
 
 function processPanelTemplate(p){
-  var list = orderedSteps(p), kinds = {};
+  var list = orderedSteps(p), nums = stepNumbers(p), kinds = {};
   list.forEach(function(s){ kinds[s.kind] = (kinds[s.kind] || 0) + 1; });
   return (
     '<div class="card-head">' +
@@ -6341,8 +6643,8 @@ function processPanelTemplate(p){
       (list.length ? '<p class="proc-kind-counts">' + STEP_KINDS.filter(function(k){ return kinds[k.code]; }).map(function(k){
           return escapeHtml(k.title) + ': ' + kinds[k.code];
         }).join(' · ') + '</p>' +
-        '<div class="proc-step-links">' + list.map(function(s, i){
-          return '<button type="button" class="om-link proc-step-link" data-step="' + s.id + '"><span class="step-num">' + (i + 1) + '</span><span class="ref-item-title">' + escapeHtml(s.name) + '</span></button>';
+        '<div class="proc-step-links">' + list.map(function(s){
+          return '<button type="button" class="om-link proc-step-link" data-step="' + s.id + '"><span class="step-num">' + nums[s.id] + '</span><span class="ref-item-title">' + escapeHtml(s.name) + '</span></button>';
         }).join('') + '</div>'
         : '<p class="ref-empty">Шагов нет.</p>') +
     '</div>'
@@ -6449,7 +6751,8 @@ function stepPanelTemplate(p, s){
         '<span class="step-proc-name" title="Процесс">' + escapeHtml(p.name) + '</span>' +
       '</div>' +
     '</div>' +
-    refFieldHTML('role', 'Роль') +
+    refFieldHTML('role', s.kind === 'decision' ? 'Кто решает' : 'Роль') +
+    (s.kind === 'decision' ? stepOutcomesSectionHTML() : '') +
     viewFieldHTML('description', 'Описание') +
     '<div class="panel-section is-tight">' +
       '<div class="panel-section-header"><p class="panel-section-title" id="step-parts-title">Участники</p>' +
@@ -6475,7 +6778,18 @@ function renderStepPanel(p, s){
   kindBtn.addEventListener('click', function(){
     openPopoverMenu(kindBtn, STEP_KINDS.map(function(k){ return {value:k.code, label:k.title, icon:STEP_KIND_ICONS[k.code], current:k.code === s.kind}; }), function(code){
       if (code === s.kind) return;
-      s.kind = code; changed(); renderStepPanel(p, s);
+      function apply(){ setStepKind(s, code); changed(); renderStepPanel(p, s); }
+      var lost = s.kind === 'decision' ? (s.outcomes || []).slice(1).filter(function(o){ return o.next; }) : [];
+      if (!lost.length){ apply(); return; }
+      openModal({
+        title:'Сменить вид шага?',
+        bodyHTML:'<p>Шаг перестанет быть решением: останется только переход первого исхода «' + escapeHtml(s.outcomes[0].label) + '». ' +
+          'Исходы ' + lost.map(function(o){ return '«' + escapeHtml(o.label) + '»'; }).join(', ') + ' будут удалены; шаги их веток останутся, но могут стать недостижимыми.</p>',
+        footerButtons:[
+          {label:'Отмена', onClick:function(){ return true; }},
+          {label:'Сменить вид', variant:'primary', onClick:function(){ apply(); }}
+        ]
+      });
     });
   });
   bindRefField(panel, 'role', {label:'Роль', addText:s.kind === 'auto_action' ? 'Система — или выбрать роль' : 'Выбрать роль исполнителя',
@@ -6490,6 +6804,7 @@ function renderStepPanel(p, s){
   renderStepParticipants(p, s, panel);
   bindAddParticipant(p, s, panel);
   renderStepControls(p, s, panel);
+  if (s.kind === 'decision') renderStepOutcomes(p, s, panel);
   bindAddStepControl(p, s, panel);
 }
 
@@ -6684,6 +6999,96 @@ function bindAddParticipant(p, s, panel){
       if (e.key === 'Escape' && !e.defaultPrevented){ e.preventDefault(); e.stopPropagation(); close(); btn.focus(); }
     });
     input.focus();
+  });
+}
+
+/* ----- Исходы решения ----- */
+
+function stepOutcomesSectionHTML(){
+  return '<div class="panel-section is-tight">' +
+    '<div class="panel-section-header"><p class="panel-section-title" id="step-outs-title">Исходы</p>' +
+      '<button class="btn btn-sm" id="btn-add-outcome" type="button">+ Исход</button></div>' +
+    '<div id="step-outs-list"></div>' +
+  '</div>';
+}
+function outcomeTargetText(p, o){
+  if (!o.next) return 'Завершение процесса';
+  var t = stepById(p, o.next);
+  return t ? '→ ' + stepNumbers(p)[t.id] + ' ' + t.name : 'Завершение процесса';
+}
+/* Исход: подпись (правка по клику), цель — новая ветка / существующий шаг / завершение. Минимум 2 исхода. */
+function renderStepOutcomes(p, s, panel){
+  var box = panel.querySelector('#step-outs-list'), outs = s.outcomes || (s.outcomes = []);
+  panel.querySelector('#step-outs-title').textContent = 'Исходы · ' + outs.length;
+  box.innerHTML = outs.map(function(o, i){
+    return '<div class="sp-item so-item" data-i="' + i + '">' +
+      '<div class="sp-row">' +
+        '<span class="so-label" tabindex="0" title="Подпись исхода — нажмите, чтобы изменить">' + escapeHtml(o.label || 'Исход ' + (i + 1)) + '</span>' +
+        '<button type="button" class="badge-btn status-badge is-default so-target" aria-haspopup="menu" aria-expanded="false" title="Куда ведёт исход — нажмите, чтобы изменить">' + escapeHtml(outcomeTargetText(p, o)) + '</button>' +
+        (outs.length > 2 ? '<button type="button" class="card-menu-btn sp-menu" aria-haspopup="menu" aria-expanded="false" aria-label="Действия с исходом" title="Действия">⋯</button>' : '') +
+      '</div>' +
+      '<div class="so-pick" hidden></div>' +
+    '</div>';
+  }).join('');
+  function changed(){ persist(); renderRibbon(); renderProcessSidebar(); renderStepOutcomes(p, s, panel); }
+  panel.querySelector('#btn-add-outcome').onclick = function(){ outs.push(newOutcome('Исход ' + (outs.length + 1), null)); changed(); };
+  box.querySelectorAll('.so-item').forEach(function(item){
+    var o = outs[Number(item.getAttribute('data-i'))];
+    var label = item.querySelector('.so-label');
+    function editLabel(){
+      var input = document.createElement('input');
+      input.type = 'text'; input.className = 'field-input so-label-input'; input.value = o.label || '';
+      input.setAttribute('aria-label', 'Подпись исхода');
+      label.replaceWith(input); input.focus(); input.select();
+      var done = false;
+      function finish(save){
+        if (done) return; done = true;
+        var v = normalizeLabel(input.value);
+        if (save && v && v !== o.label){ o.label = v; persist(); renderRibbon(); }
+        renderStepOutcomes(p, s, panel);
+      }
+      input.addEventListener('keydown', function(e){
+        if (e.key === 'Enter'){ e.preventDefault(); finish(true); }
+        else if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); finish(false); }
+      });
+      input.addEventListener('blur', function(){ finish(true); });
+    }
+    label.addEventListener('click', editLabel);
+    label.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); editLabel(); } });
+    var tBtn = item.querySelector('.so-target');
+    tBtn.addEventListener('click', function(){
+      openPopoverMenu(tBtn, [
+        {value:'new', label:'Новая ветка'},
+        {value:'existing', label:'К существующему шагу…', current:!!o.next},
+        {value:'end', label:'Завершение процесса', current:!o.next}
+      ], function(v){
+        if (v === 'new'){ var ns = newStep(); p.steps.push(ns); o.next = ns.id; changed(); }
+        else if (v === 'end'){ o.next = null; changed(); }
+        else if (v === 'existing'){
+          var pick = item.querySelector('.so-pick'); pick.hidden = false;
+          var input = buildCombobox(pick, {
+            placeholder:'Номер или название шага…', ariaLabel:'Шаг, к которому ведёт исход', autoActive:true, emptyText:'Шаги не найдены',
+            source:function(q){
+              var k = q.toLowerCase(), nums = stepNumbers(p);
+              return orderedSteps(p).filter(function(x){ return x.id !== s.id; })
+                .filter(function(x){ return !k || x.name.toLowerCase().indexOf(k) >= 0 || String(nums[x.id]).indexOf(k) === 0; })
+                .map(function(x){ return {value:x.id, label:nums[x.id] + ' · ' + x.name, sub:stepKindTitle(x.kind)}; });
+            },
+            onPick:function(it){ o.next = it.value; changed(); }
+          });
+          input.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !e.defaultPrevented){ e.preventDefault(); e.stopPropagation(); renderStepOutcomes(p, s, panel); } });
+          input.addEventListener('blur', function(){ setTimeout(function(){ if (pick.isConnected && !pick.contains(document.activeElement)) renderStepOutcomes(p, s, panel); }, 200); });
+          input.focus();
+        }
+      });
+    });
+    var menu = item.querySelector('.sp-menu');
+    if (menu) menu.addEventListener('click', function(){
+      openPopoverMenu(menu, [{value:'remove', label:'Удалить исход', danger:true}], function(){
+        if (outs.length <= 2) return;
+        outs.splice(outs.indexOf(o), 1); changed();
+      });
+    });
   });
 }
 /* ===================== Контроли в карточке шага =====================
