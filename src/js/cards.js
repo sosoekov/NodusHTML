@@ -411,6 +411,7 @@ function objectPanelTemplate(obj){
     '</div>' +
     attributesSectionHTML() +
     '<div id="obj-tool-controls"></div>' +
+    '<div id="obj-proc-uses"></div>' +
     viewFieldHTML('description', 'Описание') +
     '<div class="vfield" data-key="subtags"><div class="vfield-label">Подсистема · Теги</div><div class="vfield-value" tabindex="0"></div></div>' +
     '<div class="panel-section is-tight">' +
@@ -529,6 +530,7 @@ function renderObjectPanel(obj, panel){
   renderAttributesBlock(obj, panel);
   bindAddAttribute(panel, obj);
   renderControlBackLinks(panel.querySelector('#obj-tool-controls'), 'Инструмент для контролей', controlsByTool(obj.id));
+  renderProcessUsesBlock(panel.querySelector('#obj-proc-uses'), 'Участвует в процессах', objectProcessUses(obj.id), 'Пока не участвует ни в одном процессе.');
   renderAttachmentsList(panel, '#obj-attachments-list', 'obj', obj.id);
 }
 
@@ -902,6 +904,8 @@ function mechanismPanelTemplate(mech){
       '<div id="participants-list"></div>' +
     '</div>' +
     '<div id="mech-replaces-controls"></div>' +
+    '<div id="mech-proc-uses"></div>' +
+    '<div id="mech-proc-controls"></div>' +
     '<div class="panel-section">' +
       '<div class="panel-section-header"><p class="panel-section-title">Вложения</p>' +
         '<button class="btn btn-sm" id="btn-attach-mechanism" type="button">Прикрепить файл</button></div>' +
@@ -950,6 +954,9 @@ function renderMechanismPanel(mech, panel){
   });
   renderParticipantsList(mech, panel);
   renderControlBackLinks(panel.querySelector('#mech-replaces-controls'), 'Заменит ручные контроли', controlsReplacedBy(mech.id));
+  var mu = mechanismProcessUses(mech.id);
+  renderProcessUsesBlock(panel.querySelector('#mech-proc-uses'), 'Используется в процессах', mu.participant, 'Пока не используется ни в одном процессе.');
+  renderProcessUsesBlock(panel.querySelector('#mech-proc-controls'), 'Контролирует в процессах', mu.control, 'Не привязан к шагам как контроль.');
   renderAttachmentsList(panel, '#mech-attachments-list', 'mech', mech.id);
 }
 

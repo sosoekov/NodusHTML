@@ -29,7 +29,7 @@ var listFilters = {
 };
 var listSort = { objects:{key:'name', dir:1}, mechanisms:{key:'name', dir:1}, roles:{key:'name', dir:1}, controls:{key:'name', dir:1} };
 /* Колонки. hideBelow — ширина таблицы (px), ниже которой колонка скрывается
-   (открытая карточка сужает таблицу: сначала уходят «Реквизиты», затем «Теги», затем «Подсистема»). */
+   (открытая карточка сужает таблицу: сначала уходят «Реквизиты», затем «Теги», «Процессы», «Подсистема»). */
 var LIST_COLUMNS = {
   objects: [
     {key:'name',   title:'Синоним',               width:'minmax(0,2.2fr)'},
@@ -37,6 +37,7 @@ var LIST_COLUMNS = {
     {key:'sub',    title:'Подсистема',            width:'minmax(0,1.4fr)', hideBelow:860},
     {key:'mechs',  title:'Механизмы',             width:'96px'},
     {key:'attrs',  title:'Реквизиты',             width:'96px', hideBelow:1180},
+    {key:'procs',  title:'Процессы',              width:'96px', hideBelow:960},
     {key:'tags',   title:'Теги',                  width:'minmax(0,1.4fr)', hideBelow:1060},
     {key:'status', title:'Статус',                width:'112px'}
   ],
@@ -45,6 +46,7 @@ var LIST_COLUMNS = {
     {key:'cat',     title:'Категория',  width:'minmax(0,1.1fr)'},
     {key:'sources', title:'Источники',  width:'minmax(0,2fr)'},
     {key:'targets', title:'Приёмники',  width:'minmax(0,2fr)'},
+    {key:'procs',   title:'Процессы',   width:'96px', hideBelow:900},
     {key:'status',  title:'Статус',     width:'112px'}
   ],
   roles: [
@@ -106,6 +108,7 @@ function listObjectValues(o, mechRoles, attrCount){
     sub: subs.join(', '),
     mechs: mechRoles.length,
     attrs: attrCount || 0,
+    procs: objectProcessCount(o.id),
     tags: tags.join(', '),
     status: st === DEFAULT_OBJECT_STATUS ? '' : objectStatusTitle(st),
     statusKind: statusKind(st)
@@ -118,6 +121,7 @@ function listMechanismValues(m){
     cat: categoryTitle(m.category),
     sources: sides.sources, targets: sides.targets,
     sourcesText: sides.sources.join(', '), targetsText: sides.targets.join(', '),
+    procs: mechanismProcessCount(m.id),
     status: st === DEFAULT_MECH_STATUS ? '' : mechanismStatusTitle(st),
     statusKind: statusKind(st)
   };

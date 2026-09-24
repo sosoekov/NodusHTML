@@ -490,10 +490,10 @@ function layoutLabels(ctx, focus){
     });
     return placed;
   }
-  if (graphFilter){
+  if (graphFilter || processOverlay){
     /* Сначала место под подписи отобранных, потом — остальных. */
-    labelOrder.forEach(function(n){ if (graphFilter.nodes.has(n.id)){ var a = fadeAlpha(n); if (a) place(n, false, a); } });
-    labelOrder.forEach(function(n){ if (!graphFilter.nodes.has(n.id)){ var a = fadeAlpha(n); if (a) place(n, false, a*THEME.alpha.labelBackground); } });
+    labelOrder.forEach(function(n){ if (inGraphSelection(n.id)){ var a = fadeAlpha(n); if (a) place(n, false, a); } });
+    labelOrder.forEach(function(n){ if (!inGraphSelection(n.id)){ var a = fadeAlpha(n); if (a) place(n, false, a*THEME.alpha.labelBackground); } });
     return placed;
   }
   labelOrder.forEach(function(n){ var a = fadeAlpha(n); if (a) place(n, false, a); });
@@ -651,7 +651,8 @@ function drawEdges(ctx, edges, focus){
     var hl = !!focus && isEdgeHighlighted(e, focus);
     var alpha;
     if (focus) alpha = hl ? 1 : Math.min(nodeAlpha(e.a, focus), nodeAlpha(e.b, focus));
-    else if (graphFilter) alpha = graphFilter.edge(e) ? 1 : THEME.alpha.edgeFiltered;
+    else if (graphFilter || processOverlay) alpha = (!graphFilter || graphFilter.edge(e)) && (!processOverlay || overlayEdgeIn(e)) ? 1 :
+      (graphFilter ? THEME.alpha.edgeFiltered : THEME.alpha.nodeBackground);
     else alpha = 1;
     var style = edgeStyle(e);
     var key = (hl?1:0) + '|' + alpha + '|' + style;
@@ -736,9 +737,10 @@ function drawTypeTags(ctx, fills, baseAlpha){
 }
 
 function drawNodes(ctx, nodes, focus){
-  if (!focus && graphFilter){
-    drawNodeBatch(ctx, nodes.filter(function(n){ return !graphFilter.nodes.has(n.id); }), THEME.alpha.nodeFiltered);
-    drawNodeBatch(ctx, nodes.filter(function(n){ return graphFilter.nodes.has(n.id); }), 1);
+  if (!focus && (graphFilter || processOverlay)){
+    /* Отбор левой панели — до «отфильтровано», наложение процесса — до «фона». */
+    drawNodeBatch(ctx, nodes.filter(function(n){ return !inGraphSelection(n.id); }), graphFilter ? THEME.alpha.nodeFiltered : THEME.alpha.nodeBackground);
+    drawNodeBatch(ctx, nodes.filter(function(n){ return inGraphSelection(n.id); }), 1);
     return;
   }
   if (!focus){ drawNodeBatch(ctx, nodes, 1); return; }
@@ -784,6 +786,7 @@ function render(){
   lastLabels = labels;
   drawLabels(ctx2d, labels);
   edgeLabelBoxes = focusMode ? drawFocusEdgeLabels(ctx2d, labels) : [];
+  drawProcessBadges(ctx2d);
   drawMinimap();
 }
 
@@ -844,6 +847,8 @@ function onMouseDown(ev){
   cancelViewAnim();
   var rect = canvasEl.getBoundingClientRect();
   var sx = ev.clientX-rect.left, sy = ev.clientY-rect.top;
+  /* Бейдж шагов процесса (наложение) — переход в «Процессы». */
+  if (processBadgeClick(sx, sy)) return;
   var w = screenToWorld(sx,sy);
   var node = hitTestNode(w.x,w.y);
   mouseDownPos = {sx:sx, sy:sy}; didDrag = false;

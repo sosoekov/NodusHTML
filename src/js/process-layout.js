@@ -110,7 +110,44 @@ function roundedPath(pts, r){
   return d + ' L' + last[0] + ' ' + last[1];
 }
 
-function renderRibbonLayout(stage, proc, L){
+/* Дорожки: строка карточки определяется ролью шага. Дорожка «Система» — автоматические действия
+   без роли. Порядок дорожек — по первому появлению роли в процессе. Внутри дорожки ветки — подстроки
+   (по строкам ленты), поэтому ячейки не пересекаются. Возвращает {rows, termRows, bands}. */
+function laneKeyOf(s){ return s.roleId ? 'role:' + s.roleId : (s.kind === 'auto_action' ? 'system' : 'none'); }
+function laneTitle(key){
+  if (key === 'system') return 'Система';
+  if (key === 'none') return 'Роль не указана';
+  var id = key.slice(5);
+  return state.roles[id] ? state.roles[id].name : '⚠ Удалено: ' + deletedName(id);
+}
+function laneLayout(proc, L){
+  var byId = {}; proc.steps.forEach(function(s){ byId[s.id] = s; });
+  var lanes = [], laneIdx = {};
+  function lane(k){ if (!(k in laneIdx)){ laneIdx[k] = lanes.length; lanes.push({key:k, items:[]}); } return lanes[laneIdx[k]]; }
+  L.order.forEach(function(id){ lane(laneKeyOf(byId[id])).items.push({id:id, row:L.row[id]}); });
+  L.terms.forEach(function(t){ lane(laneKeyOf(byId[t.from])).items.push({term:t.key, row:t.row}); });
+  var rows = {}, termRows = {}, bands = [], next = 0;
+  lanes.forEach(function(ln){
+    var distinct = []; ln.items.forEach(function(it){ if (distinct.indexOf(it.row) < 0) distinct.push(it.row); });
+    distinct.sort(function(a, b){ return a - b; });
+    ln.items.forEach(function(it){
+      var r = next + distinct.indexOf(it.row);
+      if (it.id) rows[it.id] = r; else termRows[it.term] = r;
+    });
+    bands.push({key:ln.key, title:laneTitle(ln.key), first:next, last:next + distinct.length - 1});
+    next += distinct.length;
+  });
+  return {rows:rows, termRows:termRows, bands:bands, maxRow:next - 1};
+}
+
+/* opts (необязательно) — раскладка дорожек из laneLayout: строки и полосы вместо строк ленты.
+   Возвращает геометрию полос [{title, top, height}] для заголовков дорожек. */
+function renderRibbonLayout(stage, proc, L, opts){
+  var rowOf = opts ? opts.rows : L.row, termRowOf = opts ? opts.termRows : null;
+  var maxRow = opts ? opts.maxRow : L.maxRow;
+  var bands = opts ? opts.bands : [{first:0, last:maxRow}];
+  var bandOfRow = [];
+  bands.forEach(function(b, i){ for (var r = b.first; r <= b.last; r++) bandOfRow[r] = i; });
   var cs = getComputedStyle(document.documentElement);
   var cardW = parseFloat(cs.getPropertyValue('--step-card-w')) || 240, gap = parseFloat(cs.getPropertyValue('--step-link-w')) || 112;
   var R = RIBBON, byId = {};
@@ -129,12 +166,12 @@ function renderRibbonLayout(stage, proc, L){
   stage.querySelectorAll('.step-card').forEach(function(el){
     var id = el.getAttribute('data-step');
     el.style.left = xOf(L.col[id]) + 'px';
-    cell(id, L.col[id], L.row[id], el, cardW);
+    cell(id, L.col[id], rowOf[id], el, cardW);
   });
   L.terms.forEach(function(t){
     var el = stage.querySelector('.step-term[data-term="' + t.key + '"]');
     el.style.left = xOf(t.col) + 'px';
-    cell(t.key, t.col, t.row, el, R.termW);
+    cell(t.key, t.col, termRowOf ? termRowOf[t.key] : t.row, el, R.termW);
   });
   fitChipLines();
   Object.keys(cells).forEach(function(k){
@@ -142,25 +179,34 @@ function renderRibbonLayout(stage, proc, L){
     c.h = cells[k].el.offsetHeight;
     rowH[c.row] = Math.max(rowH[c.row] || 0, h);
   });
-  for (var r = 0; r <= L.maxRow; r++) if (!rowH[r]) rowH[r] = R.arrowY * 2;
+  for (var r = 0; r <= maxRow; r++) if (!rowH[r]) rowH[r] = R.arrowY * 2;
 
-  /* Возвраты: полосы над лентой; более короткие — ниже, пересекающиеся — на разных уровнях. */
+  /* Возвраты: дуги над своей полосой (на ленте полоса одна; в дорожках — верхняя из двух дорожек);
+     более короткие — ниже, пересекающиеся — на разных уровнях. */
   var returns = L.edges.filter(function(e){ return e.kind === 'back'; });
-  var lanes = [];
+  var arcLanes = bands.map(function(){ return []; });
   returns.forEach(function(e){
     var U = cells[e.from], V = cells[e.to];
-    e.sx = U.row === 0 ? xOf(U.col) + cardW / 2 + 10 : xOf(U.col) + U.w + gap / 2;
-    e.ex = V.row === 0 ? xOf(V.col) + cardW / 2 - 10 : xOf(V.col) - (V.col === 0 ? R.padX / 2 : gap / 2);
+    e.band = bandOfRow[Math.min(U.row, V.row)];
+    var first = bands[e.band].first;
+    e.sx = U.row === first ? xOf(U.col) + cardW / 2 + 10 : xOf(U.col) + U.w + gap / 2;
+    e.ex = V.row === first ? xOf(V.col) + cardW / 2 - 10 : xOf(V.col) - (V.col === 0 ? R.padX / 2 : gap / 2);
     e.span = [Math.min(e.sx, e.ex) - 4, Math.max(e.sx, e.ex) + 4];
   });
   returns.slice().sort(function(a, b){ return (a.span[1] - a.span[0]) - (b.span[1] - b.span[0]) || a.span[0] - b.span[0]; }).forEach(function(e){
-    var lv = 0;
+    var lanes = arcLanes[e.band], lv = 0;
     while ((lanes[lv] || []).some(function(s){ return s[0] < e.span[1] && e.span[0] < s[1]; })) lv++;
     (lanes[lv] = lanes[lv] || []).push(e.span); e.lane = lv;
   });
-  var top0 = R.padY + (lanes.length ? lanes.length * R.laneH + 14 : 0);
-  var rowTop = [top0];
-  for (r = 1; r <= L.maxRow + 1; r++) rowTop[r] = rowTop[r - 1] + rowH[r - 1] + R.rowGap;
+  /* Высоты: полоса = место под дуги + её строки. */
+  var rowTop = [], bandGeo = [], y = R.padY;
+  bands.forEach(function(b, i){
+    var top = y, n = arcLanes[i].length;
+    y += n ? n * R.laneH + 14 : (opts ? 12 : 0);
+    for (var rr = b.first; rr <= b.last; rr++){ rowTop[rr] = y; y += rowH[rr] + R.rowGap; }
+    bandGeo.push({title:b.title, top:top, height:y - top});
+  });
+  rowTop[maxRow + 1] = y;
   Object.keys(cells).forEach(function(k){
     var c = cells[k];
     c.x = xOf(c.col); c.y = c.el.classList.contains('step-term') ? rowTop[c.row] + R.arrowY - R.termH / 2 : rowTop[c.row];
@@ -182,10 +228,10 @@ function renderRibbonLayout(stage, proc, L){
     }
     var V = cells[e.to];
     if (e.kind === 'back'){
-      var laneY = top0 - 14 - e.lane * R.laneH, pts = [];
-      if (U.row === 0) pts.push([e.sx, U.y], [e.sx, laneY]);
+      var first = bands[e.band].first, laneY = rowTop[first] - 14 - e.lane * R.laneH, pts = [];
+      if (U.row === first) pts.push([e.sx, U.y], [e.sx, laneY]);
       else pts.push([U.x + U.w, U.yA + 8], [e.sx, U.yA + 8], [e.sx, laneY]);
-      if (V.row === 0) pts.push([e.ex, laneY], [e.ex, V.y]);
+      if (V.row === first) pts.push([e.ex, laneY], [e.ex, V.y]);
       else pts.push([e.ex, laneY], [e.ex, V.yA + 8], [V.x, V.yA + 8]);
       paths.push({pts:pts, cls:'proc-edge is-return'});
       if (e.label) labels.push({x:(e.sx + e.ex) / 2, y:laneY - 5, text:fitLabel(e.label, Math.abs(e.sx - e.ex) - 12), full:e.label, anchor:'middle', cls:'is-return'});
@@ -216,12 +262,13 @@ function renderRibbonLayout(stage, proc, L){
   });
 
   var maxCol = 0; Object.keys(cells).forEach(function(k){ maxCol = Math.max(maxCol, cells[k].col); });
-  var W = xOf(maxCol + 1) + R.padX / 2, H = rowTop[L.maxRow + 1] - R.rowGap + R.padY + 40;
+  var W = xOf(maxCol + 1) + R.padX / 2, H = rowTop[maxRow + 1] - R.rowGap + R.padY + 40;
   if (!L.order.length){ W = 400; H = 120; }
   var svg = stage.querySelector('.proc-edges');
   svg.setAttribute('width', W); svg.setAttribute('height', H); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
   svg.innerHTML = '<defs><marker id="proc-arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
       '<path d="M0 0 L10 5 L0 10 z" class="proc-arrowhead"/></marker></defs>' +
+    (opts ? bandGeo.map(function(b, i){ return '<rect class="lane-band' + (i % 2 ? ' is-odd' : '') + '" x="0" y="' + b.top + '" width="' + W + '" height="' + b.height + '"/>'; }).join('') : '') +
     paths.map(function(pp){ return '<path class="' + pp.cls + '" d="' + roundedPath(pp.pts, R.corner) + '" marker-end="url(#proc-arrowhead)"/>'; }).join('') +
     labels.map(function(l){ return '<text class="proc-edge-label ' + (l.cls || '') + '" x="' + l.x + '" y="' + l.y + '" text-anchor="' + l.anchor + '"><title>' + escapeHtml(l.full) + '</title>' + escapeHtml(l.text) + '</text>'; }).join('');
   stage.insertAdjacentHTML('beforeend', plus.map(function(b){
@@ -230,4 +277,5 @@ function renderRibbonLayout(stage, proc, L){
   }).join('') + (L.order.length ? '' : '<button type="button" class="btn step-add-first" data-from="" data-out="-1">+ Добавить шаг</button>'));
   stage.style.width = W + 'px'; stage.style.height = H + 'px';
   stage.style.zoom = procZoom;
+  return bandGeo;
 }

@@ -321,6 +321,7 @@ function attachHandlers(){
 
   bindGlobalSearch();
   bindProcessView();
+  document.getElementById('proc-overlay-select').addEventListener('change', function(e){ setProcessOverlay(e.target.value); });
 
   window.addEventListener('keydown', function(e){
     if (currentView === 'list' && (e.key === 'ArrowDown' || e.key === 'ArrowUp') && !e.altKey && !e.ctrlKey && !e.metaKey &&

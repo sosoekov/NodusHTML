@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nodus v.0.5.0 — локальный прототип</title>
+<title>Nodus v.0.6.0 — локальный прототип</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -82,6 +82,7 @@
   --step-card-w:240px;
   --step-link-w:112px;   /* промежуток между колонками: стрелка, подпись исхода, «+» */
   --step-term-w:120px;   /* «Завершение» — конец исхода решения */
+  --lane-head-w:150px;   /* колонка заголовков дорожек */
   /* Готовность: штриховка «в разработке» и приглушение в режиме «Только в проме» */
   --dev-hatch:repeating-linear-gradient(135deg, transparent 0 4px, rgba(229,192,123,0.16) 4px 6px);
   --alpha-dev-dim:0.35;
@@ -806,6 +807,25 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .pp-item.is-warn .pp-icon{ color:var(--warning); }
 .pp-item.is-info .pp-icon{ color:var(--text-muted); }
 .pp-step{ display:flex; align-items:center; gap:5px; font-size:var(--fs-caption); color:var(--text-muted); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ===== Дорожки, наложение на граф, обратные связи (фаза 7) ===== */
+.proc-lanes{ display:none; position:absolute; left:0; bottom:0; width:var(--lane-head-w); overflow:hidden; border-right:1px solid var(--border); background:var(--bg-panel); z-index:3; }
+#proc-main.is-lanes .proc-lanes{ display:block; }
+#proc-main.is-lanes .proc-scroll{ margin-left:var(--lane-head-w); }
+.lane-head{ position:absolute; left:0; right:0; padding:10px 12px; border-bottom:1px solid var(--border-soft); font-size:var(--fs-base); font-weight:500; color:var(--text); overflow:hidden; }
+.lane-head span{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lane-head.is-odd{ background:var(--bg-elevated); }
+.lane-band{ fill:transparent; stroke:var(--border-soft); stroke-width:1; }
+.lane-band.is-odd{ fill:var(--bg-panel); fill-opacity:.55; }
+.proc-overlay-row{ margin-top:8px; align-items:center; }
+.proc-overlay-row[hidden]{ display:none; }
+.proc-overlay-label{ font-size:var(--fs-caption); color:var(--text-muted); flex:none; }
+.proc-overlay-row .select-sm{ flex:1; min-width:0; }
+.pu-group + .pu-group{ margin-top:6px; }
+.pu-proc .type-icon{ width:13px; height:13px; color:var(--type-bproc); }
+.pu-step{ display:flex; align-items:center; gap:8px; padding:2px 4px 2px 18px; }
+.pu-step .ref-item-title{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--fs-base); }
+.pu-roles{ flex:none; font-size:var(--fs-caption); color:var(--text-muted); font-weight:600; }
 </style>
 </head>
 <body>
@@ -814,7 +834,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     <div class="topbar-left">
       <h1 class="app-title">
         <svg class="app-logo" viewBox="0 0 24 24" aria-hidden="true"><polyline class="logo-line" points="5,19 5,5 19,19 19,5" stroke-width="2" stroke-linejoin="round"/><circle class="logo-n2" cx="5" cy="19" r="2.6"/><circle class="logo-n1" cx="5" cy="5" r="2.6"/><circle class="logo-n3" cx="19" cy="19" r="2.6"/><circle class="logo-n4" cx="19" cy="5" r="2.6"/></svg>
-        Nodus <span class="app-version">v.0.5.0</span>
+        Nodus <span class="app-version">v.0.6.0</span>
       </h1>
     </div>
     <div class="topbar-group">
@@ -825,7 +845,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       </div>
     </div>
     <div class="global-search" id="global-search">
-      <input type="text" id="global-search-input" class="global-search-input" placeholder="Поиск объектов и механизмов" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="global-search-dropdown">
+      <input type="text" id="global-search-input" class="global-search-input" placeholder="Поиск объектов, механизмов, процессов" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="global-search-dropdown">
       <span class="global-search-kbd" id="global-search-kbd">Ctrl+K</span>
       <div class="global-search-dropdown" id="global-search-dropdown" role="listbox" hidden></div>
     </div>
@@ -870,6 +890,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
           <span class="switch-track" aria-hidden="true"></span>
           <span class="switch-label">Показывать устаревшие</span>
         </label>
+        <div class="filters-row proc-overlay-row" hidden>
+          <label class="proc-overlay-label" for="proc-overlay-select">Процесс:</label>
+          <select id="proc-overlay-select" class="select-sm" title="Наложить процесс на граф: остальное приглушается, у участников — номера шагов"><option value="">нет</option></select>
+        </div>
       </div>
       <div class="sidebar-section list-wrap">
         <div id="object-list"></div>
@@ -953,6 +977,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <div class="proc-head-info" id="proc-head-info"></div>
         <div class="mech-mode proc-view-seg" role="radiogroup" aria-label="Вид процесса">
           <button type="button" class="seg-btn proc-view-btn" data-pview="ribbon" role="radio" aria-checked="true">Лента</button>
+          <button type="button" class="seg-btn proc-view-btn" data-pview="lanes" role="radio" aria-checked="false">Дорожки</button>
           <button type="button" class="seg-btn proc-view-btn" data-pview="matrix" role="radio" aria-checked="false">Матрица</button>
         </div>
         <label class="switch proc-only-prod" title="Приглушить всё «в разработке» и показать шаги, которые останутся ручной работой">
@@ -962,6 +987,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         </label>
       </div>
       <div class="proc-problems" id="proc-problems" hidden></div>
+      <div class="proc-lanes" id="proc-lanes" aria-hidden="true"></div>
       <div class="proc-scroll" id="proc-scroll"><div class="proc-stage" id="proc-stage"></div></div>
       <div class="proc-matrix" id="proc-matrix" hidden></div>
       <div class="empty-state proc-empty" id="proc-empty" hidden>
@@ -2100,10 +2126,10 @@ function layoutLabels(ctx, focus){
     });
     return placed;
   }
-  if (graphFilter){
+  if (graphFilter || processOverlay){
     /* Сначала место под подписи отобранных, потом — остальных. */
-    labelOrder.forEach(function(n){ if (graphFilter.nodes.has(n.id)){ var a = fadeAlpha(n); if (a) place(n, false, a); } });
-    labelOrder.forEach(function(n){ if (!graphFilter.nodes.has(n.id)){ var a = fadeAlpha(n); if (a) place(n, false, a*THEME.alpha.labelBackground); } });
+    labelOrder.forEach(function(n){ if (inGraphSelection(n.id)){ var a = fadeAlpha(n); if (a) place(n, false, a); } });
+    labelOrder.forEach(function(n){ if (!inGraphSelection(n.id)){ var a = fadeAlpha(n); if (a) place(n, false, a*THEME.alpha.labelBackground); } });
     return placed;
   }
   labelOrder.forEach(function(n){ var a = fadeAlpha(n); if (a) place(n, false, a); });
@@ -2261,7 +2287,8 @@ function drawEdges(ctx, edges, focus){
     var hl = !!focus && isEdgeHighlighted(e, focus);
     var alpha;
     if (focus) alpha = hl ? 1 : Math.min(nodeAlpha(e.a, focus), nodeAlpha(e.b, focus));
-    else if (graphFilter) alpha = graphFilter.edge(e) ? 1 : THEME.alpha.edgeFiltered;
+    else if (graphFilter || processOverlay) alpha = (!graphFilter || graphFilter.edge(e)) && (!processOverlay || overlayEdgeIn(e)) ? 1 :
+      (graphFilter ? THEME.alpha.edgeFiltered : THEME.alpha.nodeBackground);
     else alpha = 1;
     var style = edgeStyle(e);
     var key = (hl?1:0) + '|' + alpha + '|' + style;
@@ -2346,9 +2373,10 @@ function drawTypeTags(ctx, fills, baseAlpha){
 }
 
 function drawNodes(ctx, nodes, focus){
-  if (!focus && graphFilter){
-    drawNodeBatch(ctx, nodes.filter(function(n){ return !graphFilter.nodes.has(n.id); }), THEME.alpha.nodeFiltered);
-    drawNodeBatch(ctx, nodes.filter(function(n){ return graphFilter.nodes.has(n.id); }), 1);
+  if (!focus && (graphFilter || processOverlay)){
+    /* Отбор левой панели — до «отфильтровано», наложение процесса — до «фона». */
+    drawNodeBatch(ctx, nodes.filter(function(n){ return !inGraphSelection(n.id); }), graphFilter ? THEME.alpha.nodeFiltered : THEME.alpha.nodeBackground);
+    drawNodeBatch(ctx, nodes.filter(function(n){ return inGraphSelection(n.id); }), 1);
     return;
   }
   if (!focus){ drawNodeBatch(ctx, nodes, 1); return; }
@@ -2394,6 +2422,7 @@ function render(){
   lastLabels = labels;
   drawLabels(ctx2d, labels);
   edgeLabelBoxes = focusMode ? drawFocusEdgeLabels(ctx2d, labels) : [];
+  drawProcessBadges(ctx2d);
   drawMinimap();
 }
 
@@ -2454,6 +2483,8 @@ function onMouseDown(ev){
   cancelViewAnim();
   var rect = canvasEl.getBoundingClientRect();
   var sx = ev.clientX-rect.left, sy = ev.clientY-rect.top;
+  /* Бейдж шагов процесса (наложение) — переход в «Процессы». */
+  if (processBadgeClick(sx, sy)) return;
   var w = screenToWorld(sx,sy);
   var node = hitTestNode(w.x,w.y);
   mouseDownPos = {sx:sx, sy:sy}; didDrag = false;
@@ -3006,6 +3037,7 @@ function objectPanelTemplate(obj){
     '</div>' +
     attributesSectionHTML() +
     '<div id="obj-tool-controls"></div>' +
+    '<div id="obj-proc-uses"></div>' +
     viewFieldHTML('description', 'Описание') +
     '<div class="vfield" data-key="subtags"><div class="vfield-label">Подсистема · Теги</div><div class="vfield-value" tabindex="0"></div></div>' +
     '<div class="panel-section is-tight">' +
@@ -3124,6 +3156,7 @@ function renderObjectPanel(obj, panel){
   renderAttributesBlock(obj, panel);
   bindAddAttribute(panel, obj);
   renderControlBackLinks(panel.querySelector('#obj-tool-controls'), 'Инструмент для контролей', controlsByTool(obj.id));
+  renderProcessUsesBlock(panel.querySelector('#obj-proc-uses'), 'Участвует в процессах', objectProcessUses(obj.id), 'Пока не участвует ни в одном процессе.');
   renderAttachmentsList(panel, '#obj-attachments-list', 'obj', obj.id);
 }
 
@@ -3497,6 +3530,8 @@ function mechanismPanelTemplate(mech){
       '<div id="participants-list"></div>' +
     '</div>' +
     '<div id="mech-replaces-controls"></div>' +
+    '<div id="mech-proc-uses"></div>' +
+    '<div id="mech-proc-controls"></div>' +
     '<div class="panel-section">' +
       '<div class="panel-section-header"><p class="panel-section-title">Вложения</p>' +
         '<button class="btn btn-sm" id="btn-attach-mechanism" type="button">Прикрепить файл</button></div>' +
@@ -3545,6 +3580,9 @@ function renderMechanismPanel(mech, panel){
   });
   renderParticipantsList(mech, panel);
   renderControlBackLinks(panel.querySelector('#mech-replaces-controls'), 'Заменит ручные контроли', controlsReplacedBy(mech.id));
+  var mu = mechanismProcessUses(mech.id);
+  renderProcessUsesBlock(panel.querySelector('#mech-proc-uses'), 'Используется в процессах', mu.participant, 'Пока не используется ни в одном процессе.');
+  renderProcessUsesBlock(panel.querySelector('#mech-proc-controls'), 'Контролирует в процессах', mu.control, 'Не привязан к шагам как контроль.');
   renderAttachmentsList(panel, '#mech-attachments-list', 'mech', mech.id);
 }
 
@@ -3733,7 +3771,7 @@ var listFilters = {
 };
 var listSort = { objects:{key:'name', dir:1}, mechanisms:{key:'name', dir:1}, roles:{key:'name', dir:1}, controls:{key:'name', dir:1} };
 /* Колонки. hideBelow — ширина таблицы (px), ниже которой колонка скрывается
-   (открытая карточка сужает таблицу: сначала уходят «Реквизиты», затем «Теги», затем «Подсистема»). */
+   (открытая карточка сужает таблицу: сначала уходят «Реквизиты», затем «Теги», «Процессы», «Подсистема»). */
 var LIST_COLUMNS = {
   objects: [
     {key:'name',   title:'Синоним',               width:'minmax(0,2.2fr)'},
@@ -3741,6 +3779,7 @@ var LIST_COLUMNS = {
     {key:'sub',    title:'Подсистема',            width:'minmax(0,1.4fr)', hideBelow:860},
     {key:'mechs',  title:'Механизмы',             width:'96px'},
     {key:'attrs',  title:'Реквизиты',             width:'96px', hideBelow:1180},
+    {key:'procs',  title:'Процессы',              width:'96px', hideBelow:960},
     {key:'tags',   title:'Теги',                  width:'minmax(0,1.4fr)', hideBelow:1060},
     {key:'status', title:'Статус',                width:'112px'}
   ],
@@ -3749,6 +3788,7 @@ var LIST_COLUMNS = {
     {key:'cat',     title:'Категория',  width:'minmax(0,1.1fr)'},
     {key:'sources', title:'Источники',  width:'minmax(0,2fr)'},
     {key:'targets', title:'Приёмники',  width:'minmax(0,2fr)'},
+    {key:'procs',   title:'Процессы',   width:'96px', hideBelow:900},
     {key:'status',  title:'Статус',     width:'112px'}
   ],
   roles: [
@@ -3810,6 +3850,7 @@ function listObjectValues(o, mechRoles, attrCount){
     sub: subs.join(', '),
     mechs: mechRoles.length,
     attrs: attrCount || 0,
+    procs: objectProcessCount(o.id),
     tags: tags.join(', '),
     status: st === DEFAULT_OBJECT_STATUS ? '' : objectStatusTitle(st),
     statusKind: statusKind(st)
@@ -3822,6 +3863,7 @@ function listMechanismValues(m){
     cat: categoryTitle(m.category),
     sources: sides.sources, targets: sides.targets,
     sourcesText: sides.sources.join(', '), targetsText: sides.targets.join(', '),
+    procs: mechanismProcessCount(m.id),
     status: st === DEFAULT_MECH_STATUS ? '' : mechanismStatusTitle(st),
     statusKind: statusKind(st)
   };
@@ -4426,6 +4468,7 @@ function renderSidebar(){
   syncSidebarActive();
   if (currentView === 'list') renderListView();
   if (currentView === 'process') renderProcessView();
+  fillProcessOverlaySelect();
 }
 
 /* ===================== Глобальный поиск =====================
@@ -4450,6 +4493,7 @@ function globalSearchMatches(query){
     var i = m.title.toLowerCase().indexOf(q);
     if (i >= 0) res.push({kind:'mech', id:id, title:m.title, sub:'Механизм · ' + categoryTitle(m.category), color:categoryAccent(m.category), pos:i});
   });
+  processSearchMatches(q).forEach(function(r){ res.push(r); });
   /* Совпадение с начала названия — выше. */
   res.sort(function(a,b){ return (a.pos===0?0:1) - (b.pos===0?0:1) || a.title.localeCompare(b.title,'ru'); });
   return res.slice(0, GLOBAL_SEARCH_LIMIT);
@@ -4510,7 +4554,9 @@ function bindGlobalSearch(){
     if (!r) return;
     setOpen(false);
     input.blur();
-    selectEntity(r.kind, r.id);
+    if (r.kind === 'step') goToProcessStep(r.procId, r.id);
+    else if (r.kind === 'proc') goToProcessStep(r.id, null);
+    else selectEntity(r.kind, r.id);
   }
   function update(){
     results = globalSearchMatches(input.value);
@@ -5231,8 +5277,7 @@ function createRole(partial){
   persist();
   return r;
 }
-/* Число процессов, в которых используется роль. Процессов пока нет (фаза 3) — всегда 0. */
-function roleProcessCount(roleId){ return 0; }
+/* roleProcessCount / roleProcessUses — process-links.js. */
 
 function deleteRole(id){
   var r = state.roles[id];
@@ -5267,10 +5312,7 @@ function rolePanelTemplate(r){
       '<div class="card-head-badges"><span class="status-badge is-default">Роль в процессах</span></div>' +
     '</div>' +
     viewFieldHTML('description', 'Описание') +
-    '<div class="panel-section is-tight">' +
-      '<div class="panel-section-header"><p class="panel-section-title">Используется в процессах · ' + roleProcessCount(r.id) + '</p></div>' +
-      '<p class="ref-empty">Пока не используется.</p>' +
-    '</div>'
+    '<div class="role-proc-uses"></div>'
   );
 }
 
@@ -5287,6 +5329,7 @@ function renderRolePanel(r){
   menuBtn.addEventListener('click', function(){
     openPopoverMenu(menuBtn, [{value:'delete', label:'Удалить роль', danger:true}], function(){ deleteRole(r.id); });
   });
+  renderProcessUsesBlock(panel.querySelector('.role-proc-uses'), 'Используется в процессах', roleProcessUses(r.id), 'Пока не используется.');
   bindViewField(panel, 'description', {label:'Описание', addText:'Добавить описание', multiline:true,
     get:function(){ return r.description || ''; },
     set:function(v){ r.description = v; persist(); if (currentView === 'list') renderListView(); }});
@@ -6150,7 +6193,44 @@ function roundedPath(pts, r){
   return d + ' L' + last[0] + ' ' + last[1];
 }
 
-function renderRibbonLayout(stage, proc, L){
+/* Дорожки: строка карточки определяется ролью шага. Дорожка «Система» — автоматические действия
+   без роли. Порядок дорожек — по первому появлению роли в процессе. Внутри дорожки ветки — подстроки
+   (по строкам ленты), поэтому ячейки не пересекаются. Возвращает {rows, termRows, bands}. */
+function laneKeyOf(s){ return s.roleId ? 'role:' + s.roleId : (s.kind === 'auto_action' ? 'system' : 'none'); }
+function laneTitle(key){
+  if (key === 'system') return 'Система';
+  if (key === 'none') return 'Роль не указана';
+  var id = key.slice(5);
+  return state.roles[id] ? state.roles[id].name : '⚠ Удалено: ' + deletedName(id);
+}
+function laneLayout(proc, L){
+  var byId = {}; proc.steps.forEach(function(s){ byId[s.id] = s; });
+  var lanes = [], laneIdx = {};
+  function lane(k){ if (!(k in laneIdx)){ laneIdx[k] = lanes.length; lanes.push({key:k, items:[]}); } return lanes[laneIdx[k]]; }
+  L.order.forEach(function(id){ lane(laneKeyOf(byId[id])).items.push({id:id, row:L.row[id]}); });
+  L.terms.forEach(function(t){ lane(laneKeyOf(byId[t.from])).items.push({term:t.key, row:t.row}); });
+  var rows = {}, termRows = {}, bands = [], next = 0;
+  lanes.forEach(function(ln){
+    var distinct = []; ln.items.forEach(function(it){ if (distinct.indexOf(it.row) < 0) distinct.push(it.row); });
+    distinct.sort(function(a, b){ return a - b; });
+    ln.items.forEach(function(it){
+      var r = next + distinct.indexOf(it.row);
+      if (it.id) rows[it.id] = r; else termRows[it.term] = r;
+    });
+    bands.push({key:ln.key, title:laneTitle(ln.key), first:next, last:next + distinct.length - 1});
+    next += distinct.length;
+  });
+  return {rows:rows, termRows:termRows, bands:bands, maxRow:next - 1};
+}
+
+/* opts (необязательно) — раскладка дорожек из laneLayout: строки и полосы вместо строк ленты.
+   Возвращает геометрию полос [{title, top, height}] для заголовков дорожек. */
+function renderRibbonLayout(stage, proc, L, opts){
+  var rowOf = opts ? opts.rows : L.row, termRowOf = opts ? opts.termRows : null;
+  var maxRow = opts ? opts.maxRow : L.maxRow;
+  var bands = opts ? opts.bands : [{first:0, last:maxRow}];
+  var bandOfRow = [];
+  bands.forEach(function(b, i){ for (var r = b.first; r <= b.last; r++) bandOfRow[r] = i; });
   var cs = getComputedStyle(document.documentElement);
   var cardW = parseFloat(cs.getPropertyValue('--step-card-w')) || 240, gap = parseFloat(cs.getPropertyValue('--step-link-w')) || 112;
   var R = RIBBON, byId = {};
@@ -6169,12 +6249,12 @@ function renderRibbonLayout(stage, proc, L){
   stage.querySelectorAll('.step-card').forEach(function(el){
     var id = el.getAttribute('data-step');
     el.style.left = xOf(L.col[id]) + 'px';
-    cell(id, L.col[id], L.row[id], el, cardW);
+    cell(id, L.col[id], rowOf[id], el, cardW);
   });
   L.terms.forEach(function(t){
     var el = stage.querySelector('.step-term[data-term="' + t.key + '"]');
     el.style.left = xOf(t.col) + 'px';
-    cell(t.key, t.col, t.row, el, R.termW);
+    cell(t.key, t.col, termRowOf ? termRowOf[t.key] : t.row, el, R.termW);
   });
   fitChipLines();
   Object.keys(cells).forEach(function(k){
@@ -6182,25 +6262,34 @@ function renderRibbonLayout(stage, proc, L){
     c.h = cells[k].el.offsetHeight;
     rowH[c.row] = Math.max(rowH[c.row] || 0, h);
   });
-  for (var r = 0; r <= L.maxRow; r++) if (!rowH[r]) rowH[r] = R.arrowY * 2;
+  for (var r = 0; r <= maxRow; r++) if (!rowH[r]) rowH[r] = R.arrowY * 2;
 
-  /* Возвраты: полосы над лентой; более короткие — ниже, пересекающиеся — на разных уровнях. */
+  /* Возвраты: дуги над своей полосой (на ленте полоса одна; в дорожках — верхняя из двух дорожек);
+     более короткие — ниже, пересекающиеся — на разных уровнях. */
   var returns = L.edges.filter(function(e){ return e.kind === 'back'; });
-  var lanes = [];
+  var arcLanes = bands.map(function(){ return []; });
   returns.forEach(function(e){
     var U = cells[e.from], V = cells[e.to];
-    e.sx = U.row === 0 ? xOf(U.col) + cardW / 2 + 10 : xOf(U.col) + U.w + gap / 2;
-    e.ex = V.row === 0 ? xOf(V.col) + cardW / 2 - 10 : xOf(V.col) - (V.col === 0 ? R.padX / 2 : gap / 2);
+    e.band = bandOfRow[Math.min(U.row, V.row)];
+    var first = bands[e.band].first;
+    e.sx = U.row === first ? xOf(U.col) + cardW / 2 + 10 : xOf(U.col) + U.w + gap / 2;
+    e.ex = V.row === first ? xOf(V.col) + cardW / 2 - 10 : xOf(V.col) - (V.col === 0 ? R.padX / 2 : gap / 2);
     e.span = [Math.min(e.sx, e.ex) - 4, Math.max(e.sx, e.ex) + 4];
   });
   returns.slice().sort(function(a, b){ return (a.span[1] - a.span[0]) - (b.span[1] - b.span[0]) || a.span[0] - b.span[0]; }).forEach(function(e){
-    var lv = 0;
+    var lanes = arcLanes[e.band], lv = 0;
     while ((lanes[lv] || []).some(function(s){ return s[0] < e.span[1] && e.span[0] < s[1]; })) lv++;
     (lanes[lv] = lanes[lv] || []).push(e.span); e.lane = lv;
   });
-  var top0 = R.padY + (lanes.length ? lanes.length * R.laneH + 14 : 0);
-  var rowTop = [top0];
-  for (r = 1; r <= L.maxRow + 1; r++) rowTop[r] = rowTop[r - 1] + rowH[r - 1] + R.rowGap;
+  /* Высоты: полоса = место под дуги + её строки. */
+  var rowTop = [], bandGeo = [], y = R.padY;
+  bands.forEach(function(b, i){
+    var top = y, n = arcLanes[i].length;
+    y += n ? n * R.laneH + 14 : (opts ? 12 : 0);
+    for (var rr = b.first; rr <= b.last; rr++){ rowTop[rr] = y; y += rowH[rr] + R.rowGap; }
+    bandGeo.push({title:b.title, top:top, height:y - top});
+  });
+  rowTop[maxRow + 1] = y;
   Object.keys(cells).forEach(function(k){
     var c = cells[k];
     c.x = xOf(c.col); c.y = c.el.classList.contains('step-term') ? rowTop[c.row] + R.arrowY - R.termH / 2 : rowTop[c.row];
@@ -6222,10 +6311,10 @@ function renderRibbonLayout(stage, proc, L){
     }
     var V = cells[e.to];
     if (e.kind === 'back'){
-      var laneY = top0 - 14 - e.lane * R.laneH, pts = [];
-      if (U.row === 0) pts.push([e.sx, U.y], [e.sx, laneY]);
+      var first = bands[e.band].first, laneY = rowTop[first] - 14 - e.lane * R.laneH, pts = [];
+      if (U.row === first) pts.push([e.sx, U.y], [e.sx, laneY]);
       else pts.push([U.x + U.w, U.yA + 8], [e.sx, U.yA + 8], [e.sx, laneY]);
-      if (V.row === 0) pts.push([e.ex, laneY], [e.ex, V.y]);
+      if (V.row === first) pts.push([e.ex, laneY], [e.ex, V.y]);
       else pts.push([e.ex, laneY], [e.ex, V.yA + 8], [V.x, V.yA + 8]);
       paths.push({pts:pts, cls:'proc-edge is-return'});
       if (e.label) labels.push({x:(e.sx + e.ex) / 2, y:laneY - 5, text:fitLabel(e.label, Math.abs(e.sx - e.ex) - 12), full:e.label, anchor:'middle', cls:'is-return'});
@@ -6256,12 +6345,13 @@ function renderRibbonLayout(stage, proc, L){
   });
 
   var maxCol = 0; Object.keys(cells).forEach(function(k){ maxCol = Math.max(maxCol, cells[k].col); });
-  var W = xOf(maxCol + 1) + R.padX / 2, H = rowTop[L.maxRow + 1] - R.rowGap + R.padY + 40;
+  var W = xOf(maxCol + 1) + R.padX / 2, H = rowTop[maxRow + 1] - R.rowGap + R.padY + 40;
   if (!L.order.length){ W = 400; H = 120; }
   var svg = stage.querySelector('.proc-edges');
   svg.setAttribute('width', W); svg.setAttribute('height', H); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
   svg.innerHTML = '<defs><marker id="proc-arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
       '<path d="M0 0 L10 5 L0 10 z" class="proc-arrowhead"/></marker></defs>' +
+    (opts ? bandGeo.map(function(b, i){ return '<rect class="lane-band' + (i % 2 ? ' is-odd' : '') + '" x="0" y="' + b.top + '" width="' + W + '" height="' + b.height + '"/>'; }).join('') : '') +
     paths.map(function(pp){ return '<path class="' + pp.cls + '" d="' + roundedPath(pp.pts, R.corner) + '" marker-end="url(#proc-arrowhead)"/>'; }).join('') +
     labels.map(function(l){ return '<text class="proc-edge-label ' + (l.cls || '') + '" x="' + l.x + '" y="' + l.y + '" text-anchor="' + l.anchor + '"><title>' + escapeHtml(l.full) + '</title>' + escapeHtml(l.text) + '</text>'; }).join('');
   stage.insertAdjacentHTML('beforeend', plus.map(function(b){
@@ -6270,6 +6360,7 @@ function renderRibbonLayout(stage, proc, L){
   }).join('') + (L.order.length ? '' : '<button type="button" class="btn step-add-first" data-from="" data-out="-1">+ Добавить шаг</button>'));
   stage.style.width = W + 'px'; stage.style.height = H + 'px';
   stage.style.zoom = procZoom;
+  return bandGeo;
 }
 /* ===================== Режим «Процессы»: левая панель и лента =====================
    Выбранный процесс и шаг хранятся в браузере (как ширины панелей) и переживают смену
@@ -6295,9 +6386,11 @@ var procReturn = null;
 /* «Только в проме»: приглушить всё «в разработке» и пометить шаги «ручная работа». */
 var PROC_ONLY_PROD_KEY = 'nodusProcOnlyProd';
 var procOnlyProd = (function(){ try{ return localStorage.getItem(PROC_ONLY_PROD_KEY) === '1'; }catch(e){ return false; } })();
-/* Вид центра: «Лента» или «Матрица»; запоминается в браузере. */
+/* Вид центра: «Лента», «Дорожки» или «Матрица»; запоминается в браузере. */
 var PROC_VIEW_KEY = 'nodusProcView';
-var procViewMode = (function(){ try{ return localStorage.getItem(PROC_VIEW_KEY) === 'matrix' ? 'matrix' : 'ribbon'; }catch(e){ return 'ribbon'; } })();
+var PROC_VIEWS = ['ribbon', 'lanes', 'matrix'];
+var procViewMode = (function(){ try{ var v = localStorage.getItem(PROC_VIEW_KEY); return PROC_VIEWS.indexOf(v) >= 0 ? v : 'ribbon'; }catch(e){ return 'ribbon'; } })();
+var laneBands = null; /* геометрия дорожек последней отрисовки (для закреплённых заголовков) */
 /* Проверки текущего процесса — пересчитываются при каждой отрисовке центра. */
 var currentChecks = null;
 var READINESS_MARKS = {
@@ -6430,7 +6523,8 @@ function goToProcessStep(procId, stepId){
   if (currentView !== 'process'){
     document.querySelectorAll('.view-toggle .mode-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-view') === 'process'); });
     switchView('process');
-  } else { renderProcessSidebar(); renderRibbon(); selectStep(stepId); }
+  } else if (stepId){ renderProcessSidebar(); renderRibbon(); selectStep(stepId); }
+  else selectProcess(procId);
   var card = document.querySelector('#proc-stage .step-card[data-step="' + stepId + '"]');
   if (card) card.scrollIntoView({block:'nearest', inline:'nearest'});
 }
@@ -6530,14 +6624,39 @@ function renderRibbon(){
   var btn = head.querySelector('.proc-problems-btn');
   btn.addEventListener('click', function(){ toggleProblemsPanel(); });
   if (!document.getElementById('proc-problems').hidden) renderProblemsPanel();
-  var matrix = procViewMode === 'matrix';
+  var matrix = procViewMode === 'matrix', lanesMode = procViewMode === 'lanes';
   document.getElementById('proc-main').classList.toggle('is-matrix', matrix);
+  document.getElementById('proc-main').classList.toggle('is-lanes', lanesMode);
+  laneBands = null;
   document.getElementById('proc-scroll').hidden = matrix;
   document.getElementById('proc-matrix').hidden = !matrix;
   document.querySelectorAll('.proc-view-btn').forEach(function(b){ b.setAttribute('aria-checked', b.getAttribute('data-pview') === procViewMode ? 'true' : 'false'); });
   if (matrix){ renderMatrix(document.getElementById('proc-matrix'), p, currentChecks); return; }
   stage.classList.toggle('only-prod', procOnlyProd);
-  renderRibbonLayout(stage, p, currentChecks.layout);
+  var L = currentChecks.layout;
+  var bands = renderRibbonLayout(stage, p, L, lanesMode ? laneLayout(p, L) : null);
+  if (lanesMode){ laneBands = bands; renderLaneHeaders(); }
+}
+
+/* Заголовки дорожек — отдельная колонка слева от ленты: не прокручиваются по горизонтали,
+   по вертикали и масштабу следуют за лентой. */
+function renderLaneHeaders(){
+  var box = document.getElementById('proc-lanes');
+  if (!laneBands){ box.innerHTML = ''; return; }
+  box.innerHTML = laneBands.map(function(b, i){
+    return '<div class="lane-head' + (i % 2 ? ' is-odd' : '') + '" data-i="' + i + '" title="' + escapeHtml(b.title) + '"><span>' + escapeHtml(b.title) + '</span></div>';
+  }).join('');
+  syncLaneHeaders();
+}
+function syncLaneHeaders(){
+  if (!laneBands) return;
+  var sc = document.getElementById('proc-scroll'), box = document.getElementById('proc-lanes');
+  box.style.top = sc.offsetTop + 'px';
+  box.querySelectorAll('.lane-head').forEach(function(el){
+    var b = laneBands[Number(el.getAttribute('data-i'))];
+    el.style.top = (b.top * procZoom - sc.scrollTop) + 'px';
+    el.style.height = (b.height * procZoom) + 'px';
+  });
 }
 
 /* ----- «Проблем: N»: список с переходом к шагу ----- */
@@ -6660,6 +6779,7 @@ function setProcZoom(z, anchorX, anchorY){
   stage.style.zoom = z;
   sc.scrollLeft = cx * z - anchorX;
   sc.scrollTop = cy * z - anchorY;
+  syncLaneHeaders();
 }
 /* «Вписать»: вся лента помещается в видимую область (не крупнее 100%). */
 function fitProcessRibbon(){
@@ -6669,6 +6789,7 @@ function fitProcessRibbon(){
   procZoom = Math.min(PROC_ZOOM_MAX, Math.max(PROC_ZOOM_MIN, Math.min(1, sc.clientWidth / w, sc.clientHeight / h)));
   stage.style.zoom = procZoom;
   sc.scrollLeft = 0; sc.scrollTop = 0;
+  syncLaneHeaders();
 }
 
 /* ----- Обработчики (один раз при старте) ----- */
@@ -6736,7 +6857,8 @@ function bindProcessView(){
     try{ localStorage.setItem(PROC_ONLY_PROD_KEY, procOnlyProd ? '1' : '0'); }catch(e){}
     renderRibbon();
   });
-  if (window.ResizeObserver) new ResizeObserver(function(){ if (currentView === 'process') fitChipLines(); }).observe(sc);
+  if (window.ResizeObserver) new ResizeObserver(function(){ if (currentView === 'process'){ fitChipLines(); syncLaneHeaders(); } }).observe(sc);
+  sc.addEventListener('scroll', syncLaneHeaders);
 }
 /* ===================== Процессы: карточки в правой панели =====================
    Карточка процесса — когда шаг не выбран; карточка шага — по клику на шаг ленты. */
@@ -7692,6 +7814,194 @@ function renderMatrix(container, proc, checks){
 function markActiveMatrixColumn(){
   document.querySelectorAll('#proc-matrix [data-step]').forEach(function(el){ el.classList.toggle('is-active', el.getAttribute('data-step') === procSel.stepId); });
 }
+/* ===================== Процессы в остальном Nodus =====================
+   Наложение процесса на граф, обратные блоки в карточках объекта, механизма и роли,
+   счётчики «Процессы» в «Списке», процессы и шаги в поиске Ctrl+K. */
+
+/* ----- Где используется сущность ----- */
+
+function processesByName(){ return allProcesses().sort(function(a,b){ return a.name.localeCompare(b.name,'ru'); }); }
+
+/* Объект: роли участия его самого и его реквизитов, «К» — контроли, нацеленные на него или реквизит.
+   [{proc, steps:[{step, num, text}]}] */
+function objectProcessUses(objId){
+  var attrs = {}; objectAttributes(objId).forEach(function(a){ attrs[a.id] = true; });
+  var out = [];
+  processesByName().forEach(function(proc){
+    var nums = stepNumbers(proc), rows = [];
+    orderedSteps(proc).forEach(function(s){
+      var objRoles = {}, attrRoles = {}, ctrl = false;
+      s.participants.forEach(function(p){
+        if (p.entityType === 'object' && p.entityId === objId) objRoles[p.role] = true;
+        if (p.entityType === 'attribute' && attrs[p.entityId]) attrRoles[p.role] = true;
+      });
+      stepControls(s).forEach(function(c){ c.targets.forEach(function(t){
+        if ((t.entityType === 'object' && t.entityId === objId) || (t.entityType === 'attribute' && attrs[t.entityId])) ctrl = true;
+      }); });
+      var letters = [];
+      MATRIX_ROLE_ORDER.object.forEach(function(r){ if (objRoles[r]) letters.push(participationRole('object', r).letter); });
+      MATRIX_ROLE_ORDER.attribute.forEach(function(r){ var l = participationRole('attribute', r).letter; if (attrRoles[r] && letters.indexOf(l) < 0) letters.push(l); });
+      if (ctrl) letters.push('К');
+      if (letters.length) rows.push({step:s, num:nums[s.id], text:letters.join(', ')});
+    });
+    if (rows.length) out.push({proc:proc, steps:rows});
+  });
+  return out;
+}
+/* Механизм: как участник шага и как источник автоматического контроля. */
+function mechanismProcessUses(mechId){
+  var part = [], ctrl = [];
+  processesByName().forEach(function(proc){
+    var nums = stepNumbers(proc), pr = [], cr = [];
+    orderedSteps(proc).forEach(function(s){
+      var roles = s.participants.filter(function(p){ return p.entityType === 'mechanism' && p.entityId === mechId; })
+        .map(function(p){ return participationRole('mechanism', p.role).title; });
+      if (roles.length) pr.push({step:s, num:nums[s.id], text:roles.join(', ')});
+      var reacts = stepControls(s).filter(function(c){ return c.source === 'mechanism' && c.sourceId === mechId; })
+        .map(function(c){ return controlReaction(c.reaction).title.toLowerCase(); });
+      if (reacts.length) cr.push({step:s, num:nums[s.id], text:reacts.join(', ')});
+    });
+    if (pr.length) part.push({proc:proc, steps:pr});
+    if (cr.length) ctrl.push({proc:proc, steps:cr});
+  });
+  return {participant:part, control:ctrl};
+}
+/* Роль: исполнитель шагов и владелец процесса. */
+function roleProcessUses(roleId){
+  var out = [];
+  processesByName().forEach(function(proc){
+    var nums = stepNumbers(proc), rows = [];
+    orderedSteps(proc).forEach(function(s){ if (s.roleId === roleId) rows.push({step:s, num:nums[s.id], text:stepKindTitle(s.kind).toLowerCase()}); });
+    if (rows.length || proc.ownerRoleId === roleId) out.push({proc:proc, steps:rows, owner:proc.ownerRoleId === roleId});
+  });
+  return out;
+}
+function objectProcessCount(objId){ return objectProcessUses(objId).length; }
+function mechanismProcessCount(mechId){
+  var u = mechanismProcessUses(mechId), ids = {};
+  u.participant.concat(u.control).forEach(function(g){ ids[g.proc.id] = true; });
+  return Object.keys(ids).length;
+}
+function roleProcessCount(roleId){ return roleProcessUses(roleId).length; }
+
+/* Блок «… в процессах · N»: процесс → шаги (номер, название, роли); клик — переход к шагу. */
+function renderProcessUsesBlock(container, title, groups, emptyText){
+  if (!container) return;
+  container.innerHTML = '<div class="panel-section is-tight">' +
+    '<div class="panel-section-header"><p class="panel-section-title">' + escapeHtml(title) + ' · ' + groups.length + '</p></div>' +
+    (groups.length ? groups.map(function(g){
+      return '<div class="pu-group"><button type="button" class="om-link pu-proc" data-proc="' + g.proc.id + '">' +
+          '<span class="om-mech-title">' + typeIconSVG('bproc') + '<span class="ref-item-title">' + escapeHtml(g.proc.name) + '</span></span>' +
+          (g.owner ? '<span class="om-note">владелец процесса</span>' : '') + '</button>' +
+        g.steps.map(function(r){
+          return '<button type="button" class="om-link pu-step" data-proc="' + g.proc.id + '" data-step="' + r.step.id + '">' +
+            '<span class="step-num">' + r.num + '</span><span class="ref-item-title">' + escapeHtml(r.step.name) + '</span>' +
+            '<span class="pu-roles">' + escapeHtml(r.text) + '</span></button>';
+        }).join('') + '</div>';
+    }).join('') : '<p class="ref-empty">' + escapeHtml(emptyText) + '</p>') +
+  '</div>';
+  container.querySelectorAll('.pu-step, .pu-proc').forEach(function(b){
+    b.addEventListener('click', function(){ setGraphHint(null); goToProcessStep(b.getAttribute('data-proc'), b.getAttribute('data-step')); });
+  });
+}
+
+/* ----- Наложение процесса на граф ----- */
+
+var processOverlay = null; /* {procId, nodes:Map(nodeId → [stepId]), mechs:Set} */
+var processBadgeRects = [];
+
+/* Узлы процесса: объекты-участники и цели контролей (сам объект), механизмы-участники и источники
+   автоконтролей. Реквизиты не поднимают свой объект — у него свой блок в карточке. */
+function buildProcessOverlay(procId){
+  var proc = state.processes[procId]; if (!proc) return null;
+  var nodes = new Map(), mechs = new Set();
+  function add(nid, stepId){ var l = nodes.get(nid) || nodes.set(nid, []).get(nid); if (l.indexOf(stepId) < 0) l.push(stepId); }
+  orderedSteps(proc).forEach(function(s){
+    s.participants.forEach(function(p){
+      if (p.entityType === 'object' && state.objects[p.entityId]) add('obj:' + p.entityId, s.id);
+      if (p.entityType === 'mechanism' && state.mechanisms[p.entityId]){ add('mech:' + p.entityId, s.id); mechs.add(p.entityId); }
+    });
+    stepControls(s).forEach(function(c){
+      if (c.source === 'mechanism' && state.mechanisms[c.sourceId]){ add('mech:' + c.sourceId, s.id); mechs.add(c.sourceId); }
+      c.targets.forEach(function(t){ if (t.entityType === 'object' && state.objects[t.entityId]) add('obj:' + t.entityId, s.id); });
+    });
+  });
+  return {procId:procId, nodes:nodes, mechs:mechs, numbers:stepNumbers(proc)};
+}
+function setProcessOverlay(procId){
+  processOverlay = procId ? buildProcessOverlay(procId) : null;
+  if (!processOverlay) processBadgeRects = [];
+  var sel = document.getElementById('proc-overlay-select');
+  if (sel && sel.value !== (processOverlay ? procId : '')) sel.value = processOverlay ? procId : '';
+  requestRender();
+}
+/* Список процессов в левой панели; после изменений данных наложение пересобирается. */
+function fillProcessOverlaySelect(){
+  var sel = document.getElementById('proc-overlay-select'); if (!sel) return;
+  var cur = processOverlay && state.processes[processOverlay.procId] ? processOverlay.procId : '';
+  sel.innerHTML = '<option value="">нет</option>' + processesByName().map(function(p){
+    return '<option value="' + p.id + '"' + (p.id === cur ? ' selected' : '') + '>' + escapeHtml(p.name) + '</option>';
+  }).join('');
+  sel.closest('.proc-overlay-row').hidden = !allProcesses().length;
+  if (processOverlay) setProcessOverlay(cur);
+}
+function inGraphSelection(id){
+  return (!graphFilter || graphFilter.nodes.has(id)) && (!processOverlay || processOverlay.nodes.has(id));
+}
+function overlayEdgeIn(e){
+  if (processOverlay.nodes.has(e.a) && processOverlay.nodes.has(e.b)) return true;
+  var hit = false;
+  if (e.mechanismIds) e.mechanismIds.forEach(function(id){ if (processOverlay.mechs.has(id)) hit = true; });
+  return hit;
+}
+/* «1, 6»; больше трёх — «1, 3 +2». */
+function overlayBadgeText(stepIds){
+  var n = stepIds.map(function(id){ return processOverlay.numbers[id]; });
+  return n.length <= 3 ? n.join(', ') : n.slice(0, 2).join(', ') + ' +' + (n.length - 2);
+}
+function drawProcessBadges(ctx){
+  processBadgeRects = [];
+  if (!processOverlay || focusMode) return;
+  ctx.save();
+  ctx.font = THEME.badgeFont; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  currentNodes.forEach(function(n){
+    var steps = processOverlay.nodes.get(n.id); if (!steps) return;
+    var r = nodeRadius(n) * view.scale, cx = n.x * view.scale + view.offsetX, cy = n.y * view.scale + view.offsetY;
+    if (cx < -40 || cy < -40 || cx > viewportWidth + 40 || cy > viewportHeight + 40) return;
+    var text = overlayBadgeText(steps), w = ctx.measureText(text).width + 12, h = 18;
+    var x = cx + r * 0.55, y = cy - r - h + 6;
+    ctx.beginPath();
+    roundRectPath(ctx, x, y, w, h, h / 2);
+    ctx.fillStyle = THEME.panel; ctx.fill();
+    ctx.strokeStyle = THEME.accent; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = THEME.accent; ctx.fillText(text, x + 6, y + h / 2 + 0.5);
+    processBadgeRects.push({x:x, y:y, w:w, h:h, nodeId:n.id, stepId:steps[0], text:text});
+  });
+  ctx.restore();
+}
+function processBadgeClick(sx, sy){
+  if (!processOverlay) return false;
+  var b = processBadgeRects.filter(function(r){ return sx >= r.x && sx <= r.x + r.w && sy >= r.y && sy <= r.y + r.h; })[0];
+  if (!b) return false;
+  goToProcessStep(processOverlay.procId, b.stepId);
+  return true;
+}
+
+/* ----- Поиск Ctrl+K: процессы и шаги ----- */
+function processSearchMatches(q){
+  var res = [];
+  allProcesses().forEach(function(p){
+    var i = p.name.toLowerCase().indexOf(q), n = p.steps.length;
+    if (i >= 0) res.push({kind:'proc', id:p.id, title:p.name, sub:'Процесс · ' + n + ' ' + pluralRu(n,'шаг','шага','шагов'), color:typeColor('bproc'), pos:i});
+    var nums = null;
+    p.steps.forEach(function(s){
+      var j = s.name.toLowerCase().indexOf(q); if (j < 0) return;
+      nums = nums || stepNumbers(p);
+      res.push({kind:'step', id:s.id, procId:p.id, title:s.name, sub:'Шаг ' + nums[s.id] + ' · ' + p.name, color:typeColor('bproc'), pos:j});
+    });
+  });
+  return res;
+}
 function resizeCanvas(){
   var wrap = document.getElementById('canvas-wrap');
   var rect = wrap.getBoundingClientRect();
@@ -8013,6 +8323,7 @@ function attachHandlers(){
 
   bindGlobalSearch();
   bindProcessView();
+  document.getElementById('proc-overlay-select').addEventListener('change', function(e){ setProcessOverlay(e.target.value); });
 
   window.addEventListener('keydown', function(e){
     if (currentView === 'list' && (e.key === 'ArrowDown' || e.key === 'ArrowUp') && !e.altKey && !e.ctrlKey && !e.metaKey &&

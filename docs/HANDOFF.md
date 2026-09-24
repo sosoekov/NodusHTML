@@ -29,6 +29,7 @@
   src/js/step-controls.js контроли в шаге: «+ Контроль», цели, реакция (готовность — READY_STATUSES в processes.js)
   src/js/process-checks.js проверки процесса (чтение до заполнения, неиспользуемые реквизиты, изменения без контроля, структура, готовность)
   src/js/process-matrix.js матрица «объекты/реквизиты × шаги»
+  src/js/process-links.js процессы в остальном Nodus: наложение на граф, «… в процессах» в карточках, счётчики, поиск Ctrl+K
   src/js/main.js        resizeCanvas, обработчики, init
   build.js              node build.js → dist/nodus.html (один самодостаточный файл); --check — dist актуален
   tools/check.js        синтаксис JS, сверка id между JS и разметкой, актуальность dist

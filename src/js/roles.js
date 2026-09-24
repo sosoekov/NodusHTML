@@ -23,8 +23,7 @@ function createRole(partial){
   persist();
   return r;
 }
-/* Число процессов, в которых используется роль. Процессов пока нет (фаза 3) — всегда 0. */
-function roleProcessCount(roleId){ return 0; }
+/* roleProcessCount / roleProcessUses — process-links.js. */
 
 function deleteRole(id){
   var r = state.roles[id];
@@ -59,10 +58,7 @@ function rolePanelTemplate(r){
       '<div class="card-head-badges"><span class="status-badge is-default">Роль в процессах</span></div>' +
     '</div>' +
     viewFieldHTML('description', 'Описание') +
-    '<div class="panel-section is-tight">' +
-      '<div class="panel-section-header"><p class="panel-section-title">Используется в процессах · ' + roleProcessCount(r.id) + '</p></div>' +
-      '<p class="ref-empty">Пока не используется.</p>' +
-    '</div>'
+    '<div class="role-proc-uses"></div>'
   );
 }
 
@@ -79,6 +75,7 @@ function renderRolePanel(r){
   menuBtn.addEventListener('click', function(){
     openPopoverMenu(menuBtn, [{value:'delete', label:'Удалить роль', danger:true}], function(){ deleteRole(r.id); });
   });
+  renderProcessUsesBlock(panel.querySelector('.role-proc-uses'), 'Используется в процессах', roleProcessUses(r.id), 'Пока не используется.');
   bindViewField(panel, 'description', {label:'Описание', addText:'Добавить описание', multiline:true,
     get:function(){ return r.description || ''; },
     set:function(v){ r.description = v; persist(); if (currentView === 'list') renderListView(); }});
