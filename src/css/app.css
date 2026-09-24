@@ -481,3 +481,26 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .settings-meta{ margin-top:6px; font-size:var(--fs-caption); color:var(--text-faint); }
 .logo-line{ fill:none; stroke:var(--accent); }
 .logo-n1{ fill:var(--logo-1); } .logo-n2{ fill:var(--logo-2); } .logo-n3{ fill:var(--logo-3); } .logo-n4{ fill:var(--logo-4); }
+
+/* ===== Роли и реквизиты (процессы, фаза 1) ===== */
+.deprecated-switch[hidden]{ display:none; }
+.card-icon-role{ color:var(--text-muted); }
+.attr-head, .attr-row{ display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.75fr) 26px; column-gap:8px; align-items:center; }
+.attr-head{ font-size:var(--fs-caption); color:var(--text-faint); padding:2px 0 4px; border-bottom:1px solid var(--border-soft); }
+.attr-group-toggle{ width:100%; display:flex; align-items:center; gap:6px; padding:6px 0 2px; background:transparent; border:none; text-align:left; cursor:pointer; color:var(--text-muted); font-size:var(--fs-caption); }
+.attr-group-toggle:hover{ color:var(--text); }
+.attr-group-chevron{ width:12px; height:12px; display:flex; align-items:center; justify-content:center; flex:none; }
+.attr-group-chevron::before{ content:''; width:5px; height:5px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(45deg); margin-top:-3px; }
+.attr-group-toggle[aria-expanded="false"] .attr-group-chevron::before{ transform:rotate(-45deg); margin-top:0; margin-left:-2px; }
+.attr-group-count{ color:var(--text-faint); }
+.attr-rows[hidden]{ display:none; }
+.attr-cell{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:2px 4px; border-radius:var(--radius); color:var(--text-muted); cursor:text; }
+.attr-cell:hover, .attr-cell:focus-visible{ background:var(--bg-elevated); outline:none; }
+.attr-cell.is-name{ font-family:var(--mono); font-size:var(--fs-caption); color:var(--text); }
+.attr-cell.is-empty{ color:var(--text-faint); }
+.attr-menu-btn{ width:24px; height:22px; }
+.attr-cell-input{ padding:2px 4px; font-size:var(--fs-caption); }
+.attr-cell-input.is-name, .attr-add-name{ font-family:var(--mono); }
+.attr-add-grid{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.attr-add-grid .field-input{ padding:5px 7px; font-size:var(--fs-caption); }
+.attr-add-hint{ margin:0; font-size:var(--fs-caption); color:var(--text-faint); }
